@@ -32,6 +32,8 @@ coverage/
 playwright-report/
 test-results/
 artifacts/gate-b/
+deliverables/submission/*.zip
+deliverables/submission/MANIFEST.txt
 
 # IDE and operating-system files
 .idea/

@@ -15,6 +15,8 @@ Artifact: [`Nightingale_Technical_Brief.pdf`](../../deliverables/Nightingale_Tec
   inspected after the final regeneration.
 - Visual result: no clipped diagram, page overflow, unreadable table, or footer overlap remains.
   Page 3 was tightened once after inspection to keep the safety card and footer separated.
+- The final regeneration reflects the reproducible backend coverage result of 87% and does not
+  retain the earlier 97% self-report that could not be reproduced with the same command.
 
 The PDF describes local synthetic evidence and explicitly separates measured behavior from
 unverified PostgreSQL, deployment TLS/encryption-at-rest, external-provider, and UX sign-off

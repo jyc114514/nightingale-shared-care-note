@@ -98,7 +98,7 @@ medical risk score.”
 
 Implemented and checked locally:
 
-- Backend: 46 real-application tests, 97% coverage, Ruff check/format, mypy, pip check.
+ - Backend: 46 real-application tests, 87% coverage under the reproducible `pytest --cov=app` command, Ruff check/format, mypy, pip check.
 - Schema: Alembic head `0006_gate_d_archival`; fresh, downgrade/re-upgrade, legacy repair, and
   `alembic check` paths pass without `Base.metadata.create_all()` in seed.
 - Seed: two consecutive synthetic runs preserve 2 clinics, 5 users, 2 patients, 7 entries, 5

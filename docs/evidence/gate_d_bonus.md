@@ -8,8 +8,10 @@ external LLM, TLS, or encryption-at-rest evidence.
 - Python: 3.10.20 in the pre-existing `ai_env`; `pip check` passed.
 - Alembic head: `0006_gate_d_archival`.
 - `pytest`: **46 passed**.
-- Coverage: **97%** (`2905` statements, `97` missed) from the full backend suite; data file was
-  written under ignored `artifacts/gate-d/`.
+- Coverage: **87%** (`2210` statements, `286` missed) from the reproducible
+  `pytest --cov=app --cov-report=term-missing` command; the full test suite still reports
+  **46 passed**. The lower percentage includes unexecuted standalone benchmark scripts in the
+  `app` source scope; data files used for the run were kept outside the repository deliverables.
 - Ruff check, Ruff format check, and `mypy app tests`: passed.
 - `requirements.txt` SHA-256 remains
   `4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5`.

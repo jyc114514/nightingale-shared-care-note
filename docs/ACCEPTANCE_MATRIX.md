@@ -34,8 +34,8 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | passed |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | passed |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
-| DEL-01 | Working Git repository with clear history | Deliverable | Clean clone and log inspection | in progress |
-| DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | in progress |
+| DEL-01 | Working Git repository with clear history | Deliverable | Clean clone and log inspection | passed |
+| DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | passed |
 | DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | passed |
 | DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | passed |
 | DEL-05 | Demo video covers Scenarios A–C | Deliverable | Script checklist and final playback | in progress |
@@ -133,6 +133,9 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
+| DEL-01-CLEAN-CLONE | Final checkpoint `f745574` cloned into a fresh directory; migration, seed, backend/frontend quality, and 8 browser checks passed | passed | [clean_clone_rehearsal.md](evidence/clean_clone_rehearsal.md), [`.gitattributes`](../.gitattributes) |
+| DEL-02-CLEAN-SETUP | README setup, migration-first seed, redaction boundary, local limitation, and clean-clone commands were executed successfully | passed | [README.md](../README.md), [clean_clone_rehearsal.md](evidence/clean_clone_rehearsal.md) |
+
 | DEL-03-PDF | Three-page A4 Technical Brief generated from local HTML, rendered to raster, and visually inspected page by page; final page footer overlap was corrected and rechecked | passed | [Nightingale_Technical_Brief.pdf](../deliverables/Nightingale_Technical_Brief.pdf), [technical_brief_qa.md](evidence/technical_brief_qa.md) |
 | DEL-04-AUDIT | Direct backend/frontend dependency versions and observed license metadata recorded without guessing undeclared Python licenses | passed | [ATTRIBUTION.txt](../ATTRIBUTION.txt) |
 | DEL-05-SCRIPT | Scenarios A-C script, shot list, UX timing protocol, and six synthetic browser screenshots are ready; no final video tool is available on PATH | in progress | [DEMO_SCRIPT.md](DEMO_SCRIPT.md), [DEMO_SHOTLIST.md](DEMO_SHOTLIST.md), [screenshots](../deliverables/screenshots/) |

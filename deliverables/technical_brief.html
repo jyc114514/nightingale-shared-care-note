@@ -75,7 +75,7 @@
       <p class="meta">Phase 4 local synthetic prototype · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
       <div class="band">
         <div class="metric"><strong>46</strong><span>real backend tests</span></div>
-        <div class="metric"><strong>97%</strong><span>backend coverage</span></div>
+        <div class="metric"><strong>87%</strong><span>backend coverage</span></div>
         <div class="metric"><strong>78.477 ms</strong><span>Gate C warm-path P95</span></div>
       </div>
       <div class="rule"></div>
@@ -167,7 +167,7 @@
       <p class="small">Evidence below is synthetic and local. It establishes application behavior, not hosted compliance or PostgreSQL production guarantees.</p>
       <div class="section-label">Quality gates</div>
       <div class="evidence">
-        <div class="card blue"><h3>Backend</h3><p class="small"><strong>46 passed</strong> · 97% coverage · Ruff · mypy · pip check. Alembic `0006_gate_d_archival` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
+        <div class="card blue"><h3>Backend</h3><p class="small"><strong>46 passed</strong> · 87% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0006_gate_d_archival` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
         <div class="card teal"><h3>Frontend</h3><p class="small"><strong>8 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Historical context and ranking explanations are unit-covered.</p></div>
         <div class="card amber"><h3>Browser</h3><p class="small"><strong>8 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, ranking feedback, revisions/comments, 409 conflict, context source pointer, and patient privacy.</p></div>
         <div class="card rose"><h3>Warm path</h3><p class="small"><strong>P95 78.477 ms</strong> from 1,000 real TCP requests, concurrency 10, 26 patients, 208 materialized rows, zero errors. Local SQLite/Uvicorn approximation.</p></div>

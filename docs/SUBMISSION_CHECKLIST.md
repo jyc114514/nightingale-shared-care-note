@@ -18,7 +18,7 @@
 
 - [x] Mandatory local application paths and bonus paths have automated evidence.
 - [x] Git checkpoint history is inspectable and current worktree is clean at the last checkpoint.
-- [ ] Clean-clone rehearsal and package manifest.
+- [x] Clean-clone rehearsal; package manifest is included in the local submission bundle.
 - [ ] Private GitHub upload verification, if authorized and authenticated.
 - [ ] Final human review of screenshots/brief/demo.
 - [ ] Email submission by the user; Codex must not send it.
