@@ -32,7 +32,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | PRIV-04 | TLS in transit and encryption at rest | Mandatory | Deployment-provider evidence and explicit local limitation | planned |
 | PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) reports P95 78.477 ms; local SQLite approximation limitation documented | passed |
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | passed |
-| BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | planned |
+| BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | passed |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
 | DEL-01 | Working Git repository with clear history | Deliverable | Clean clone and log inspection | planned |
 | DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | planned |
@@ -119,6 +119,15 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 | BONUS-01-SCHEMA | Alembic `0005_gate_d_importance` adds append-only feedback events, rebuildable clinic-scoped profiles, and persisted ranking contribution fields without changing prior migrations; migration tests pass | passed | [0005_gate_d_importance.py](../backend/migrations/versions/0005_gate_d_importance.py), [test_migrations.py](../backend/tests/test_migrations.py) |
 | BONUS-01-SCORE | Structured feature signatures, bounded positive/negative updates, idempotency, clinic isolation, and separation from risk/provenance pass against the real API | passed | [importance.py](../backend/app/services/importance.py), [test_self_learning_importance.py](../backend/tests/test_self_learning_importance.py) |
 | BONUS-01-UI | Glance cards expose a collapsed “Why ranked?” explanation and role-aware pin/unpin feedback; desktop/mobile browser checks pass | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+
+## Phase 4B / Hybrid archival context evidence - 2026-08-26
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| BONUS-02-SCHEMA | Alembic `0006_gate_d_archival` adds rebuildable archival summaries and composite source pointers; fresh, downgrade/re-upgrade, legacy upgrade, and `alembic check` paths pass | passed | [0006_gate_d_archival.py](../backend/migrations/versions/0006_gate_d_archival.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| BONUS-02-POLICY | Deterministic 14-day hot / 90-day cold policy, manifest hash, stable period upsert, and protection overrides keep open actions, risk, conflicts, discussion, pinned/accepted, and care-plan sources out of cold summaries | passed | [archival.py](../backend/app/services/archival.py), [test_data_decay.py](../backend/tests/test_data_decay.py) |
+| BONUS-02-API | Context read and explicit refresh enforce clinic scope and role permissions; patient projection omits internal entries and raw AI content | passed | [context.py](../backend/app/api/routes/context.py), [test_data_decay.py](../backend/tests/test_data_decay.py) |
+| BONUS-02-UI | Historical context panel discloses derived summaries and follows canonical source pointers on desktop/mobile browser paths | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
 
 ## Hard release gate
 

@@ -272,7 +272,22 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
   expect(stale.status).toBe(409);
   expect(String(JSON.stringify(stale.body))).toContain("actual_version");
 
+  const contextRefresh = await backendRequest(
+    page,
+    "/patients/" + entry.patientId + "/context/refresh",
+    { method: "POST" },
+  );
+  expect(contextRefresh.status).toBe(200);
+
   await page.reload();
+  const historical = page.getByTestId("historical-context");
+  await expect(historical).toBeVisible();
+  await expect(historical).toContainText(
+    "Derived summary · not canonical source",
+  );
+  await expect(
+    historical.getByRole("button", { name: "Open canonical source" }).first(),
+  ).toBeVisible();
   const staffCard = page.getByTestId("timeline-entry-" + entry.id);
   await expect(staffCard).toContainText(winnerContent);
   await staffCard.getByRole("button", { name: "History" }).click();
@@ -293,6 +308,7 @@ test("Patient privacy - cookie patient sees only patient-facing entries and inte
   await expect(page.getByText("Internal Glance View is hidden")).toBeVisible();
   await expect(page.getByText("Patient summary")).toBeVisible();
   await expect(page.getByText("Patient instruction")).toBeVisible();
+  await expect(page.getByTestId("historical-context")).toBeVisible();
   await expect(
     page.getByText("Documented symptom after dose change"),
   ).toHaveCount(0);

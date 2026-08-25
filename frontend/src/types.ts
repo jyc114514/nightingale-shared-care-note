@@ -93,6 +93,63 @@ export type ImportanceFeedback = {
   ranking_explanation: Record<string, number>;
 };
 
+export type ContextEntry = {
+  id: string;
+  patient_id: string;
+  entry_type: string;
+  owner_role: string;
+  author_role: string;
+  current_version: number;
+  content: string | null;
+  occurred_at: string;
+  source_kind: string;
+  source_reference: string | null;
+  protection_reason: string | null;
+  canonical: boolean;
+};
+
+export type WarmContextEntry = Omit<
+  ContextEntry,
+  "content" | "source_reference"
+>;
+
+export type ArchivalSummarySource = {
+  source_entry_id: string;
+  source_version_id: string;
+  occurred_at: string;
+  source_order: number;
+};
+
+export type ArchivalSummary = {
+  id: string;
+  period_start: string;
+  period_end: string;
+  summary_text: string;
+  source_count: number;
+  source_manifest_hash: string;
+  generated_by: string;
+  created_at: string;
+  refreshed_at: string;
+  policy_version: string;
+  sources: ArchivalSummarySource[];
+  derived: boolean;
+};
+
+export type PatientContext = {
+  patient_id: string;
+  policy_version: string;
+  hot_entries: ContextEntry[];
+  warm_entries: WarmContextEntry[];
+  archival_summaries: ArchivalSummary[];
+};
+
+export type ContextRefresh = {
+  patient_id: string;
+  policy_version: string;
+  archival_summary_count: number;
+  archival_source_count: number;
+};
+
 export type Highlight = {
   id: string;
   clinic_id: string;

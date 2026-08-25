@@ -70,6 +70,8 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "patient_glance_items",
             "highlight_feedback_events",
             "importance_profiles",
+            "archival_summaries",
+            "archival_summary_sources",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -110,7 +112,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0005_gate_d_importance"
+                == "0006_gate_d_archival"
             )
     finally:
         engine.dispose()
@@ -165,7 +167,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0005_gate_d_importance"
+                == "0006_gate_d_archival"
             )
     finally:
         engine.dispose()

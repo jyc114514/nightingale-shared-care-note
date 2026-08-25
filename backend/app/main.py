@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
 from app.api.routes.ai_processing import router as ai_processing_router
 from app.api.routes.comments import router as comments_router
+from app.api.routes.context import router as context_router
 from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
 from app.api.routes.gate_b import router as gate_b_router
@@ -14,7 +15,7 @@ from app.config import settings
 
 settings.validate_runtime_security()
 
-app = FastAPI(title="Nightingale", version="0.3.0")
+app = FastAPI(title="Nightingale", version="0.4.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origin_list,
@@ -30,10 +31,11 @@ app.include_router(entries_router)
 app.include_router(gate_b_router)
 app.include_router(comments_router)
 app.include_router(conflicts_router)
+app.include_router(context_router)
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     """Return a fixed, non-sensitive process health response."""
 
-    return {"status": "ok", "phase": "3-gate-c-local"}
+    return {"status": "ok", "phase": "4-bonus-local"}

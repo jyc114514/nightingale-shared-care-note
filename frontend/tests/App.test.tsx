@@ -1,5 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App, exactCodepointSpan } from "../src/App";
@@ -104,6 +110,37 @@ const glance = Array.from({ length: 6 }, (_, index) => ({
   quote: index === 0 ? "Pending renal panel" : `Synthetic item ${index + 1}`,
 }));
 
+const context = {
+  patient_id: "patient-a",
+  policy_version: "gate-d-v1",
+  hot_entries: [],
+  warm_entries: [],
+  archival_summaries: [
+    {
+      id: "archival-2025-04",
+      period_start: "2025-04-01T00:00:00Z",
+      period_end: "2025-05-01T00:00:00Z",
+      summary_text:
+        "Derived historical context for 2025-04: 1 source entry remains canonical.",
+      source_count: 1,
+      source_manifest_hash: "manifest",
+      generated_by: "deterministic-local-archive",
+      created_at: "2026-08-26T00:00:00Z",
+      refreshed_at: "2026-08-26T00:00:00Z",
+      policy_version: "gate-d-v1",
+      sources: [
+        {
+          source_entry_id: "entry-staff",
+          source_version_id: "version-1",
+          occurred_at: "2025-04-15T09:00:00Z",
+          source_order: 0,
+        },
+      ],
+      derived: true,
+    },
+  ],
+};
+
 function response(payload: unknown, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -133,6 +170,7 @@ function mockAuthenticatedApi(
       const url = String(input);
       if (url.endsWith("/auth/me")) return response(user);
       if (url.endsWith("/patients")) return response([patient]);
+      if (url.endsWith("/context")) return response(context);
       if (url.endsWith("/timeline")) return response(timeline);
       if (url.endsWith("/glance")) return response(glance);
       if (url.includes("/highlights/") && url.endsWith("/source")) {
@@ -272,6 +310,23 @@ describe("Gate B shared care note", () => {
       expect(
         screen.getAllByRole("button", { name: "Unpin" })[0],
       ).toBeInTheDocument(),
+    );
+  });
+
+  it("shows derived historical context and canonical source pointers", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    const historical = await screen.findByTestId("historical-context");
+    expect(historical).toContainElement(
+      screen.getByText("Derived summary · not canonical source"),
+    );
+    fireEvent.click(
+      within(historical).getByRole("button", { name: "Open canonical source" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("timeline-entry-entry-staff")).toHaveClass(
+        "border-amber-400",
+      ),
     );
   });
 

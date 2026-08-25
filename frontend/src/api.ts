@@ -2,6 +2,8 @@ import type {
   AIJob,
   ApiErrorShape,
   Comment,
+  ContextRefresh,
+  PatientContext,
   Conflict,
   Diff,
   FeedbackEventType,
@@ -63,6 +65,12 @@ export const api = {
   patients: () => request<Patient[]>("/patients"),
   timeline: (patientId: string) =>
     request<TimelineEntry[]>(`/patients/${patientId}/timeline`),
+  context: (patientId: string) =>
+    request<PatientContext>(`/patients/${patientId}/context`),
+  refreshContext: (patientId: string) =>
+    request<ContextRefresh>(`/patients/${patientId}/context/refresh`, {
+      method: "POST",
+    }),
   glance: (patientId: string) =>
     request<GlanceItem[]>(`/patients/${patientId}/glance`),
   source: (highlightId: string) =>

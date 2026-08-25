@@ -9,6 +9,7 @@ import {
 import { ApiError, api } from "./api";
 import type {
   Comment,
+  PatientContext,
   Conflict,
   Diff,
   FeedbackEventType,
@@ -745,6 +746,118 @@ function HistoryPanel({
   );
 }
 
+function HistoricalContextPanel({
+  context,
+  internal,
+  onOpenSource,
+  onRefresh,
+  refreshBusy,
+}: {
+  context: PatientContext | null;
+  internal: boolean;
+  onOpenSource: (entryId: string) => void;
+  onRefresh: (() => Promise<void>) | null;
+  refreshBusy: boolean;
+}) {
+  if (!context) return null;
+  return (
+    <section
+      className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
+      aria-label="Historical context"
+      data-testid="historical-context"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            Historical context
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">
+            Hot, warm, and derived cold history
+          </h2>
+        </div>
+        {onRefresh && (
+          <Button
+            kind="quiet"
+            onClick={() => void onRefresh()}
+            disabled={refreshBusy}
+          >
+            {refreshBusy ? "Refreshing" : "Refresh derived context"}
+          </Button>
+        )}
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700">
+            Hot context
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {context.hot_entries.length} canonical entries remain available with
+            full detail for this scope.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+            Warm index
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-700">
+            {context.warm_entries.length} older entries remain discoverable by
+            metadata without moving content into the cold summary.
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3">
+        {context.archival_summaries.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+            No derived archival periods are available yet.
+          </p>
+        ) : (
+          context.archival_summaries.map((summary) => (
+            <article
+              key={summary.id}
+              className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4"
+              data-testid="archival-summary"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold text-slate-800">
+                  {new Intl.DateTimeFormat("en-SG", {
+                    month: "long",
+                    year: "numeric",
+                  }).format(new Date(summary.period_start))}
+                </p>
+                <Pill tone="amber">Derived summary · not canonical source</Pill>
+              </div>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                {summary.summary_text}
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                {summary.source_count} source pointer
+                {summary.source_count === 1 ? "" : "s"} · policy{" "}
+                {summary.policy_version}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {summary.sources.map((source) => (
+                  <Button
+                    key={`${summary.id}-${source.source_entry_id}-${source.source_version_id}`}
+                    kind="secondary"
+                    onClick={() => onOpenSource(source.source_entry_id)}
+                  >
+                    Open canonical source
+                  </Button>
+                ))}
+              </div>
+              {!internal && (
+                <p className="mt-3 text-xs text-slate-500">
+                  Only patient-facing source pointers are included in this view.
+                </p>
+              )}
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const internal = isInternalUser(user);
   const role = primaryRole(user);
@@ -755,6 +868,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   );
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [glance, setGlance] = useState<GlanceItem[]>([]);
+  const [context, setContext] = useState<PatientContext | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -802,6 +916,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setLoading(true);
     setLoadError(null);
     setSource(null);
+    setContext(null);
     setSourceLoading(false);
     setFocusEntryId(null);
     setCommentsEntryId(null);
@@ -811,11 +926,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     const glanceRequest = internal
       ? api.glance(patientId)
       : Promise.resolve([] as GlanceItem[]);
-    Promise.all([api.timeline(patientId), glanceRequest])
-      .then(async ([timelineResult, glanceResult]) => {
+    Promise.all([
+      api.timeline(patientId),
+      glanceRequest,
+      api.context(patientId),
+    ])
+      .then(async ([timelineResult, glanceResult, contextResult]) => {
         if (!active) return;
         setTimeline(timelineResult);
         setGlance(glanceResult);
+        setContext(contextResult);
         if (internal && requestedHighlightId) {
           setSourceLoading(true);
           const linkedSource = await api.source(requestedHighlightId);
@@ -1054,6 +1174,32 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setMutationError(displayError(error));
     } finally {
       setFeedbackBusyId(null);
+    }
+  }
+
+  function openContextSource(entryId: string) {
+    setSource(null);
+    setFocusEntryId(entryId);
+    window.history.replaceState({}, "", `?patient=${patientId}`);
+    window.setTimeout(() => {
+      document
+        .getElementById(`timeline-entry-${entryId}`)
+        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, 0);
+    window.setTimeout(() => setFocusEntryId(null), 2400);
+  }
+
+  async function refreshContext() {
+    if (!patientId) return;
+    setMutationBusy(true);
+    setMutationError(null);
+    try {
+      await api.refreshContext(patientId);
+      setContext(await api.context(patientId));
+    } catch (error) {
+      setMutationError(displayError(error));
+    } finally {
+      setMutationBusy(false);
     }
   }
 
@@ -1384,6 +1530,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               </p>
             </section>
           )}
+
+          <HistoricalContextPanel
+            context={context}
+            internal={internal}
+            onOpenSource={openContextSource}
+            onRefresh={internal && role !== "admin" ? refreshContext : null}
+            refreshBusy={mutationBusy}
+          />
 
           <section
             className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"

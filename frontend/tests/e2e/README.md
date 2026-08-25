@@ -10,7 +10,8 @@ mobile viewports:
 - Scenario B: staff edit/version increment, diff, revert-as-new-version, nested root/reply
   comments, resolve, and unresolve.
 - Scenario C: a real stale `expected_version` write returns `409`; the UI shows current and
-  preserved attempted content as an optimistic conflict, distinct from a clinical conflict.
+  preserved attempted content as an optimistic conflict, then refreshes Historical context and
+  shows the derived summary disclosure/source-pointer path, distinct from a clinical conflict.
 - Patient privacy: cookie patient sees only patient-facing entries; direct internal Glance access
   is denied and no raw AI/internal comment is rendered.
 

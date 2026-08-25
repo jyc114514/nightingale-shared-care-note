@@ -12,6 +12,8 @@ from app.db.base import utcnow
 from app.db.migration import CURRENT_MIGRATION_HEAD
 from app.db.session import SessionLocal, engine
 from app.models import (
+    ArchivalSummary,
+    ArchivalSummarySource,
     Clinic,
     ClinicMembership,
     Comment,
@@ -30,6 +32,7 @@ from app.models import (
     User,
 )
 from app.services.entries import create_entry_record, record_audit
+from app.services.archival import refresh_archival_summaries
 from app.services.highlights import create_highlight_record
 from app.services.glance import sync_highlight_projection
 
@@ -529,6 +532,12 @@ def seed_demo() -> dict[str, object]:
             created_by_user_id=None,
             request_id="seed-highlight-conflict",
         )
+        refresh_archival_summaries(
+            db,
+            clinic_id=clinic_a.id,
+            patient_id=patient_a.id,
+            now=demo_time("2026-08-26T12:00:00"),
+        )
 
         counts = {
             "clinics": db.query(Clinic).count(),
@@ -538,6 +547,8 @@ def seed_demo() -> dict[str, object]:
             "comments": db.query(Comment).count(),
             "highlights": db.query(Highlight).count(),
             "glance_items": db.query(PatientGlanceItem).count(),
+            "archival_summaries": db.query(ArchivalSummary).count(),
+            "archival_sources": db.query(ArchivalSummarySource).count(),
         }
         return {
             "clinic_ids": [clinic_a.id, clinic_b.id],

@@ -6,8 +6,9 @@ authentication, clinic-scoped RBAC, immutable revisions, audit metadata, and opt
 concurrency are joined by a Glance View, occurred-time timeline, immutable source navigation,
 threaded comments, trust-state controls, and a redacted deterministic AI write path.
 
-The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance path is
-implemented with clinic-scoped deterministic feedback. This is not a hosted production
+The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance and
+hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. This is
+not a hosted production
 deployment: external-provider integration, PostgreSQL execution, TLS/encryption-at-rest
 evidence, data decay, voice capture, and final PDF/video/submission assets remain deferred. The
 repository-root `requirements.txt` is the candidate brief, **not** a
@@ -65,7 +66,8 @@ Remove-Item Env:DEMO_SEED_PASSWORD
 
 The seed creates two synthetic clinics, five users, two synthetic patients, seven entries, three
 distinct system AI-scribed entry types, five source-linked highlights/materialized Glance rows,
-and a threaded internal comment fixture. Re-running it preserves aggregate counts.
+a threaded internal comment fixture, and a derived archival summary with immutable source
+pointers. Re-running it preserves aggregate counts.
 
 ## Gate B API and UI
 
@@ -91,6 +93,14 @@ and a threaded internal comment fixture. Re-running it preserves aggregate count
 - `POST /highlights/{highlight_id}/feedback` records clinic-scoped staff/clinician feedback with
   an idempotency key. Feedback updates a bounded adaptive ranking contribution and the
   materialized Glance projection; it never mutates explicit risk or provenance.
+- `GET /patients/{patient_id}/context` returns hot full-detail entries, warm metadata indexes,
+  and derived archival periods. `POST /patients/{patient_id}/context/refresh` rebuilds only the
+  derivative summaries for staff/clinicians; canonical entries and immutable versions are never
+  deleted or rewritten.
+- Cold summaries carry a policy version, manifest hash, source entry/version pointers, and an
+  explicit “Derived summary · not canonical source” disclosure. Open actions, explicit risk,
+  active conflicts, unresolved discussion, pinned/accepted highlights, and clinician-confirmed
+  care-plan entries remain protected from compression.
 
 The frontend uses real cookie login and `/auth/me`, a clinic-scoped patient list, a calm light
 clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable Unicode
@@ -134,7 +144,7 @@ Pop-Location
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
 `test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
-`test_materialized_glance.py`, and `test_self_learning_importance.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
+`test_materialized_glance.py`, `test_self_learning_importance.py`, and `test_data_decay.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
 `TestClient/httpx` warning is hidden. Migration tests use Alembic to create the database and
 prove that seed does not call `Base.metadata.create_all()`.
 
@@ -161,8 +171,9 @@ Pop-Location
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
 real Uvicorn and Vite processes on clean local ports, and runs Scenario A (exact source and
-review), Scenario B (diff/revert/thread), Scenario C (real stale-write conflict), and patient
-privacy at 1440x900 and 390x844. The custom setup records only its own server PIDs and teardown
+review), Scenario B (diff/revert/thread), Scenario C (real stale-write conflict plus derived
+context/source pointer), and patient privacy at 1440x900 and 390x844. The custom setup records
+only its own server PIDs and teardown
 removes those processes, the temporary database, generated password, and ignored
 `artifacts/gate-b/` screenshots.
 
@@ -189,8 +200,8 @@ hosted PostgreSQL production benchmark.
 - AI output is a suggestion. It cannot silently overwrite a human source or present an
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
-- No external LLM, Docker, deployment, account creation, or email is configured. The adaptive
-  importance bonus is local and deterministic; data decay, hosted PostgreSQL, TLS/
-  encryption-at-rest, final brief PDF, and demo video remain explicit delivery gates.
+- No external LLM, Docker, deployment, account creation, or email is configured. Both Bonus paths
+  are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest, final brief PDF, and
+  demo video remain explicit delivery gates.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

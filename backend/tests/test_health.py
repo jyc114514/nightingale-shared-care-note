@@ -13,4 +13,4 @@ async def test_health_endpoint_uses_the_real_application() -> None:
         response = await client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "phase": "3-gate-c-local"}
+    assert response.json() == {"status": "ok", "phase": "4-bonus-local"}
