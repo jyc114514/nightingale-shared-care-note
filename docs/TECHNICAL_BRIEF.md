@@ -1,51 +1,88 @@
-# Nightingale technical brief — Phase 0 skeleton
+# Nightingale technical brief - Phase 1 / Gate A
 
-> This is a structure-only brief. It deliberately does not claim that deferred product
-> behavior exists.
+This brief records only behavior that exists in the local synthetic prototype. It does not
+claim a Glance View, timeline UX, AI provider, provenance highlights, PHI redaction, TLS,
+encryption at rest, warm-path P95, or bonus feature.
 
-## Architecture
+## Architecture and runtime boundary
 
-Phase 0 scaffold: FastAPI backend, React/TypeScript/Vite frontend, Tailwind CSS styling,
-TanStack Query for the shell's health request, and PostgreSQL/Alembic dependencies reserved
-for a later gate. The frontend and backend run as separate local processes.
+The backend is FastAPI with SQLAlchemy 2 ORM, Pydantic schemas, Alembic migrations, and a
+request-scoped SQLAlchemy session. SQLite is the file-backed local/test database; PostgreSQL is
+the target database through `DATABASE_URL`. The React/TypeScript/Vite frontend remains a health
+shell so Gate A authorization is exercised through direct HTTP API calls rather than a UI role
+switch.
 
-## Data schema
+The implemented prototype intentionally reuses the existing Conda `ai_env` at Python 3.10.20.
+This is a prototype limitation caused by the PM decision to avoid mutating a shared environment;
+production migration to Python 3.12+ is a follow-up.
 
-Not implemented in Phase 0. Future schema decisions belong to Gate A and must preserve clinic
-scope, immutable entry versions, audit metadata, and synthetic-data boundaries.
+## Gate A data model
 
-## RBAC
+```text
+clinics
+  ├── clinic_memberships ── users
+  └── patients ── patient_user_links ── users
+        └── entries (stable identity, owner role, visibility, current_version)
+              └── entry_versions (full immutable content snapshots)
+              ├── comments (internal, read-only in Gate A)
+              ├── conflicts (stale attempted content for internal review)
+              └── audit_logs (metadata only; no note content)
+```
 
-Not implemented in Phase 0. Server-side authorization is a mandatory future gate; the shell has
-no role switcher and no patient data.
+The tables are `clinics`, `users`, `clinic_memberships`, `patients`, `patient_user_links`,
+`entries`, `entry_versions`, `audit_logs`, `conflicts`, and `comments`. Entry types distinguish
+patient-facing summary/instruction, staff notes, clinician sections, three system-authored
+AI-scribed types, and system events. The seed uses synthetic values only.
 
-## Provenance
+## Authentication and authorization
 
-Not implemented in Phase 0. Future AI-derived highlights must resolve to immutable source
-versions and source spans.
+`POST /auth/login` verifies an Argon2 password hash and sets a signed HS256 JWT in the
+HttpOnly `nightingale_session` cookie. The token contains only `sub`, `iat`, and `exp`; no token
+is placed in the JSON response. `GET /auth/me` derives memberships and patient links from the
+database. Missing or short `SESSION_SECRET` values fail closed. Tests inject an explicit
+test-only `Settings` object and never rely on a production fallback secret.
 
-## PHI redaction
+Every protected patient or entry lookup first resolves the authenticated user's membership or
+exact patient link. An unknown or cross-clinic record returns `404`; an in-scope but forbidden
+operation returns `403`; unauthenticated requests return `401`.
 
-Not implemented in Phase 0. The current repository contains no patient records and makes no
-external LLM calls. A later gate must redact names, Singapore-style IC/ID values, and phones
-before any provider call and fail closed on detector failure.
+| Actor | Read scope | Gate A write scope |
+| --- | --- | --- |
+| patient | linked patient-facing summaries/instructions only | none |
+| staff | all entries/comments in own clinic | own `staff_note` entries only |
+| clinician | all entries/comments in own clinic | own `clinician_section` entries only |
+| admin | all data in own clinic | read-only |
+| system | seed/service records only | no login role |
 
-## Performance measurement
+Role, clinic, owner, and visibility are derived server-side. Extra client fields are ignored and
+cannot turn a staff request into a clinician or cross-clinic write.
 
-Not measured in Phase 0. The required warm Glance View P95 measurement belongs to a later gate;
-the current `/health` response is not a Glance View benchmark.
+## Revision and conflict semantics
 
-## Assumptions and trade-offs
+An entry starts at version 1 with a complete `entry_versions` snapshot. An edit executes an
+atomic compare-and-swap on `entries.current_version = expected_version`. On success it appends a
+new full snapshot, increments `current_version`, and records metadata-only audit fields. A revert
+copies an earlier snapshot into a new version and records `reverted_from_version`; it never
+deletes history.
 
-- The existing confirmed Conda environment is reused, even though it is Python 3.10.20 while
-  the longer-term project plan targets Python 3.12.
-- The scaffold avoids a database connection, hosted service, Docker, and external credentials.
-- The frontend health request is a real request to the local backend, while all clinical screens
-  remain deferred.
+If the compare-and-swap affects zero rows, the submitted text is stored in `conflicts` and the
+API returns `409` with conflict ID, expected version, and actual version. The accepted snapshot
+remains unchanged. This is deterministic stale-write handling, not role-priority overwrite.
+Different entry IDs/sections use independent rows and therefore do not overwrite each other.
 
-## Implemented versus deferred
+## Verification and trade-offs
 
-Implemented: repository scaffold, dependency lockfiles, backend health endpoint and test,
-frontend shell and unit test, lint/type-check/build commands, safe placeholders, and evidence
-artifacts. Deferred: all product requirements and all bonus features.
+Gate A evidence currently includes eight real FastAPI tests, `pytest --cov=app` at 83% total
+coverage in the local run, a real Alembic `upgrade head` against an empty temporary SQLite
+database, and two consecutive seed runs with stable counts of 2 clinics, 5 users, 2 patients,
+7 entries, and 1 comment. The async tests use HTTPX `AsyncClient` plus `ASGITransport`, removing
+the former `TestClient/httpx` warning rather than suppressing it.
 
+SQLite keeps the 72-hour prototype runnable without Docker or a hosted service. PostgreSQL is
+the stated target but is not claimed as locally provisioned. Full snapshots make audit and
+revert behavior easy to inspect at prototype scale; a production deployment should revisit
+retention, indexing, connection pooling, and migration operations after workload measurement.
+
+Deferred work remains explicit: Gate B owns timeline/Glance View UX, complete comments workflow,
+source-span provenance and trust interactions; Gate C owns redaction, provider boundary,
+materialized warm reads and P95 measurement. No AI call is on the current read path.

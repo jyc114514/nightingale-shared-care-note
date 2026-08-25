@@ -15,13 +15,13 @@ function renderApp() {
   );
 }
 
-describe("Phase 0 shell", () => {
+describe("Phase 1 Gate A shell", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ status: "ok", phase: "0-scaffold" }),
+        json: async () => ({ status: "ok", phase: "1-gate-a" }),
       }),
     );
   });
@@ -34,9 +34,8 @@ describe("Phase 0 shell", () => {
     renderApp();
 
     expect(screen.getByRole("heading", { name: "Nightingale" })).toBeInTheDocument();
-    expect(screen.getByText("Phase 0 · scaffold")).toBeInTheDocument();
+    expect(screen.getByText("Phase 1 Gate A")).toBeInTheDocument();
     expect(await screen.findByText("Backend online")).toBeInTheDocument();
-    expect(screen.getByText("GET /health · ok · 0-scaffold")).toBeInTheDocument();
+    expect(screen.getByText("GET /health | ok | 1-gate-a")).toBeInTheDocument();
   });
 });
-

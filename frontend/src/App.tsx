@@ -25,7 +25,7 @@ export function App() {
   });
 
   const backendLabel = healthQuery.isPending
-    ? "Checking backend…"
+    ? "Checking backend"
     : healthQuery.isError
       ? "Backend unavailable"
       : "Backend online";
@@ -40,22 +40,23 @@ export function App() {
             </p>
             <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Nightingale</h1>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-              A trust-centered longitudinal care-note project. Phase 0 establishes the
-              reproducible application shell only.
+              A trust-centered longitudinal care-note project. Gate A establishes the secure data
+              and revision foundation while the health shell remains intentionally small.
             </p>
           </div>
           <span className="w-fit rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-medium text-cyan-200">
-            Phase 0 · scaffold
+            Phase 1 Gate A
           </span>
         </header>
 
-        <section className="grid gap-4 sm:grid-cols-2" aria-label="Phase 0 status">
+        <section className="grid gap-4 sm:grid-cols-2" aria-label="Phase 1 Gate A status">
           <article className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl shadow-cyan-950/20">
             <p className="text-sm font-medium text-slate-400">Current boundary</p>
-            <h2 className="mt-3 text-xl font-semibold">Foundation before features</h2>
+            <h2 className="mt-3 text-xl font-semibold">Secure foundation before UX</h2>
             <p className="mt-3 text-sm leading-6 text-slate-400">
-              Authentication, RBAC, timeline, AI processing, provenance, and bonus capabilities
-              are intentionally deferred to later gates.
+              Authentication, clinic-scoped RBAC, immutable revisions, audit metadata, and
+              optimistic conflicts are in Gate A. Timeline, AI, provenance, and bonus capabilities
+              remain deferred to later gates.
             </p>
           </article>
 
@@ -72,17 +73,16 @@ export function App() {
             </div>
             <p className="mt-3 text-sm leading-6 text-slate-400">
               {healthQuery.data
-                ? `GET /health · ${healthQuery.data.status} · ${healthQuery.data.phase}`
+                ? `GET /health | ${healthQuery.data.status} | ${healthQuery.data.phase}`
                 : "Start the FastAPI process on port 8000 to verify the connection."}
             </p>
           </article>
         </section>
 
         <footer className="border-t border-slate-800 pt-5 text-sm text-slate-500">
-          Synthetic data only · No clinical workflow is implemented in this phase.
+          Synthetic data only | No clinical workflow or AI output is implemented in this phase.
         </footer>
       </div>
     </main>
   );
 }
-

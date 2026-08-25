@@ -12,10 +12,10 @@ Date: 2026-08-25 (+08:00)
 - `sys.prefix` is the same `ai_env` root.
 - pip: `26.1.2`.
 
-The Phase 0 prompt permits 3.11–3.13 and also requires reusing the confirmed existing
-environment rather than creating an alternate environment. This run preserved the existing
-Python 3.10.20 Conda environment and selected compatible pinned dependencies; no `.venv`, uv
-managed interpreter, conda-base activation, or global pip installation was used.
+PM decision: the implemented prototype continues using the existing Python 3.10.20 Conda
+environment. This is a prototype-only limitation; the production recommendation is Python
+3.12+. The sprint does not upgrade the shared environment or create an alternate environment.
+No `.venv`, uv-managed interpreter, conda-base activation, or global pip installation was used.
 
 ## Package change
 
@@ -60,8 +60,9 @@ environment to prevent unrelated upgrades.
 - Backend Ruff check: passed with `--no-cache`.
 - Backend Ruff format check: passed with `--no-cache`.
 - Backend mypy: passed, 4 source files checked.
-- Backend pytest: passed, 1 test; the cache provider is disabled because the restricted runner
-  cannot create `.pytest_cache`. A FastAPI/Starlette `httpx` deprecation warning remains.
+- Backend pytest: passed, 1 async test; the cache provider is disabled because the restricted
+  runner cannot create `.pytest_cache`. The health test uses `httpx.AsyncClient` with
+  `ASGITransport`, so the former FastAPI/Starlette `TestClient` deprecation warning is gone.
 - Live health check: a temporary Uvicorn process returned `status=ok`, `phase=0-scaffold`; it
   was stopped and port 8000 was confirmed free afterward.
 - Frontend `pnpm install`: passed with the project lockfile; Playwright browser binaries were not
@@ -77,7 +78,31 @@ environment to prevent unrelated upgrades.
 ## Known risks and limitations
 
 - The existing environment is Python 3.10.20 rather than the project plan's preferred 3.12.
+- Python 3.10.20 is accepted only for this prototype; production migration to Python 3.12+ is
+  still required.
 - Git is installed locally but is not on this PowerShell session's PATH; repository commands use
   its explicit executable path. The VS Code shortcut is not a dependency or blocker.
 - Clinical data, authentication, authorization, database schema, AI processing, redaction,
   provenance, Glance View P95, and all bonus features remain unimplemented.
+
+## Phase 1 / Gate A evidence - 2026-08-25
+
+The Phase 0 history above is preserved as a historical snapshot. The implemented prototype
+continues using the same Conda `ai_env` Python 3.10.20 environment. No package delta was needed
+for Gate A and `backend/requirements.lock` remains the Phase 0 lockfile.
+
+- The health test now uses `httpx.AsyncClient` with `ASGITransport` and pytest strict asyncio;
+  the former `TestClient/httpx` deprecation warning is gone without suppressing warnings.
+- Ruff check, Ruff format check, mypy, and eight real FastAPI tests passed after Gate A changes.
+- Coverage run: `pytest --cov=app --cov-report=term-missing`, 8 passed, 83% total coverage.
+- Real Alembic `upgrade head` on an empty temporary SQLite file created all 11 expected tables,
+  including `alembic_version`.
+- The synthetic seed ran twice against a temporary SQLite file with stable counts: 2 clinics,
+  5 users, 2 patients, 7 entries, and 1 comment. It required an explicit local
+  `DEMO_SEED_PASSWORD` and printed only IDs/counts.
+- Gate A remains local/test SQLite with PostgreSQL as the target connection through
+  `DATABASE_URL`. No Docker, hosted database, external LLM, or external account was used.
+
+Gate A does not change the Python production limitation: Python 3.12+ remains the recommended
+production runtime migration. Gate B/C items, including redaction, provenance, performance, and
+the full product UI, remain deferred.
