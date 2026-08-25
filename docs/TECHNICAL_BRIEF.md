@@ -1,143 +1,137 @@
-# Nightingale technical brief - Phase 3 / Gate C local implementation
+# Nightingale Technical Brief
 
-This brief records only behavior that exists in the local synthetic prototype. Gate C adds a
-fail-closed redaction boundary, a typed deterministic fixture provider, synchronous write-path
-processing, and a materialized Glance read model on top of the Gate A/Gate B foundation. It does
-not claim a live external LLM, hosted PostgreSQL validation, deployment TLS, encryption at rest,
-bonus learning, or final submission assets.
+## A trust-centered longitudinal shared-care note
 
-## Product boundary and runtime
+Status: Phase 4 local synthetic prototype, measured on 2026-08-26.
 
-Nightingale is a clinic-scoped longitudinal care-note workspace. Internal users see a compact
-Glance View, a time-ordered timeline, immutable source navigation, comments, and revision trust
-controls. Patient access remains a separate server-authorized projection containing only patient-
-facing summaries and instructions.
+Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
+understand what changed and what needs action in under ten seconds. It is not an EHR replacement,
+diagnostic system, or autonomous medical decision-maker. AI-scribed content is a suggestion until
+clinician review; explicit medical risk, display ranking, provenance, and human confirmation are
+separate fields.
 
-The backend is FastAPI with SQLAlchemy 2, Pydantic, Alembic, and request-scoped sessions. SQLite
-is the local/test database; PostgreSQL remains the target through `DATABASE_URL` but was not
-provisioned or tested in this phase. The frontend is React/TypeScript/Vite with Tailwind CSS.
-The browser sends credentialed requests and receives an HttpOnly signed session cookie; it never
-receives a database service credential or a client-side role switch that changes authority.
+## 1. System boundary and architecture
 
-The prototype intentionally reuses the existing Conda `ai_env` at Python 3.10.20. This is a
-prototype limitation from the PM decision not to mutate a shared environment. Production
-migration to Python 3.12+ is a follow-up. The repository root `requirements.txt` is the candidate
-brief and is preserved unchanged.
-
-## Data and trust model
+The browser uses a real FastAPI application through credentialed cookie requests. Authorization is
+resolved server-side from clinic membership or a patient link on every protected route. The local
+database is SQLite; PostgreSQL is the target through `DATABASE_URL` but was not provisioned in this
+prototype. The existing shared `ai_env` remains at Python 3.10.20 by PM decision; production
+migration to Python 3.12+ is a follow-up.
 
 ```text
-clinics
-  ├── clinic_memberships ── users
-  ├── patients ── patient_user_links ── users
-  └── entries (stable identity, owner, visibility, occurred_at, source metadata)
-        ├── entry_versions (full immutable content snapshots)
-        ├── highlights (immutable source-version spans and review state)
-        ├── comments (thread parent and resolution metadata)
-        ├── conflicts (stale attempted content)
-        └── audit_logs (metadata only; no note/comment body)
+Browser: React + TypeScript + Vite + Tailwind
+       │ HttpOnly session cookie / Origin guard
+       ▼
+FastAPI routes ──► clinic + role authorization
+       │                     │
+       │                     ├── immutable EntryVersion + metadata audit
+       │                     ├── CAS edit ──► 409 Conflict record
+       │                     ├── exact Highlight ──► source version/span
+       │                     └── async write path: redact → typed fixture provider
+       ▼
+Materialized projections
+  patient_glance_items  ◄── bounded per-clinic importance feedback
+  archival_summaries    ◄── deterministic hot/warm/cold refresh
+       │
+       └── warm reads contain no provider/LLM call
 ```
 
-`occurred_at` is separate from creation time and the timeline uses deterministic
-`occurred_at DESC, id DESC` ordering. Entries created by the system for doctor consult, nurse
-consult, and patient AI-session summaries have distinct `source_kind` and non-empty
-`source_reference` values. AI source text is never presented as clinician-confirmed by default.
+The AI boundary is deliberately local and deterministic. A typed redacted payload is validated
+before the fixture provider; a second detector makes the redaction path fail closed. No API key,
+external model, raw note text, patient identifier, quote, or embedding is required by the local
+implementation.
 
-Highlights store `source_entry_id`, `source_version_id`, inclusive/exclusive offsets, the exact
-quote, a SHA-256 hash over its UTF-8 bytes, and `offset_unit=unicode_codepoint`. Creation checks
-the source version, patient/clinic scope, Python string slice, and hash. Later entry revisions
-create new `entry_versions`; they do not move or rewrite an existing highlight. Review state,
-display priority, explicit `risk_level`, risk reason, action state, reviewer, and timestamps are
-separate fields. `rejected` and `superseded` highlights remain resolvable through source history
-but are excluded from the active Glance query.
+## 2. Data, provenance, and retention semantics
 
-Comments are internal, threaded by a self-reference, and scoped to one entry and clinic. Staff
-and clinicians can read/write comments in their clinic; admins are read-only; patients cannot
-read or mutate them. Resolve/unresolve stores reviewer metadata and an audit event without
-copying the body into the audit row.
+```text
+Clinic ── Membership ── User
+   │
+   └── Patient ── PatientUserLink ── User
+          │
+          └── Entry (stable identity, owner, visibility, occurred_at, source metadata)
+                 ├── EntryVersion (immutable full snapshot)
+                 ├── Highlight (immutable version + exact codepoint span + quote hash)
+                 ├── Comment (parent thread + resolution metadata)
+                 ├── Conflict (expected/actual version + attempted content)
+                 └── AuditLog (metadata only)
 
-## Authorization and conflict semantics
+Highlight ── PatientGlanceItem (materialized ranking/read projection)
+Highlight ── FeedbackEvent ── ImportanceProfile (clinic-scoped, rebuildable)
+Entry/Version ── ArchivalSummary ── ArchivalSummarySource (derived pointers only)
+```
 
-| Actor | Read scope | Gate B mutation scope |
+Every highlight stores `source_entry_id`, immutable `source_version_id`, inclusive/exclusive
+Unicode-codepoint offsets, the exact quote, and a SHA-256 hash. Later edits create a new version;
+they do not move the old highlight. A revert copies an earlier snapshot into a new version. A stale
+same-section write preserves both submissions and returns `409`; it never silently chooses a
+winner.
+
+The context endpoint exposes three retrieval bands:
+
+| Band | Local policy | Returned material |
 | --- | --- | --- |
-| patient | linked patient-facing summaries/instructions and their timeline projection | none |
-| staff | all internal entries, active Glance items, source spans, comments, history | own `staff_note` edits and comments; cannot review highlights |
-| clinician | all internal entries, active Glance items, source spans, comments, history | own `clinician_section` edits, comments, manual highlights, accept/reject/review |
-| admin | clinic-scoped internal read and source oversight | read-only |
+| Hot | last 14 days, or protected by open action/risk/conflict/discussion/pin/confirmation/care plan | full current immutable detail |
+| Warm | 14–90 days and not protected | metadata index; source remains canonical |
+| Cold | older than 90 days and not protected | deterministic period summary + manifest + source entry/version pointers |
 
-The server resolves clinic membership and patient links on every protected route. Cookie-
-authenticated writes require an allowed `Origin` when a browser sends one; production settings
-fail closed unless `COOKIE_SECURE=true` and the session secret is sufficiently long. Direct
-non-browser API tests without an `Origin` remain usable. A stale same-entry edit still returns a
-deterministic `409`, preserves the attempted content in `conflicts`, and never uses silent
-last-write-wins. A revert copies an earlier snapshot into a new version.
+Archival summaries are derivatives, not canonical records. Refresh is an explicit write operation
+for staff/clinicians; a context read never generates or calls a provider. Patient projection filters
+both hot/warm entries and archival source pointers to patient-facing summary/instruction records,
+excluding internal comments and raw AI-scribed notes.
 
-## Gate C redaction and processing boundary
+Adaptive ranking is explainable and bounded:
 
-The local provider boundary accepts only the Pydantic `RedactedPayload` contract. The processing
-service first redacts deliberately supplied synthetic patient/staff/clinician names, Singapore
-NRIC/FIN/IC/ID forms, and Singapore phone forms (+65, spaced/hyphenated, and local eight-digit
-forms). It then runs a second detector. Any detector failure or remaining match creates a
-`failed_redaction` job with a safe category code and does not call the provider.
+```text
+final display priority = clamp(
+  base + recency + explicit risk + unresolved action
+  + clinician confirmation + adaptive feedback,
+  0, 100
+)
+```
 
-`FixtureProvider` is deterministic and has no network, API key, or external model dependency.
-Its validated output creates a new `system`-authored AI-scribed entry and a `suggested`
-highlight anchored to that entry's first immutable version and exact codepoint span. It never
-updates a human entry. Idempotency keys prevent duplicate entries; malformed or unavailable
-provider output creates only a failed job. Job payloads, audit rows, and logs do not contain raw
-input, provider prompts, or provider responses.
+Adaptive feedback is clinic-scoped, idempotent, based only on a closed structured feature
+signature, and bounded to `[-12, +12]`. It changes display priority only; it cannot mutate
+`risk_level`, source spans, or clinician truth. The UI explicitly says: “Ranking priority, not a
+medical risk score.”
 
-The active `GET /patients/{patient_id}/glance` endpoint reads only `patient_glance_items`, with
-clinic authorization, deterministic ordering, a six-item cap, and rejection/supersession filters.
-Highlight creation/review and seed updates refresh the projection. This is a local materialized
-read model; no external provider is present on the warm read path.
+## 3. Evidence, trade-offs, and remaining boundary
 
-## Gate B API and UI path
+Implemented and checked locally:
 
-The implemented routes include:
+- Backend: 46 real-application tests, 97% coverage, Ruff check/format, mypy, pip check.
+- Schema: Alembic head `0006_gate_d_archival`; fresh, downgrade/re-upgrade, legacy repair, and
+  `alembic check` paths pass without `Base.metadata.create_all()` in seed.
+- Seed: two consecutive synthetic runs preserve 2 clinics, 5 users, 2 patients, 7 entries, 5
+  highlights/Glance rows, 2 comments, 1 archival summary, and 2 source pointers.
+- Frontend: 8 Vitest tests, ESLint, Prettier, TypeScript, and production Vite build pass.
+- Browser: 8 Playwright checks pass at 1440x900 and 390x844, including provenance/deep-link,
+  ranking feedback, revisions/comments, a real `409`, Historical context source pointers, and
+  patient privacy.
+- Gate C warm path: real Uvicorn TCP benchmark with 26 patients, 208 entries/highlights, 50
+  warm-up requests, 1,000 measured requests, concurrency 10, zero errors; P50 55.736 ms, P95
+  78.477 ms, P99 106.919 ms, max 129.497 ms.
 
-- `GET /patients/{patient_id}/timeline` with server-side patient projection;
-- `GET /patients/{patient_id}/glance` with a maximum of six active items;
-- `GET /highlights/{highlight_id}/source` for exact immutable source resolution;
-- `POST /entry-versions/{version_id}/highlights` for clinician-created manual highlights;
-- `PATCH /highlights/{highlight_id}/review` for clinician trust decisions;
-- `GET/POST /entries/{entry_id}/comments` and `PATCH /comments/{comment_id}/resolution`;
-- Gate A login, `/auth/me`, patient, version, diff, edit, revert, and conflict routes.
-- `POST /patients/{patient_id}/ai-processing` and `GET /ai-processing/{job_id}` for the local
-  redacted fixture write path and safe job metadata.
+The central trade-off is trust over automation: materialized reads and deterministic providers
+make the demo reproducible and auditable, while real external-provider quality and hosted database
+behavior remain unclaimed. SQLite is a fast local approximation, not PostgreSQL production proof.
+TLS/encryption-at-rest evidence depends on a deployment platform. UX-01 still needs a human timed
+10-second review. Voice, self-learning beyond the bounded bonus, and live LLM integration are out
+of scope for this prototype.
 
-The UI uses real cookie login and `/auth/me`, clinic-scoped patient selection, a calm light
-clinical layout, a six-or-fewer-item Top Card, timeline source labels, AI review badges, source
-navigation with validated `Array.from` codepoint quote highlighting and deep-link restoration,
-comments/replies/resolve controls, history/diff/revert controls, optimistic-concurrency conflict
-comparison, and role-aware review/edit controls. The patient projection does not render
-internal Glance, comments, raw AI notes, or review states because the server does not return them.
+## Demo scenarios
 
-## Verification actually performed
+Scenario A: clinician opens a Glance item, expands “Why ranked?”, pins/unpins it, follows the exact
+immutable source span, and accepts/rejects a suggestion.
 
-- Backend full pytest, Ruff check/format, mypy `app tests`, and `pip check` pass in the existing
-  Python 3.10.20 environment. The required Gate A tests remain present; Gate B and Gate C add
-  migration, provenance, API, security, comments, timeline, trust, redaction, provider-boundary,
-  AI-processing, materialized-read, and log-safety coverage.
-- `test_migrations.py` runs real Alembic upgrade/check/downgrade/re-upgrade against temporary
-  file-backed SQLite, checks the revision and key indexes/columns, proves seed fails before
-  migration, and proves consecutive seed counts are stable without `Base.metadata.create_all`.
-- The exact twelve-check `test_highlight_provenance.py` exercises manual/AI source identity,
-  exact slices, hash, Unicode offsets, old-version resolution, invalid offsets/quotes,
-  cross-source, patient, cross-clinic, and review authorization behavior.
-- Frontend Vitest, ESLint, Prettier check, TypeScript type-check, and Vite production build pass.
-  Playwright completed `8 passed` against real Uvicorn, real Vite, migrated synthetic SQLite, and
-  two viewports: 1440x900 and 390x844. It covered exact source/deep-link/review, diff/revert/
-  thread, real 409 conflict, and patient privacy. The runner cleaned ports 8000/5173, the
-  temporary database, and the generated password.
+Scenario B: staff edits a role-owned note, compares versions, reverts as a new version, and adds a
+nested internal comment that can be resolved/unresolved.
 
-- The real-TCP warm-path benchmark used file-backed SQLite, 26 synthetic patients, 208 benchmark
-  entries/highlights/materialized rows, 50 warm-up requests, 1,000 measured requests, and
-  concurrency 10. It recorded P50 55.736 ms, P95 78.477 ms, P99 106.919 ms, max 129.497 ms,
-  zero errors, and six response items. See
-  `docs/evidence/gate_c_warm_path.md` and its JSON companion. This is a measured local
-  approximation, not hosted PostgreSQL production evidence. UX-01 still needs a human timed
-  review.
+Scenario C: two writes use the same expected version; the stale write returns `409` and remains
+visible beside the winner. The user then refreshes Historical context and opens a canonical source
+pointer from a derived summary.
 
-PostgreSQL integration, external provider authorization, deployment TLS/encryption-at-rest,
-bonus importance/data decay, voice, final PDF, attribution audit, and video remain uncompleted.
+## Delivery limitation
+
+The PDF, screenshots, and local rehearsal package are delivery artifacts, not deployment evidence.
+The GitHub mirror is only acceptable as a private repository after explicit user-authorized upload;
+no public repository, email, or deployment is implied by this brief.

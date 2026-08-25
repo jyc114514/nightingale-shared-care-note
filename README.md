@@ -10,7 +10,7 @@ The local Gate C boundary is implemented and measured, and the Bonus adaptive-im
 hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. This is
 not a hosted production
 deployment: external-provider integration, PostgreSQL execution, TLS/encryption-at-rest
-evidence, data decay, voice capture, and final PDF/video/submission assets remain deferred. The
+evidence, data decay, voice capture, final video, and external submission remain deferred. The
 repository-root `requirements.txt` is the candidate brief, **not** a
 pip requirements file; never run `pip install -r requirements.txt`.
 
@@ -108,6 +108,10 @@ codepoint highlighting, comments, version history, diff/revert, conflict compari
 badges, role-aware controls, and a collapsed **Why ranked?** explanation with pin/unpin feedback.
 There is no UI-only role switch.
 
+The Phase 5 delivery set includes the editable and rendered Technical Brief, attribution audit,
+demo script/shot list, UX timing protocol, deployment checklist, and synthetic browser screenshots.
+There is no final video claim while a reliable local recorder/codec is unavailable.
+
 ## Bonus importance logic
 
 The adaptive ranking path uses a closed structured feature signature derived from entry type,
@@ -201,7 +205,8 @@ hosted PostgreSQL production benchmark.
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
 - No external LLM, Docker, deployment, account creation, or email is configured. Both Bonus paths
-  are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest, final brief PDF, and
-  demo video remain explicit delivery gates.
+  are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest, final video, and
+  external submission remain explicit delivery gates. The local Technical Brief PDF is complete
+  and QA-recorded under `docs/evidence/technical_brief_qa.md`.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

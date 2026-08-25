@@ -249,7 +249,7 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
 
 test("Scenario C - stale write returns 409 and remains visible as an optimistic conflict", async ({
   page,
-}) => {
+}, testInfo) => {
   await login(page, "staff.a@clinic-a.test");
   const entry = await staffEntry(page);
   const winnerContent = "Current winner " + Date.now();
@@ -299,6 +299,10 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
   await expect(conflictPanel).toContainText(
     "actual v" + (entry.currentVersion + 1),
   );
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "scenario-c.png"),
+    fullPage: true,
+  });
 });
 
 test("Patient privacy - cookie patient sees only patient-facing entries and internal endpoint is denied", async ({

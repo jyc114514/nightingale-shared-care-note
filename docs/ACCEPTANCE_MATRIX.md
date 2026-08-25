@@ -34,11 +34,11 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | passed |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | passed |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
-| DEL-01 | Working Git repository with clear history | Deliverable | Clean clone and log inspection | planned |
-| DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | planned |
-| DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | planned |
-| DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | planned |
-| DEL-05 | Demo video covers Scenarios A–C | Deliverable | Script checklist and final playback | planned |
+| DEL-01 | Working Git repository with clear history | Deliverable | Clean clone and log inspection | in progress |
+| DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | in progress |
+| DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | passed |
+| DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | passed |
+| DEL-05 | Demo video covers Scenarios A–C | Deliverable | Script checklist and final playback | in progress |
 
 ## Phase 0 recorded evidence — 2026-08-25
 
@@ -128,6 +128,14 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 | BONUS-02-POLICY | Deterministic 14-day hot / 90-day cold policy, manifest hash, stable period upsert, and protection overrides keep open actions, risk, conflicts, discussion, pinned/accepted, and care-plan sources out of cold summaries | passed | [archival.py](../backend/app/services/archival.py), [test_data_decay.py](../backend/tests/test_data_decay.py) |
 | BONUS-02-API | Context read and explicit refresh enforce clinic scope and role permissions; patient projection omits internal entries and raw AI content | passed | [context.py](../backend/app/api/routes/context.py), [test_data_decay.py](../backend/tests/test_data_decay.py) |
 | BONUS-02-UI | Historical context panel discloses derived summaries and follows canonical source pointers on desktop/mobile browser paths | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+
+## Phase 5 / Delivery artifact evidence - 2026-08-26
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| DEL-03-PDF | Three-page A4 Technical Brief generated from local HTML, rendered to raster, and visually inspected page by page; final page footer overlap was corrected and rechecked | passed | [Nightingale_Technical_Brief.pdf](../deliverables/Nightingale_Technical_Brief.pdf), [technical_brief_qa.md](evidence/technical_brief_qa.md) |
+| DEL-04-AUDIT | Direct backend/frontend dependency versions and observed license metadata recorded without guessing undeclared Python licenses | passed | [ATTRIBUTION.txt](../ATTRIBUTION.txt) |
+| DEL-05-SCRIPT | Scenarios A-C script, shot list, UX timing protocol, and six synthetic browser screenshots are ready; no final video tool is available on PATH | in progress | [DEMO_SCRIPT.md](DEMO_SCRIPT.md), [DEMO_SHOTLIST.md](DEMO_SHOTLIST.md), [screenshots](../deliverables/screenshots/) |
 
 ## Hard release gate
 

@@ -1,43 +1,79 @@
-Nightingale dependency attribution - Phase 1 / Gate A
+Nightingale attribution and license audit
+=========================================
 
-Versions are pinned in backend/requirements.lock and frontend/pnpm-lock.yaml. No external model,
-voice, embedding, NLP, or LLM provider is included. License labels below are package metadata
-references for this prototype and should be rechecked for a production distribution audit.
+Audit date: 2026-08-26
 
-Backend runtime and development
-- fastapi - HTTP application framework - MIT
-- uvicorn - ASGI server - BSD-3-Clause
-- pydantic-settings - environment-backed settings - MIT
-- sqlalchemy - SQL database toolkit - MIT
-- alembic - database migration toolkit - MIT
-- psycopg - PostgreSQL driver - LGPL-3.0-or-later
-- PyJWT - JWT utilities - MIT
-- pwdlib - password hashing utilities - MIT
-- httpx - HTTP client and ASGI application test transport - BSD-3-Clause
-- pytest - Python test runner - MIT
-- pytest-asyncio - async test support - Apache-2.0
-- pytest-cov - test coverage plugin - MIT
-- ruff - Python lint and formatter - MIT
-- mypy - Python static type checker - MIT
+This file records the direct runtime/development dependencies actually used by this repository.
+Versions come from backend/requirements.lock and frontend/pnpm-lock.yaml or installed package
+metadata in the verified local environment. No external model, API key, patient dataset, or
+third-party visual asset is bundled. The AI demo uses an original deterministic fixture provider.
 
-Frontend runtime and development
-- react - UI library - MIT
-- react-dom - browser renderer - MIT
-- react-router-dom - routing dependency reserved for later screens - MIT
-- @tanstack/react-query - server-state query dependency - MIT
-- zod - runtime schema validation reserved for later API contracts - MIT
-- typescript - static type checker - Apache-2.0
-- vite - frontend build and development server - MIT
-- @vitejs/plugin-react - Vite React integration - MIT
-- tailwindcss - utility-first CSS framework - MIT
-- @tailwindcss/vite - Tailwind/Vite integration - MIT
-- eslint - JavaScript/TypeScript lint runner - MIT
-- typescript-eslint - TypeScript ESLint parser and rules - MIT
-- prettier - frontend formatter - MIT
-- vitest - frontend unit-test runner - MIT
-- @testing-library/dom - DOM testing utilities - MIT
-- @testing-library/react - React testing utilities - MIT
-- @testing-library/jest-dom - DOM assertions - MIT
-- jsdom - browser-like test environment - MIT
-- @playwright/test - browser-test package reserved for later gates - Apache-2.0
-- @types/node, @types/react, @types/react-dom - type definitions - MIT
+Backend direct dependencies
+---------------------------
+
+Package                 Version    Observed license metadata       Source of version
+FastAPI                 0.136.3    not declared in installed meta   backend/requirements.lock
+Uvicorn[standard]       0.49.0     not declared in installed meta   backend/requirements.lock
+SQLAlchemy              2.0.50     MIT                             backend/requirements.lock
+Alembic                 1.15.2     MIT                             backend/requirements.lock
+Pydantic Settings       2.7.1      not declared in installed meta   backend/requirements.lock
+Psycopg[binary]         3.2.6      LGPLv3                          backend/requirements.lock
+PyJWT[crypto]           2.10.1     MIT                             backend/requirements.lock
+pwdlib[argon2]          0.3.0      not declared in installed meta   backend/requirements.lock
+HTTPX                   0.28.1     BSD-3-Clause                    backend/requirements.lock
+
+Backend verification/test tools
+--------------------------------
+
+pytest                  8.3.5      MIT                             backend/requirements.lock
+pytest-asyncio          0.25.3     Apache-2.0                      backend/requirements.lock
+pytest-cov              6.0.0      MIT                             backend/requirements.lock
+Ruff                    0.9.10     MIT                             backend/requirements.lock
+mypy                    1.15.0     MIT                             backend/requirements.lock
+coverage                7.15.4     Apache-2.0                     backend/requirements.lock
+
+Frontend direct runtime dependencies
+-------------------------------------
+
+@tanstack/react-query    5.102.2   MIT                              frontend/pnpm-lock.yaml
+React                    19.2.8    MIT                              frontend/pnpm-lock.yaml
+React DOM                19.2.8    MIT                              frontend/pnpm-lock.yaml
+React Router DOM         7.18.2    MIT                              frontend/pnpm-lock.yaml
+Zod                      3.25.76   MIT                              frontend/pnpm-lock.yaml
+
+Frontend development/test/build dependencies
+----------------------------------------------
+
+@playwright/test         1.62.1    Apache-2.0                       frontend/pnpm-lock.yaml
+@tailwindcss/vite        4.3.3     MIT                              frontend/pnpm-lock.yaml
+@testing-library/dom     10.4.1    MIT                              frontend/pnpm-lock.yaml
+@testing-library/jest-dom 7.0.1    MIT                              frontend/pnpm-lock.yaml
+@testing-library/react   16.3.2    MIT                              frontend/pnpm-lock.yaml
+@types/node              22.20.1   MIT                              frontend/pnpm-lock.yaml
+@types/react             19.2.18   MIT                              frontend/pnpm-lock.yaml
+@types/react-dom         19.2.5    MIT                              frontend/pnpm-lock.yaml
+@vitejs/plugin-react     5.2.0     MIT                              frontend/pnpm-lock.yaml
+ESLint                   10.9.1    MIT                              frontend/pnpm-lock.yaml
+JSDOM                    26.1.0    MIT                              frontend/pnpm-lock.yaml
+Prettier                 3.9.6     MIT                              frontend/pnpm-lock.yaml
+Tailwind CSS             4.3.3     MIT                              frontend/pnpm-lock.yaml
+TypeScript               5.9.3     Apache-2.0                       frontend/pnpm-lock.yaml
+typescript-eslint        8.67.0    MIT                              frontend/pnpm-lock.yaml
+Vite                     7.3.6     MIT                              frontend/pnpm-lock.yaml
+Vitest                   3.2.7     MIT                              frontend/pnpm-lock.yaml
+
+License verification note
+-------------------------
+
+“Not declared in installed meta” is intentional: the local Python distribution metadata did not
+provide a License field for those packages, so this file does not infer a license from memory or
+from a non-audited source. Confirm the upstream distribution license before any redistribution or
+commercial deployment. Transitive packages are pinned in the lockfiles; this direct audit is not a
+replacement for a deployment-specific SBOM/license review.
+
+Original work in this repository
+---------------------------------
+
+The Nightingale application code, synthetic fixtures, deterministic provider, ranking logic,
+archival policy, diagrams, and documentation in this repository are original project work for the
+72-hour prototype. No real patient information is included.
