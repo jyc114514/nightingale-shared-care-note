@@ -1,6 +1,7 @@
 """Entry persistence, immutable snapshots, audit metadata, and CAS conflicts."""
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import select, update
@@ -82,17 +83,34 @@ def create_entry_record(
     created_by_user_id: str | None,
     created_by_role: str,
     request_id: str,
+    occurred_at: datetime | None = None,
+    source_kind: str | None = None,
+    source_reference: str | None = None,
 ) -> Entry:
     """Create an entry and its first immutable version in one transaction."""
 
+    entry_type_value = enum_value(entry_type)
+    if (
+        entry_type_value
+        in {
+            EntryType.AI_DOCTOR_CONSULT_SUMMARY.value,
+            EntryType.AI_NURSE_CONSULT_SUMMARY.value,
+            EntryType.AI_PATIENT_SESSION_SUMMARY.value,
+        }
+        and not source_reference
+    ):
+        raise ValueError("AI-scribed entries require a non-empty source_reference")
     entry = Entry(
         clinic_id=clinic_id,
         patient_id=patient_id,
-        entry_type=enum_value(entry_type),
+        entry_type=entry_type_value,
         owner_role=enum_value(owner_role),
         visibility=enum_value(visibility),
         current_version=1,
         created_by_user_id=created_by_user_id,
+        occurred_at=occurred_at or utcnow(),
+        source_kind=source_kind or ("system_event" if created_by_role == "system" else "manual"),
+        source_reference=source_reference,
     )
     db.add(entry)
     db.flush()

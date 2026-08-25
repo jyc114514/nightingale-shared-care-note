@@ -356,7 +356,7 @@ def seed_demo() -> dict[str, object]:
             source_kind="system_event",
             source_reference="synthetic-history-2025-04-15",
         )
-        patient_instruction = ensure_entry(
+        ensure_entry(
             db,
             clinic=clinic_a,
             patient=patient_a,

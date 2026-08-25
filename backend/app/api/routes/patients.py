@@ -26,6 +26,9 @@ def internal_entry_out(entry: Entry, content: str) -> InternalEntryOut:
         created_by_user_id=entry.created_by_user_id,
         current_version=entry.current_version,
         content=content,
+        occurred_at=entry.occurred_at,
+        source_kind=enum_value(entry.source_kind),
+        source_reference=entry.source_reference,
         created_at=entry.created_at,
         updated_at=entry.updated_at,
     )
@@ -38,6 +41,7 @@ def patient_entry_out(entry: Entry, content: str) -> PatientEntryOut:
         entry_type=EntryType(enum_value(entry.entry_type)),
         content=content,
         current_version=entry.current_version,
+        occurred_at=entry.occurred_at,
         created_at=entry.created_at,
         updated_at=entry.updated_at,
     )

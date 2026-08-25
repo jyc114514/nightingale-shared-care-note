@@ -38,6 +38,9 @@ class InternalEntryOut(BaseModel):
     created_by_user_id: str | None
     current_version: int
     content: str
+    occurred_at: datetime
+    source_kind: str
+    source_reference: str | None
     created_at: datetime
     updated_at: datetime
 
@@ -48,6 +51,7 @@ class PatientEntryOut(BaseModel):
     entry_type: EntryType
     content: str
     current_version: int
+    occurred_at: datetime
     created_at: datetime
     updated_at: datetime
 
@@ -93,7 +97,24 @@ class CommentOut(BaseModel):
 
     id: str
     entry_id: str
+    parent_comment_id: str | None
     author_user_id: str
     body: str
     is_resolved: bool
+    resolved_at: datetime | None
+    resolved_by_user_id: str | None
     created_at: datetime
+    updated_at: datetime
+
+
+class CommentCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=5000)
+    parent_comment_id: str | None = None
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class CommentResolution(BaseModel):
+    is_resolved: bool
+
+    model_config = ConfigDict(extra="ignore")

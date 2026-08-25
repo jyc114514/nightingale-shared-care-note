@@ -1,4 +1,4 @@
-"""FastAPI application for the Nightingale Phase 1 Gate A prototype."""
+"""FastAPI application for the Nightingale Phase 2 Gate B prototype."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +13,7 @@ from app.config import settings
 
 settings.validate_runtime_security()
 
-app = FastAPI(title="Nightingale", version="0.1.0")
+app = FastAPI(title="Nightingale", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origin_list,
@@ -34,4 +34,4 @@ app.include_router(conflicts_router)
 def health() -> dict[str, str]:
     """Return a fixed, non-sensitive process health response."""
 
-    return {"status": "ok", "phase": "1-gate-a"}
+    return {"status": "ok", "phase": "2-gate-b"}

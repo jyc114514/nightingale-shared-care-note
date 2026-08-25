@@ -20,6 +20,11 @@ class Entry(Base):
     visibility: Mapped[EntryVisibility] = mapped_column(String(20), nullable=False)
     current_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     created_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+    source_kind: Mapped[str] = mapped_column(String(40), nullable=False, default="manual")
+    source_reference: Mapped[str | None] = mapped_column(String(200), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )

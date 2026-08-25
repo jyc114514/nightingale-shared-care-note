@@ -15,9 +15,17 @@ class Comment(Base):
     clinic_id: Mapped[str] = mapped_column(ForeignKey("clinics.id"), index=True, nullable=False)
     patient_id: Mapped[str] = mapped_column(ForeignKey("patients.id"), index=True, nullable=False)
     entry_id: Mapped[str] = mapped_column(ForeignKey("entries.id"), index=True, nullable=False)
+    parent_comment_id: Mapped[str | None] = mapped_column(
+        ForeignKey("comments.id"), index=True, nullable=True
+    )
     author_user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     is_resolved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False
     )

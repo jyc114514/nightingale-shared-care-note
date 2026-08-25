@@ -128,5 +128,22 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
     assert first_result["counts"] == second_result["counts"]
     assert first_result["counts"]["highlights"] >= 5
 
+    engine = create_engine(database_url, future=True)
+    try:
+        with engine.connect() as connection:
+            ai_rows = connection.execute(
+                text(
+                    "SELECT entry_type, occurred_at, source_reference FROM entries "
+                    "WHERE entry_type LIKE 'ai_%'"
+                )
+            ).mappings()
+            ai_by_type = {row["entry_type"]: row for row in ai_rows}
+        assert ai_by_type["ai_doctor_consult_summary"]["occurred_at"].startswith("2026-02-06")
+        assert ai_by_type["ai_nurse_consult_summary"]["occurred_at"].startswith("2026-08-24")
+        assert ai_by_type["ai_patient_session_summary"]["occurred_at"].startswith("2026-08-20")
+        assert all(row["source_reference"] for row in ai_by_type.values())
+    finally:
+        engine.dispose()
+
     seed_source = (BACKEND_ROOT / "app" / "scripts" / "seed_demo.py").read_text(encoding="utf-8")
     assert "Base.metadata.create_all" not in seed_source

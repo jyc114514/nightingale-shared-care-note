@@ -9,10 +9,15 @@ from app.models.enums import (
     EntryOwnerRole,
     EntryType,
     EntryVisibility,
+    HighlightActionState,
+    HighlightItemKind,
+    HighlightStatus,
     MembershipRole,
+    SourceKind,
 )
 from app.models.entry import Entry
 from app.models.entry_version import EntryVersion
+from app.models.highlight import Highlight
 from app.models.membership import ClinicMembership
 from app.models.patient import Patient, PatientUserLink
 from app.models.user import User
@@ -29,8 +34,13 @@ __all__ = [
     "EntryType",
     "EntryVersion",
     "EntryVisibility",
+    "Highlight",
+    "HighlightActionState",
+    "HighlightItemKind",
+    "HighlightStatus",
     "MembershipRole",
     "Patient",
     "PatientUserLink",
+    "SourceKind",
     "User",
 ]

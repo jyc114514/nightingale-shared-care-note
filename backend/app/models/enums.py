@@ -35,3 +35,31 @@ class EntryVisibility(str, Enum):
 class ConflictStatus(str, Enum):
     OPEN = "open"
     RESOLVED = "resolved"
+
+
+class SourceKind(str, Enum):
+    MANUAL = "manual"
+    DOCTOR_CONSULT = "doctor_consult"
+    NURSE_CONSULT = "nurse_consult"
+    PATIENT_AI_SESSION = "patient_ai_session"
+    SYSTEM_EVENT = "system_event"
+
+
+class HighlightItemKind(str, Enum):
+    INFORMATION = "information"
+    ACTION = "action"
+    FLAG = "flag"
+
+
+class HighlightStatus(str, Enum):
+    SUGGESTED = "suggested"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"
+    CONFLICT_REVIEW = "conflict_review"
+
+
+class HighlightActionState(str, Enum):
+    OPEN = "open"
+    COMPLETED = "completed"
+    NOT_APPLICABLE = "not_applicable"
