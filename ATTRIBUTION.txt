@@ -1,0 +1,45 @@
+Nightingale Phase 0 dependency attribution
+
+Only libraries introduced by the Phase 0 scaffold are listed below. Versions are pinned in
+backend/requirements.lock and frontend/pnpm-lock.yaml. No model, voice, embedding, NLP, or
+external LLM library is introduced by this phase.
+
+Backend runtime and development
+- fastapi — HTTP application framework — MIT
+- uvicorn — ASGI server — BSD-3-Clause
+- pydantic-settings — environment-backed settings — MIT
+- sqlalchemy — database toolkit reserved for later gates — MIT
+- alembic — migration toolkit reserved for later gates — MIT
+- psycopg — PostgreSQL driver reserved for later gates — LGPL-3.0-or-later
+- PyJWT — JWT utilities reserved for later gates — MIT
+- pwdlib — password hashing utilities reserved for later gates — MIT
+- httpx — HTTP client and application test transport — BSD-3-Clause
+- pytest — Python test runner — MIT
+- pytest-asyncio — async test support reserved for later tests — Apache-2.0
+- pytest-cov — test coverage plugin — MIT
+- ruff — Python lint and formatter — MIT
+- mypy — Python static type checker — MIT
+
+Frontend runtime and development
+- react — UI library — MIT
+- react-dom — browser renderer — MIT
+- react-router-dom — routing dependency reserved for later screens — MIT
+- @tanstack/react-query — server-state query dependency — MIT
+- zod — runtime schema validation reserved for later API contracts — MIT
+- typescript — static type checker — Apache-2.0
+- vite — frontend build and development server — MIT
+- @vitejs/plugin-react — Vite React integration — MIT
+- tailwindcss — utility-first CSS framework — MIT
+- @tailwindcss/vite — Tailwind/Vite integration — MIT
+- eslint — JavaScript/TypeScript lint runner — MIT
+- typescript-eslint — TypeScript ESLint parser and rules — MIT
+- prettier — frontend formatter — MIT
+- vitest — frontend unit-test runner — MIT
+- @testing-library/dom — DOM testing utilities — MIT
+- @testing-library/react — React testing utilities — MIT
+- @types/node — Node.js type definitions — MIT
+- @types/react — React type definitions — MIT
+- @types/react-dom — React DOM type definitions — MIT
+- @testing-library/jest-dom — DOM assertions — MIT
+- jsdom — browser-like test environment — MIT
+- @playwright/test — browser-test skeleton for later gates — Apache-2.0

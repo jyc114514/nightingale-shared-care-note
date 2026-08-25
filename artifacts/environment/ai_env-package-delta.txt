@@ -1,0 +1,17 @@
+# Package delta (after compared with before)
+alembic: <missing> -> 1.15.2
+coverage: <missing> -> 7.15.4
+iniconfig: <missing> -> 2.3.0
+mako: <missing> -> 1.4.1
+mypy: <missing> -> 1.15.0
+mypy_extensions: <missing> -> 1.1.0
+pluggy: <missing> -> 1.6.0
+psycopg: <missing> -> 3.2.6
+psycopg-binary: <missing> -> 3.2.6
+pwdlib: <missing> -> 0.3.0
+pydantic-settings: <missing> -> 2.7.1
+pyjwt: <missing> -> 2.10.1
+pytest: <missing> -> 8.3.5
+pytest-asyncio: <missing> -> 0.25.3
+pytest-cov: <missing> -> 6.0.0
+ruff: <missing> -> 0.9.10

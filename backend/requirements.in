@@ -1,0 +1,16 @@
+# This is the backend dependency manifest. The repository-root requirements.txt
+# is the challenge brief and must never be passed to pip.
+fastapi==0.136.3
+uvicorn[standard]==0.49.0
+sqlalchemy==2.0.50
+alembic==1.15.2
+pydantic-settings==2.7.1
+psycopg[binary]==3.2.6
+pyjwt[crypto]==2.10.1
+pwdlib[argon2]==0.3.0
+httpx==0.28.1
+pytest==8.3.5
+pytest-asyncio==0.25.3
+pytest-cov==6.0.0
+ruff==0.9.10
+mypy==1.15.0
