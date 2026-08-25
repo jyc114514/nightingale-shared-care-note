@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     environment: "jsdom",
+    include: ["tests/**/*.test.{ts,tsx}"],
     setupFiles: "./tests/setup.ts",
   },
 });
-
