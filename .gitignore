@@ -13,6 +13,9 @@ __pycache__/
 .coverage
 coverage.xml
 htmlcov/
+*.db
+*.sqlite
+*.sqlite3
 .python/
 .uv-cache/
 .venv/
