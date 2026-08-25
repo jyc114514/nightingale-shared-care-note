@@ -152,10 +152,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     for table, columns in {
-        "users": ["email"],
         "clinic_memberships": ["clinic_id", "user_id"],
         "patients": ["clinic_id"],
-        "patient_user_links": ["patient_id"],
+        "patient_user_links": [],
         "entries": ["clinic_id", "patient_id", "entry_type"],
         "entry_versions": ["entry_id"],
         "audit_logs": ["clinic_id", "patient_id"],
@@ -164,16 +163,16 @@ def upgrade() -> None:
     }.items():
         for column in columns:
             op.create_index(f"ix_{table}_{column}", table, [column])
+    op.create_index("ix_users_email", "users", ["email"], unique=True)
 
 
 def downgrade() -> None:
     """Drop the local prototype schema in reverse dependency order."""
 
     for table, columns in {
-        "users": ["email"],
         "clinic_memberships": ["clinic_id", "user_id"],
         "patients": ["clinic_id"],
-        "patient_user_links": ["patient_id"],
+        "patient_user_links": [],
         "entries": ["clinic_id", "patient_id", "entry_type"],
         "entry_versions": ["entry_id"],
         "audit_logs": ["clinic_id", "patient_id"],
@@ -182,6 +181,7 @@ def downgrade() -> None:
     }.items():
         for column in columns:
             op.drop_index(f"ix_{table}_{column}", table_name=table)
+    op.drop_index("ix_users_email", table_name="users")
     for table in (
         "comments",
         "conflicts",

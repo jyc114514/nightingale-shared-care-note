@@ -22,6 +22,19 @@ class Settings(BaseSettings):
     def allowed_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.allowed_origins.split(",") if origin.strip()]
 
+    def validate_runtime_security(self) -> None:
+        """Fail closed for unsafe production cookie/session configuration."""
+
+        if self.session_ttl_minutes <= 0:
+            raise ValueError("SESSION_TTL_MINUTES must be positive")
+        if self.app_env.lower() == "production":
+            if not self.cookie_secure:
+                raise ValueError("COOKIE_SECURE=true is required when APP_ENV=production")
+            if self.session_secret is None or len(self.session_secret) < 32:
+                raise ValueError(
+                    "SESSION_SECRET with at least 32 characters is required in production"
+                )
+
 
 settings = Settings()
 

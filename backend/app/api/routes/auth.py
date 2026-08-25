@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_user, require_allowed_origin
 from app.config import Settings, get_settings
 from app.core.security import (
     SESSION_COOKIE,
@@ -81,7 +81,11 @@ def login(
     return LoginResponse(user=make_me_response(db, user))
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def logout(response: Response) -> None:
     response.delete_cookie(key=SESSION_COOKIE, path="/")
 

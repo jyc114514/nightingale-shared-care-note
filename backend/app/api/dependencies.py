@@ -12,6 +12,20 @@ from app.db.session import get_db
 from app.models import User
 
 
+def require_allowed_origin(
+    request: Request,
+    app_settings: Settings = Depends(get_settings),
+) -> None:
+    """Reject credentialed browser writes from origins outside the allowlist."""
+
+    origin = request.headers.get("origin")
+    if origin is not None and origin not in app_settings.allowed_origin_list:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Origin is not allowed for this state-changing request",
+        )
+
+
 def get_request_id(request: Request) -> str:
     """Use a caller-provided correlation ID or create a local opaque ID."""
 

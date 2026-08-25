@@ -52,6 +52,8 @@ class DemoData:
     staff_note: Entry
     clinician_section: Entry
     ai_summary: Entry
+    ai_doctor: Entry
+    ai_nurse: Entry
 
 
 @pytest.fixture
@@ -236,6 +238,36 @@ def demo_data(db_session: Session) -> DemoData:
         created_by_user_id=None,
         created_by_role="system",
         request_id="fixture-ai",
+        source_kind="patient_ai_session",
+        source_reference="fixture-patient-session",
+    )
+    ai_doctor = create_entry_record(
+        db,
+        clinic_id=clinic_a.id,
+        patient_id=patient_a.id,
+        entry_type=EntryType.AI_DOCTOR_CONSULT_SUMMARY,
+        owner_role=EntryOwnerRole.SYSTEM,
+        visibility=EntryVisibility.INTERNAL,
+        content="Synthetic doctor consult finding",
+        created_by_user_id=None,
+        created_by_role="system",
+        request_id="fixture-ai-doctor",
+        source_kind="doctor_consult",
+        source_reference="fixture-doctor-consult",
+    )
+    ai_nurse = create_entry_record(
+        db,
+        clinic_id=clinic_a.id,
+        patient_id=patient_a.id,
+        entry_type=EntryType.AI_NURSE_CONSULT_SUMMARY,
+        owner_role=EntryOwnerRole.SYSTEM,
+        visibility=EntryVisibility.INTERNAL,
+        content="Synthetic nurse consult finding",
+        created_by_user_id=None,
+        created_by_role="system",
+        request_id="fixture-ai-nurse",
+        source_kind="nurse_consult",
+        source_reference="fixture-nurse-consult",
     )
     db.add(
         Comment(
@@ -262,4 +294,6 @@ def demo_data(db_session: Session) -> DemoData:
         staff_note=staff_note,
         clinician_section=clinician_section,
         ai_summary=ai_summary,
+        ai_doctor=ai_doctor,
+        ai_nurse=ai_nurse,
     )

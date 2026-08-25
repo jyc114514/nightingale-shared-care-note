@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_current_user, get_request_id
+from app.api.dependencies import get_current_user, get_request_id, require_allowed_origin
 from app.api.routes.patients import _current_content, internal_entry_out, patient_entry_out
 from app.db.session import get_db
 from app.models import Entry, EntryVersion, User
@@ -63,7 +63,11 @@ def conflict_http_error(exc: EntryConflictError) -> HTTPException:
     )
 
 
-@router.post("/patients/{patient_id}/entries", response_model=InternalEntryOut)
+@router.post(
+    "/patients/{patient_id}/entries",
+    response_model=InternalEntryOut,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def create_entry(
     patient_id: str,
     payload: EntryCreate,
@@ -98,7 +102,11 @@ def get_entry(
     return entry_response(db, context, entry)
 
 
-@router.patch("/entries/{entry_id}", response_model=InternalEntryOut)
+@router.patch(
+    "/entries/{entry_id}",
+    response_model=InternalEntryOut,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def update_entry(
     entry_id: str,
     payload: EntryUpdate,
@@ -172,7 +180,11 @@ def diff_entry(
     )
 
 
-@router.post("/entries/{entry_id}/revert", response_model=InternalEntryOut)
+@router.post(
+    "/entries/{entry_id}/revert",
+    response_model=InternalEntryOut,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def revert_entry(
     entry_id: str,
     payload: RevertRequest,

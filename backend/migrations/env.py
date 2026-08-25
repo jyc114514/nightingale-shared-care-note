@@ -1,6 +1,7 @@
 """Alembic environment using the application metadata and DATABASE_URL."""
 
 from logging.config import fileConfig
+import os
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
@@ -13,7 +14,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", settings.database_url.replace("%", "%%"))
+database_url = (
+    os.getenv("DATABASE_URL") or config.get_main_option("sqlalchemy.url") or settings.database_url
+)
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
 
@@ -21,7 +25,7 @@ def run_migrations_offline() -> None:
     """Run migrations without creating an engine."""
 
     context.configure(
-        url=settings.database_url,
+        url=database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
