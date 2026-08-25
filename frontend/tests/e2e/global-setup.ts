@@ -67,6 +67,7 @@ export default async function globalSetup() {
     COOKIE_SECURE: "false",
     ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173",
   };
+  mkdirSync(path.dirname(databasePath), { recursive: true });
   rmSync(databasePath, { force: true });
   mkdirSync(path.dirname(passwordPath), { recursive: true });
   writeFileSync(passwordPath, password, { encoding: "utf8" });
