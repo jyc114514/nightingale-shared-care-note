@@ -133,8 +133,8 @@ internal Glance, comments, raw AI notes, or review states because the server doe
 
 - The real-TCP warm-path benchmark used file-backed SQLite, 26 synthetic patients, 208 benchmark
   entries/highlights/materialized rows, 50 warm-up requests, 1,000 measured requests, and
-  concurrency 10. It recorded P50 54.366 ms, P95 79.13 ms, P99 98.812 ms, max 117.205 ms, zero
-  errors, and six response items. See
+  concurrency 10. It recorded P50 55.736 ms, P95 78.477 ms, P99 106.919 ms, max 129.497 ms,
+  zero errors, and six response items. See
   `docs/evidence/gate_c_warm_path.md` and its JSON companion. This is a measured local
   approximation, not hosted PostgreSQL production evidence. UX-01 still needs a human timed
   review.

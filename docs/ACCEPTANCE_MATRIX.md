@@ -30,7 +30,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | PRIV-02 | Names, IC/ID, phones redacted before external LLM | Mandatory | [test_redaction.py](../backend/tests/test_redaction.py), provider spy, and fail-closed job test | passed |
 | PRIV-03 | Clean logs; raw note content absent | Mandatory | [test_ai_processing.py](../backend/tests/test_ai_processing.py) caplog/audit/job safety assertions | passed |
 | PRIV-04 | TLS in transit and encryption at rest | Mandatory | Deployment-provider evidence and explicit local limitation | planned |
-| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) reports P95 79.13 ms; local SQLite approximation limitation documented | passed |
+| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) reports P95 78.477 ms; local SQLite approximation limitation documented | passed |
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | planned |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | planned |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
@@ -110,7 +110,7 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 | GATE-C-JOBS | Three interaction types create new system-authored AI entries and suggested exact immutable highlights; idempotency prevents duplicates; patient mutation/read is denied | passed | [ai_processing.py](../backend/app/services/ai_processing.py), [ai_processing.py](../backend/app/api/routes/ai_processing.py), [test_ai_processing.py](../backend/tests/test_ai_processing.py) |
 | GATE-C-MATERIALIZED | Glance reads only `patient_glance_items`, remains capped/ordered/filtered, retains source IDs/offset/hash, and makes zero provider calls | passed | [glance.py](../backend/app/services/glance.py), [gate_b.py](../backend/app/api/routes/gate_b.py), [test_materialized_glance.py](../backend/tests/test_materialized_glance.py) |
 | GATE-C-LOGS | Job/audit metadata excludes raw note/comment/provider content; provider failure and validation paths expose only safe error codes; caplog sentinel checks pass | passed | [test_ai_processing.py](../backend/tests/test_ai_processing.py), [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py) |
-| GATE-C-PERF | Real Uvicorn TCP benchmark: 50 warm-up, 1,000 samples, concurrency 10, 26 patients, 208 benchmark rows, zero errors, P50 54.366 ms, P95 79.13 ms, P99 98.812 ms, max 117.205 ms, six items | passed | [gate_c_warm_path.md](evidence/gate_c_warm_path.md), [gate_c_warm_path.json](evidence/gate_c_warm_path.json), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
+| GATE-C-PERF | Real Uvicorn TCP benchmark: 50 warm-up, 1,000 samples, concurrency 10, 26 patients, 208 benchmark rows, zero errors, P50 55.736 ms, P95 78.477 ms, P99 106.919 ms, max 129.497 ms, six items | passed | [gate_c_warm_path.md](evidence/gate_c_warm_path.md), [gate_c_warm_path.json](evidence/gate_c_warm_path.json), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
 
 ## Hard release gate
 

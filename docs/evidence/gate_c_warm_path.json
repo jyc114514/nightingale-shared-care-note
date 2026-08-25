@@ -1,0 +1,27 @@
+{
+  "commit": "e148368",
+  "database": "file-backed SQLite local approximation",
+  "dataset": {
+    "benchmark_entries": 208,
+    "benchmark_highlights": 208,
+    "patients": 26,
+    "target_patient_id": "841c127a-0feb-419f-b6a2-f085773fbb44"
+  },
+  "generated_at": "2026-08-25T15:47:13.732379+00:00",
+  "metrics": {
+    "concurrency": 10,
+    "error_count": 0,
+    "max_ms": 129.497,
+    "p50_ms": 55.736,
+    "p95_ms": 78.477,
+    "p99_ms": 106.919,
+    "request_count": 1000,
+    "response_item_count": 6,
+    "warmup_error_count": 0,
+    "warmup_requests": 50
+  },
+  "python": "3.10.20",
+  "target_met": true,
+  "target_p95_ms": 300,
+  "transport": "real TCP HTTP via Uvicorn and httpx.Client"
+}
