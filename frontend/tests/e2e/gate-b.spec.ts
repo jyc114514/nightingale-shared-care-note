@@ -47,6 +47,7 @@ async function login(page: Page, email: string) {
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByText("Longitudinal timeline")).toBeVisible();
+  await expect(page.locator("#patient-select")).toHaveValue(/.+/);
 }
 
 async function staffEntry(page: Page) {
