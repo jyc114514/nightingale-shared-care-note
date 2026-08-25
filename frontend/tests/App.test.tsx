@@ -71,8 +71,24 @@ const glance = Array.from({ length: 6 }, (_, index) => ({
   id: `highlight-${index}`,
   content_summary:
     index === 0 ? "Pending renal panel" : `Synthetic item ${index + 1}`,
+  feature_signature: `v1|feature-${index}`,
   item_kind: index === 0 ? "action" : "information",
   status: index === 1 ? "suggested" : "accepted",
+  base_priority: 90 - index,
+  recency_contribution: 8,
+  explicit_risk_contribution: index === 1 ? 12 : 0,
+  unresolved_action_contribution: 15,
+  clinician_confirmation_contribution: index === 1 ? 0 : 8,
+  adaptive_feedback_adjustment: index === 0 ? 2 : 0,
+  ranking_explanation: {
+    base: 90 - index,
+    recency: 8,
+    explicit_risk: index === 1 ? 12 : 0,
+    unresolved_action: 15,
+    clinician_confirmation: index === 1 ? 0 : 8,
+    adaptive_feedback: index === 0 ? 2 : 0,
+    final: 100 - index,
+  },
   display_priority: 100 - index,
   risk_level: index === 1 ? "high" : null,
   risk_reason: "Synthetic review reason",
@@ -236,6 +252,27 @@ describe("Gate B shared care note", () => {
       6,
     );
     expect(screen.getAllByRole("button", { name: "Comments" }).length).toBe(2);
+  });
+
+  it("shows bounded ranking contributions and sends pin feedback", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    const details = (await screen.findAllByTestId("ranking-details"))[0];
+    fireEvent.click(details);
+    expect(
+      (
+        await screen.findAllByText(
+          "Ranking priority, not a medical risk score.",
+        )
+      ).length,
+    ).toBeGreaterThan(0);
+    const pin = screen.getAllByRole("button", { name: "Pin" })[0];
+    fireEvent.click(pin);
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole("button", { name: "Unpin" })[0],
+      ).toBeInTheDocument(),
+    );
   });
 
   it("opens an immutable source and the internal comments flow", async () => {

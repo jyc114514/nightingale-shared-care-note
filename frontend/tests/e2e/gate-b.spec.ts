@@ -91,6 +91,19 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   await expect(doctorCard.getByTestId("glance-action")).toContainText(
     "Review suggestion",
   );
+  await doctorCard.getByTestId("ranking-details").click();
+  await expect(doctorCard).toContainText(
+    "Ranking priority, not a medical risk score.",
+  );
+
+  if (testInfo.project.name === "desktop-1440") {
+    await doctorCard.getByRole("button", { name: "Pin" }).click();
+    await expect(
+      doctorCard.getByRole("button", { name: "Unpin" }),
+    ).toBeVisible();
+    await doctorCard.getByRole("button", { name: "Unpin" }).click();
+    await expect(doctorCard.getByRole("button", { name: "Pin" })).toBeVisible();
+  }
 
   await doctorCard.getByRole("button", { name: "Open source" }).click();
   const source = page.getByRole("region", { name: "Immutable source" });

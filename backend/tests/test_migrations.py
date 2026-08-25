@@ -68,6 +68,8 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "highlights",
             "ai_processing_jobs",
             "patient_glance_items",
+            "highlight_feedback_events",
+            "importance_profiles",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -87,6 +89,15 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "display_priority",
             "risk_level",
         } <= highlight_columns
+        glance_columns = {
+            column["name"] for column in database_inspector.get_columns("patient_glance_items")
+        }
+        assert {
+            "feature_signature",
+            "base_priority",
+            "adaptive_feedback_adjustment",
+            "ranking_explanation",
+        } <= glance_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -99,7 +110,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0004_gate_c"
+                == "0005_gate_d_importance"
             )
     finally:
         engine.dispose()
@@ -154,7 +165,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0004_gate_c"
+                == "0005_gate_d_importance"
             )
     finally:
         engine.dispose()

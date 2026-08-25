@@ -4,7 +4,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import HighlightActionState, HighlightItemKind, HighlightStatus
+from app.models.enums import (
+    FeedbackEventType,
+    HighlightActionState,
+    HighlightItemKind,
+    HighlightStatus,
+)
 
 
 class TimelineEntryOut(BaseModel):
@@ -45,6 +50,13 @@ class HighlightReview(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
 
+class HighlightFeedbackCreate(BaseModel):
+    event_type: FeedbackEventType
+    idempotency_key: str = Field(min_length=1, max_length=200)
+
+    model_config = ConfigDict(extra="ignore")
+
+
 class HighlightOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -76,8 +88,16 @@ class HighlightOut(BaseModel):
 class GlanceItemOut(BaseModel):
     id: str
     content_summary: str
+    feature_signature: str
     item_kind: HighlightItemKind
     status: HighlightStatus
+    base_priority: float
+    recency_contribution: float
+    explicit_risk_contribution: float
+    unresolved_action_contribution: float
+    clinician_confirmation_contribution: float
+    adaptive_feedback_adjustment: float
+    ranking_explanation: dict[str, float]
     display_priority: float
     risk_level: str | None
     risk_reason: str
@@ -91,6 +111,27 @@ class GlanceItemOut(BaseModel):
     entry_type: str
     occurred_at: datetime
     quote: str
+
+
+class ImportanceProfileOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    clinic_id: str
+    feature_key: str
+    positive_count: int
+    negative_count: int
+    bounded_weight: float
+    updated_at: datetime
+    version: int
+
+
+class HighlightFeedbackOut(BaseModel):
+    event_id: str
+    event_type: FeedbackEventType
+    created: bool
+    feature_signature: str
+    profile: ImportanceProfileOut
+    ranking_explanation: dict[str, float]
 
 
 class ProvenanceSourceOut(BaseModel):

@@ -170,7 +170,9 @@ async def test_glance_has_six_item_cap_deterministic_priority_and_separate_risk(
         key=lambda item: (item["display_priority"], item["occurred_at"], item["id"]),
         reverse=True,
     )
-    assert items[0]["display_priority"] == 16
+    assert items[0]["base_priority"] == 16
+    assert items[0]["display_priority"] > items[0]["base_priority"]
+    assert items[0]["ranking_explanation"]["final"] == items[0]["display_priority"]
     assert items[0]["risk_level"] == "low"
     assert all(
         item["version_number"] >= 1 and item["current_entry_version"] >= item["version_number"]

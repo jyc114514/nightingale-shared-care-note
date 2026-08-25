@@ -1,15 +1,16 @@
 # Nightingale
 
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
-collaboration product. The repository is at **Phase 3 / Gate C local implementation**: Gate A
+collaboration product. The repository is at **Phase 4 / local Bonus implementation**: Gate A
 authentication, clinic-scoped RBAC, immutable revisions, audit metadata, and optimistic
 concurrency are joined by a Glance View, occurred-time timeline, immutable source navigation,
 threaded comments, trust-state controls, and a redacted deterministic AI write path.
 
-The local Gate C boundary is implemented and measured, but this is not a hosted production
+The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance path is
+implemented with clinic-scoped deterministic feedback. This is not a hosted production
 deployment: external-provider integration, PostgreSQL execution, TLS/encryption-at-rest
-evidence, self-learning importance, data decay, voice capture, and final PDF/video/submission
-assets remain deferred. The repository-root `requirements.txt` is the candidate brief, **not** a
+evidence, data decay, voice capture, and final PDF/video/submission assets remain deferred. The
+repository-root `requirements.txt` is the candidate brief, **not** a
 pip requirements file; never run `pip install -r requirements.txt`.
 
 ## Runtime and database
@@ -87,11 +88,34 @@ and a threaded internal comment fixture. Re-running it preserves aggregate count
   entry and suggested immutable highlight; it never overwrites a human entry.
 - `GET /ai-processing/{job_id}` exposes job metadata and safe error codes, not raw input,
   provider prompts, or provider responses.
+- `POST /highlights/{highlight_id}/feedback` records clinic-scoped staff/clinician feedback with
+  an idempotency key. Feedback updates a bounded adaptive ranking contribution and the
+  materialized Glance projection; it never mutates explicit risk or provenance.
 
 The frontend uses real cookie login and `/auth/me`, a clinic-scoped patient list, a calm light
 clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable Unicode
 codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
-badges, and role-aware controls. There is no UI-only role switch.
+badges, role-aware controls, and a collapsed **Why ranked?** explanation with pin/unpin feedback.
+There is no UI-only role switch.
+
+## Bonus importance logic
+
+The adaptive ranking path uses a closed structured feature signature derived from entry type,
+item kind, source kind, action state, explicit risk, and a normalized topic category. It does not
+use embeddings, external LLM calls, patient identifiers, names, quotes, or raw free text.
+
+```text
+final display priority = clamp(
+  base priority + recency + explicit risk + unresolved action
+  + clinician confirmation + bounded adaptive feedback,
+  0, 100
+)
+```
+
+Adaptive feedback is bounded to `[-12, +12]`, is clinic-scoped and idempotent, and is kept
+separate from medical risk, source provenance, and clinician truth. Glance reads remain provider-
+free and consume only the materialized projection. The UI labels this as “Ranking priority, not a
+medical risk score”.
 
 ## Verification
 
@@ -110,7 +134,7 @@ Pop-Location
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
 `test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
-`test_materialized_glance.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
+`test_materialized_glance.py`, and `test_self_learning_importance.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
 `TestClient/httpx` warning is hidden. Migration tests use Alembic to create the database and
 prove that seed does not call `Base.metadata.create_all()`.
 
@@ -165,8 +189,8 @@ hosted PostgreSQL production benchmark.
 - AI output is a suggestion. It cannot silently overwrite a human source or present an
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
-- No external LLM, Docker, deployment, account creation, email, remote Git, or GitHub push is
-  configured. The local Git repository intentionally has no remote.
-- PostgreSQL, TLS/encryption-at-rest, bonus learning/data decay, final brief PDF, and demo video
-  are explicit remaining gates. The local redaction/provider boundary and materialized warm
-  path/P95 are implemented and evidenced, but do not establish hosted production guarantees.
+- No external LLM, Docker, deployment, account creation, or email is configured. The adaptive
+  importance bonus is local and deterministic; data decay, hosted PostgreSQL, TLS/
+  encryption-at-rest, final brief PDF, and demo video remain explicit delivery gates.
+- The local redaction/provider boundary and materialized warm path/P95 are implemented and
+  evidenced, but do not establish hosted production guarantees.

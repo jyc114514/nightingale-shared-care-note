@@ -4,7 +4,9 @@ import type {
   Comment,
   Conflict,
   Diff,
+  FeedbackEventType,
   GlanceItem,
+  ImportanceFeedback,
   Me,
   Patient,
   ProvenanceSource,
@@ -106,6 +108,15 @@ export const api = {
     request<GlanceItem>(`/highlights/${highlightId}/review`, {
       method: "PATCH",
       ...json({ status: reviewStatus }),
+    }),
+  feedback: (
+    highlightId: string,
+    eventType: FeedbackEventType,
+    idempotencyKey: string,
+  ) =>
+    request<ImportanceFeedback>(`/highlights/${highlightId}/feedback`, {
+      method: "POST",
+      ...json({ event_type: eventType, idempotency_key: idempotencyKey }),
     }),
   submitAIProcessing: (
     patientId: string,

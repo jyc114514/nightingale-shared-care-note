@@ -5,11 +5,14 @@ from app.models.ai_processing_job import AIProcessingJob
 from app.models.clinic import Clinic
 from app.models.comment import Comment
 from app.models.conflict import Conflict
+from app.models.highlight_feedback_event import HighlightFeedbackEvent
+from app.models.importance_profile import ImportanceProfile
 from app.models.enums import (
     ConflictStatus,
     EntryOwnerRole,
     EntryType,
     EntryVisibility,
+    FeedbackEventType,
     HighlightActionState,
     HighlightItemKind,
     HighlightStatus,
@@ -37,10 +40,13 @@ __all__ = [
     "EntryType",
     "EntryVersion",
     "EntryVisibility",
+    "FeedbackEventType",
     "Highlight",
+    "HighlightFeedbackEvent",
     "HighlightActionState",
     "HighlightItemKind",
     "HighlightStatus",
+    "ImportanceProfile",
     "MembershipRole",
     "Patient",
     "PatientGlanceItem",

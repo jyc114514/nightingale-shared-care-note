@@ -4,8 +4,9 @@
 starts Uvicorn and Vite on clean local ports, and runs four real API scenarios at desktop and
 mobile viewports:
 
-- Scenario A: clinician Glance item action/risk/status, exact immutable source, `<mark>` quote,
-  source entry/version, URL deep-link refresh, accept, and reject.
+- Scenario A: clinician Glance item action/risk/status, collapsed “Why ranked?” contributions,
+  pin/unpin feedback, exact immutable source, `<mark>` quote, source entry/version, URL deep-link
+  refresh, accept, and reject.
 - Scenario B: staff edit/version increment, diff, revert-as-new-version, nested root/reply
   comments, resolve, and unresolve.
 - Scenario C: a real stale `expected_version` write returns `409`; the UI shows current and

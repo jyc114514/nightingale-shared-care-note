@@ -63,3 +63,15 @@ class HighlightActionState(str, Enum):
     OPEN = "open"
     COMPLETED = "completed"
     NOT_APPLICABLE = "not_applicable"
+
+
+class FeedbackEventType(str, Enum):
+    """Closed vocabulary for explainable importance feedback."""
+
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    PINNED = "pinned"
+    UNPINNED = "unpinned"
+    MANUALLY_HIGHLIGHTED = "manually_highlighted"
+    COMMENTED = "commented"
+    RESOLVED_AFTER_ACTION = "resolved_after_action"

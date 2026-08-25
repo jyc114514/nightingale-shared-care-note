@@ -2,6 +2,7 @@
 
 from app.db.base import utcnow
 from app.models import Entry, EntryVersion, Highlight, PatientGlanceItem
+from app.services.importance import apply_ranking
 from app.services.entries import enum_value
 from sqlalchemy.orm import Session
 
@@ -39,7 +40,6 @@ def sync_highlight_projection(db: Session, highlight: Highlight) -> PatientGlanc
     projected.content_summary = highlight.quote
     projected.item_kind = enum_value(highlight.item_kind)
     projected.status = enum_value(highlight.status)
-    projected.display_priority = highlight.display_priority
     projected.risk_level = highlight.risk_level
     projected.risk_reason = highlight.risk_reason
     projected.action_label = highlight.action_label
@@ -50,6 +50,7 @@ def sync_highlight_projection(db: Session, highlight: Highlight) -> PatientGlanc
     projected.entry_type = enum_value(entry.entry_type)
     projected.occurred_at = entry.occurred_at
     projected.quote = highlight.quote
+    apply_ranking(db, highlight=highlight, entry=entry, projection=projected)
     projected.updated_at = utcnow()
     db.flush()
     return projected

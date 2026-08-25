@@ -11,6 +11,7 @@ import type {
   Comment,
   Conflict,
   Diff,
+  FeedbackEventType,
   GlanceItem,
   Me,
   Patient,
@@ -772,6 +773,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [editingText, setEditingText] = useState("");
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
+  const [feedbackBusyId, setFeedbackBusyId] = useState<string | null>(null);
+  const [pinnedItems, setPinnedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -843,6 +846,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       active = false;
     };
   }, [patientId, internal, refreshToken]);
+
+  useEffect(() => {
+    setPinnedItems(new Set());
+  }, [patientId]);
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === patientId),
@@ -1024,6 +1031,29 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setMutationError(displayError(error));
     } finally {
       setMutationBusy(false);
+    }
+  }
+
+  async function sendFeedback(item: GlanceItem, eventType: FeedbackEventType) {
+    setFeedbackBusyId(item.id);
+    setMutationError(null);
+    try {
+      await api.feedback(
+        item.id,
+        eventType,
+        `ui:${eventType}:${item.id}:${Date.now()}`,
+      );
+      setPinnedItems((current) => {
+        const next = new Set(current);
+        if (eventType === "pinned") next.add(item.id);
+        if (eventType === "unpinned") next.delete(item.id);
+        return next;
+      });
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setMutationError(displayError(error));
+    } finally {
+      setFeedbackBusyId(null);
     }
   }
 
@@ -1242,6 +1272,50 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             item.action_state}
                         </span>
                       </div>
+                      <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                        <summary
+                          className="cursor-pointer font-semibold text-slate-700"
+                          data-testid="ranking-details"
+                        >
+                          Why ranked?{" "}
+                          <span className="font-normal text-slate-500">
+                            Ranking priority, not a medical risk score.
+                          </span>
+                        </summary>
+                        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
+                          <dt>Base</dt>
+                          <dd className="text-right font-semibold">
+                            {item.base_priority}
+                          </dd>
+                          <dt>Recency</dt>
+                          <dd className="text-right font-semibold">
+                            +{item.recency_contribution}
+                          </dd>
+                          <dt>Explicit risk</dt>
+                          <dd className="text-right font-semibold">
+                            +{item.explicit_risk_contribution}
+                          </dd>
+                          <dt>Open action</dt>
+                          <dd className="text-right font-semibold">
+                            +{item.unresolved_action_contribution}
+                          </dd>
+                          <dt>Clinician confirmation</dt>
+                          <dd className="text-right font-semibold">
+                            +{item.clinician_confirmation_contribution}
+                          </dd>
+                          <dt>Adaptive feedback</dt>
+                          <dd className="text-right font-semibold">
+                            {item.adaptive_feedback_adjustment >= 0 ? "+" : ""}
+                            {item.adaptive_feedback_adjustment}
+                          </dd>
+                          <dt className="font-semibold text-slate-800">
+                            Final priority
+                          </dt>
+                          <dd className="text-right font-bold text-blue-700">
+                            {item.display_priority}
+                          </dd>
+                        </dl>
+                      </details>
                       <p className="mt-3 text-xs font-semibold text-blue-700">
                         {item.source_label}
                       </p>
@@ -1253,6 +1327,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                         >
                           Open source
                         </Button>
+                        {role !== "admin" && (
+                          <Button
+                            kind="quiet"
+                            onClick={() =>
+                              void sendFeedback(
+                                item,
+                                pinnedItems.has(item.id)
+                                  ? "unpinned"
+                                  : "pinned",
+                              )
+                            }
+                            disabled={feedbackBusyId === item.id}
+                          >
+                            {pinnedItems.has(item.id) ? "Unpin" : "Pin"}
+                          </Button>
+                        )}
                         {role === "clinician" &&
                           (item.status === "suggested" ||
                             item.status === "conflict_review") && (

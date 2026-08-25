@@ -1,4 +1,6 @@
-"""Gate B timeline, Glance View, provenance, and trust-state endpoints."""
+"""Timeline, Glance View, provenance, trust-state, and importance endpoints."""
+
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -11,6 +13,7 @@ from app.models import (
     Entry,
     EntryType,
     EntryVersion,
+    FeedbackEventType,
     HighlightActionState,
     HighlightItemKind,
     HighlightStatus,
@@ -20,8 +23,11 @@ from app.models import (
 from app.schemas.gate_b import (
     GlanceItemOut,
     HighlightCreate,
+    HighlightFeedbackCreate,
+    HighlightFeedbackOut,
     HighlightOut,
     HighlightReview,
+    ImportanceProfileOut,
     ProvenanceSourceOut,
     TimelineEntryOut,
 )
@@ -37,6 +43,10 @@ from app.services.highlights import (
     get_highlight_source,
     get_source_context,
     review_highlight,
+)
+from app.services.importance import (
+    FeedbackIdempotencyConflict,
+    record_feedback_event,
 )
 
 
@@ -144,8 +154,16 @@ def glance(
         GlanceItemOut(
             id=item.highlight_id,
             content_summary=item.content_summary,
+            feature_signature=item.feature_signature,
             item_kind=HighlightItemKind(item.item_kind),
             status=HighlightStatus(item.status),
+            base_priority=item.base_priority,
+            recency_contribution=item.recency_contribution,
+            explicit_risk_contribution=item.explicit_risk_contribution,
+            unresolved_action_contribution=item.unresolved_action_contribution,
+            clinician_confirmation_contribution=item.clinician_confirmation_contribution,
+            adaptive_feedback_adjustment=item.adaptive_feedback_adjustment,
+            ranking_explanation=json.loads(item.ranking_explanation),
             display_priority=item.display_priority,
             risk_level=item.risk_level,
             risk_reason=item.risk_reason,
@@ -235,6 +253,15 @@ def create_highlight(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
+    record_feedback_event(
+        db,
+        highlight=highlight,
+        actor_user_id=user.id,
+        actor_role=context.actor_role,
+        event_type=FeedbackEventType.MANUALLY_HIGHLIGHTED,
+        idempotency_key=f"manual-highlight:{request_id}",
+        request_id=request_id,
+    )
     return HighlightOut.model_validate(highlight)
 
 
@@ -269,4 +296,86 @@ def review_highlight_route(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
+    if payload.status in {HighlightStatus.ACCEPTED, HighlightStatus.REJECTED}:
+        try:
+            record_feedback_event(
+                db,
+                highlight=reviewed,
+                actor_user_id=user.id,
+                actor_role=context.actor_role,
+                event_type=(
+                    FeedbackEventType.ACCEPTED
+                    if payload.status is HighlightStatus.ACCEPTED
+                    else FeedbackEventType.REJECTED
+                ),
+                idempotency_key=f"review:{reviewed.id}:{request_id}",
+                request_id=request_id,
+            )
+        except FeedbackIdempotencyConflict as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return HighlightOut.model_validate(reviewed)
+
+
+def require_feedback_role(actor_role: str, event_type: FeedbackEventType) -> None:
+    if actor_role not in {"staff", "clinician"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only staff or clinicians can provide importance feedback",
+        )
+    clinician_only = {
+        FeedbackEventType.ACCEPTED,
+        FeedbackEventType.REJECTED,
+        FeedbackEventType.MANUALLY_HIGHLIGHTED,
+    }
+    if event_type in clinician_only and actor_role != "clinician":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This importance feedback requires clinician authority",
+        )
+
+
+@router.post(
+    "/highlights/{highlight_id}/feedback",
+    response_model=HighlightFeedbackOut,
+    dependencies=[Depends(require_allowed_origin)],
+)
+def feedback_highlight(
+    highlight_id: str,
+    payload: HighlightFeedbackCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    request_id: str = Depends(get_request_id),
+) -> HighlightFeedbackOut:
+    try:
+        highlight, _ = get_highlight_source(db, highlight_id)
+    except HighlightValidationError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    context = get_patient_context(db, user, highlight.patient_id)
+    require_internal(context)
+    require_feedback_role(context.actor_role, payload.event_type)
+    try:
+        result = record_feedback_event(
+            db,
+            highlight=highlight,
+            actor_user_id=user.id,
+            actor_role=context.actor_role,
+            event_type=payload.event_type,
+            idempotency_key=payload.idempotency_key,
+            request_id=request_id,
+        )
+    except FeedbackIdempotencyConflict as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    projection = result.projection
+    explanation = (
+        json.loads(projection.ranking_explanation)
+        if projection is not None
+        else {"adaptive_feedback": result.profile.bounded_weight}
+    )
+    return HighlightFeedbackOut(
+        event_id=result.event.id,
+        event_type=FeedbackEventType(result.event.event_type),
+        created=result.created,
+        feature_signature=result.event.feature_signature,
+        profile=ImportanceProfileOut.model_validate(result.profile),
+        ranking_explanation=explanation,
+    )

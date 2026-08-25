@@ -41,9 +41,17 @@ export type TimelineEntry = {
 export type GlanceItem = {
   id: string;
   content_summary: string;
+  feature_signature: string;
   item_kind: "information" | "action" | "flag";
   status:
     "suggested" | "accepted" | "rejected" | "superseded" | "conflict_review";
+  base_priority: number;
+  recency_contribution: number;
+  explicit_risk_contribution: number;
+  unresolved_action_contribution: number;
+  clinician_confirmation_contribution: number;
+  adaptive_feedback_adjustment: number;
+  ranking_explanation: Record<string, number>;
   display_priority: number;
   risk_level: string | null;
   risk_reason: string;
@@ -57,6 +65,32 @@ export type GlanceItem = {
   entry_type: string;
   occurred_at: string;
   quote: string;
+};
+
+export type FeedbackEventType =
+  | "accepted"
+  | "rejected"
+  | "pinned"
+  | "unpinned"
+  | "manually_highlighted"
+  | "commented"
+  | "resolved_after_action";
+
+export type ImportanceFeedback = {
+  event_id: string;
+  event_type: FeedbackEventType;
+  created: boolean;
+  feature_signature: string;
+  profile: {
+    clinic_id: string;
+    feature_key: string;
+    positive_count: number;
+    negative_count: number;
+    bounded_weight: number;
+    updated_at: string;
+    version: number;
+  };
+  ranking_explanation: Record<string, number>;
 };
 
 export type Highlight = {
