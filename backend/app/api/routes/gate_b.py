@@ -5,9 +5,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, get_request_id, require_allowed_origin
-from app.api.routes.patients import _current_content
+from app.api.routes.patients import _current_content, _current_version
 from app.db.session import get_db
-from app.models import Entry, EntryType, Highlight, HighlightStatus, User
+from app.models import (
+    Entry,
+    EntryType,
+    EntryVersion,
+    HighlightActionState,
+    HighlightItemKind,
+    HighlightStatus,
+    PatientGlanceItem,
+    User,
+)
 from app.schemas.gate_b import (
     GlanceItemOut,
     HighlightCreate,
@@ -36,17 +45,22 @@ router = APIRouter(tags=["gate-b"])
 
 def timeline_entry_out(
     entry: Entry,
+    current_version: EntryVersion,
     content: str,
     *,
     internal: bool,
 ) -> TimelineEntryOut:
+    author_role = current_version.created_by_role
+    author_id = current_version.created_by_user_id
     return TimelineEntryOut(
         id=entry.id,
         clinic_id=entry.clinic_id if internal else None,
         patient_id=entry.patient_id,
         entry_type=enum_value(entry.entry_type),
-        author_role=enum_value(entry.owner_role),
-        created_by_user_id=entry.created_by_user_id if internal else None,
+        owner_role=enum_value(entry.owner_role),
+        author_role=str(author_role),
+        author_id=author_id if internal else None,
+        created_by_user_id=author_id if internal else None,
         current_version=entry.current_version,
         content=content,
         occurred_at=entry.occurred_at,
@@ -55,18 +69,6 @@ def timeline_entry_out(
         created_at=entry.created_at,
         updated_at=entry.updated_at,
     )
-
-
-def source_label(entry: Entry) -> str:
-    kind = enum_value(entry.source_kind)
-    labels = {
-        "doctor_consult": "AI-scribed · Doctor consult",
-        "nurse_consult": "AI-scribed · Nurse consult",
-        "patient_ai_session": "AI-scribed · Patient session",
-        "system_event": "System event",
-        "manual": "Manual note",
-    }
-    return labels.get(kind, "Care note")
 
 
 def require_clinician(context: AccessContext) -> None:
@@ -105,6 +107,7 @@ def timeline(
         result.append(
             timeline_entry_out(
                 entry,
+                _current_version(db, entry),
                 _current_content(db, entry),
                 internal=not context.is_patient,
             )
@@ -121,42 +124,43 @@ def glance(
 ) -> list[GlanceItemOut]:
     context = get_patient_context(db, user, patient_id)
     require_internal(context)
-    rows = db.execute(
-        select(Highlight, Entry)
-        .join(Entry, Entry.id == Highlight.source_entry_id)
+    rows = db.scalars(
+        select(PatientGlanceItem)
         .where(
-            Highlight.patient_id == patient_id,
-            Highlight.clinic_id == context.clinic_id,
-            Highlight.status.not_in(
+            PatientGlanceItem.patient_id == patient_id,
+            PatientGlanceItem.clinic_id == context.clinic_id,
+            PatientGlanceItem.status.not_in(
                 [HighlightStatus.REJECTED.value, HighlightStatus.SUPERSEDED.value]
             ),
         )
         .order_by(
-            Highlight.display_priority.desc(),
-            Entry.occurred_at.desc(),
-            Highlight.id.desc(),
+            PatientGlanceItem.display_priority.desc(),
+            PatientGlanceItem.occurred_at.desc(),
+            PatientGlanceItem.id.desc(),
         )
         .limit(limit)
-    ).all()
+    )
     return [
         GlanceItemOut(
-            id=highlight.id,
-            content_summary=highlight.quote,
-            item_kind=highlight.item_kind,
-            status=highlight.status,
-            display_priority=highlight.display_priority,
-            risk_level=highlight.risk_level,
-            risk_reason=highlight.risk_reason,
-            action_label=highlight.action_label,
-            action_state=highlight.action_state,
-            source_entry_id=highlight.source_entry_id,
-            source_version_id=highlight.source_version_id,
-            source_label=source_label(entry),
-            entry_type=enum_value(entry.entry_type),
-            occurred_at=entry.occurred_at,
-            quote=highlight.quote,
+            id=item.highlight_id,
+            content_summary=item.content_summary,
+            item_kind=HighlightItemKind(item.item_kind),
+            status=HighlightStatus(item.status),
+            display_priority=item.display_priority,
+            risk_level=item.risk_level,
+            risk_reason=item.risk_reason,
+            action_label=item.action_label,
+            action_state=HighlightActionState(item.action_state),
+            source_entry_id=item.source_entry_id,
+            source_version_id=item.source_version_id,
+            version_number=item.version_number,
+            current_entry_version=item.current_entry_version,
+            source_label=item.source_label,
+            entry_type=item.entry_type,
+            occurred_at=item.occurred_at,
+            quote=item.quote,
         )
-        for highlight, entry in rows
+        for item in rows
     ]
 
 
@@ -176,6 +180,8 @@ def highlight_source(
         highlight=HighlightOut.model_validate(highlight),
         source_entry_id=source.entry.id,
         source_version_id=source.version.id,
+        version_number=source.version.version_number,
+        current_entry_version=source.entry.current_version,
         entry_type=enum_value(source.entry.entry_type),
         source_kind=enum_value(source.entry.source_kind),
         source_reference=source.entry.source_reference,
@@ -223,7 +229,6 @@ def create_highlight(
             created_by_role=context.actor_role,
             created_by_user_id=user.id,
             reviewed_by_user_id=user.id,
-            reviewed_at=source.entry.updated_at,
             request_id=request_id,
         )
     except HighlightValidationError as exc:

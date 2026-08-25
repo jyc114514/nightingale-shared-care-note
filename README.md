@@ -1,16 +1,16 @@
 # Nightingale
 
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
-collaboration product. The repository is at **Phase 2 / Gate B**: Gate A authentication,
-clinic-scoped RBAC, immutable revisions, audit metadata, and optimistic concurrency are joined
-by a Glance View, occurred-time timeline, immutable source navigation, threaded comments, and
-trust-state controls for three AI-scribed entry types.
+collaboration product. The repository is at **Phase 3 / Gate C local implementation**: Gate A
+authentication, clinic-scoped RBAC, immutable revisions, audit metadata, and optimistic
+concurrency are joined by a Glance View, occurred-time timeline, immutable source navigation,
+threaded comments, trust-state controls, and a redacted deterministic AI write path.
 
-Gate C work is intentionally not represented as complete: external-provider integration,
-redaction before any provider call, materialized warm reads, warm-path P95, PostgreSQL execution,
-self-learning importance, data decay, voice capture, and final PDF/video/submission assets remain
-deferred. The repository-root `requirements.txt` is the candidate brief, **not** a pip
-requirements file; never run `pip install -r requirements.txt`.
+The local Gate C boundary is implemented and measured, but this is not a hosted production
+deployment: external-provider integration, PostgreSQL execution, TLS/encryption-at-rest
+evidence, self-learning importance, data decay, voice capture, and final PDF/video/submission
+assets remain deferred. The repository-root `requirements.txt` is the candidate brief, **not** a
+pip requirements file; never run `pip install -r requirements.txt`.
 
 ## Runtime and database
 
@@ -63,8 +63,8 @@ Remove-Item Env:DEMO_SEED_PASSWORD
 ```
 
 The seed creates two synthetic clinics, five users, two synthetic patients, seven entries, three
-distinct system AI-scribed entry types, five source-linked highlights, and a threaded internal
-comment fixture. Re-running it preserves aggregate counts.
+distinct system AI-scribed entry types, five source-linked highlights/materialized Glance rows,
+and a threaded internal comment fixture. Re-running it preserves aggregate counts.
 
 ## Gate B API and UI
 
@@ -72,7 +72,8 @@ comment fixture. Re-running it preserves aggregate counts.
 - `GET /patients` and `GET /patients/{patient_id}/timeline` are clinic/link scoped; patient
   projections omit internal entries, comments, raw AI notes, conflicts, and revision history.
 - `GET /patients/{patient_id}/glance` returns at most six deterministic active highlights and
-  excludes rejected/superseded items.
+  excludes rejected/superseded items. It reads only the `patient_glance_items` materialized
+  projection; it does not call a provider.
 - `GET /highlights/{highlight_id}/source` resolves the immutable entry version, exact quote,
   Python Unicode-codepoint offsets, and source reference.
 - Clinicians can create manual highlights and review suggestions; staff can read/comment but
@@ -81,10 +82,16 @@ comment fixture. Re-running it preserves aggregate counts.
   `PATCH /comments/{comment_id}/resolution` supports resolve/unresolve.
 - Existing Gate A routes provide role-owned edits, immutable version history, diff, revert-as-new-
   version, and deterministic `409` stale-write conflicts.
+- `POST /patients/{patient_id}/ai-processing` accepts the three AI-scribed entry types through a
+  typed redacted payload and deterministic fixture provider. It creates a new system-authored
+  entry and suggested immutable highlight; it never overwrites a human entry.
+- `GET /ai-processing/{job_id}` exposes job metadata and safe error codes, not raw input,
+  provider prompts, or provider responses.
 
 The frontend uses real cookie login and `/auth/me`, a clinic-scoped patient list, a calm light
-clinical workspace, Top Card, timeline, source click-to-focus/scroll, comments, version history,
-diff/revert, AI review badges, and role-aware controls. There is no UI-only role switch.
+clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable Unicode
+codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
+badges, and role-aware controls. There is no UI-only role switch.
 
 ## Verification
 
@@ -95,16 +102,17 @@ $pyExe = 'C:\Users\JI YANCHEN\Desktop\ai_trading_playground\ai_env\python.exe'
 Push-Location backend
 & $pyExe -m ruff check --no-cache app tests migrations
 & $pyExe -m ruff format --check --no-cache app tests migrations
-& $pyExe -m mypy app
+& $pyExe -m mypy app tests
 & $pyExe -m pytest
 Pop-Location
 ```
 
 The repository contains the required real-application tests `test_rbac_scope.py`,
-`test_revision_history.py`, `test_concurrent_edits.py`, and the Gate B files
-`test_migrations.py`, `test_highlight_provenance.py`, and `test_gate_b_api.py`. They use HTTPX
-`AsyncClient` with `ASGITransport`; no old `TestClient/httpx` warning is hidden. Migration tests
-use Alembic to create the database and prove that seed does not call `Base.metadata.create_all()`.
+`test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
+`test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
+`test_materialized_glance.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
+`TestClient/httpx` warning is hidden. Migration tests use Alembic to create the database and
+prove that seed does not call `Base.metadata.create_all()`.
 
 Frontend unit/build checks:
 
@@ -128,10 +136,25 @@ Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs Scenario A (clinician source
-trace) and Scenario B (staff edit/history/comments) at 1440x900 and 390x844. The custom setup
-records only its own server PIDs and teardown removes those processes, the temporary database,
-generated password, and ignored `artifacts/gate-b/` screenshots.
+real Uvicorn and Vite processes on clean local ports, and runs Scenario A (exact source and
+review), Scenario B (diff/revert/thread), Scenario C (real stale-write conflict), and patient
+privacy at 1440x900 and 390x844. The custom setup records only its own server PIDs and teardown
+removes those processes, the temporary database, generated password, and ignored
+`artifacts/gate-b/` screenshots.
+
+Gate C warm-path benchmark:
+
+```powershell
+Push-Location backend
+& $pyExe -m app.scripts.benchmark_warm_path
+Pop-Location
+```
+
+This uses a fresh migrated file-backed SQLite database, 26 synthetic patients, 208 benchmark
+entries/highlights, real Uvicorn TCP HTTP, 50 warm-up requests, 1,000 measured requests, and
+10-way concurrency. The current evidence is
+[`gate_c_warm_path.md`](docs/evidence/gate_c_warm_path.md). It is a local approximation, not a
+hosted PostgreSQL production benchmark.
 
 ## Safety and repository boundary
 
@@ -144,5 +167,6 @@ generated password, and ignored `artifacts/gate-b/` screenshots.
   separate fields.
 - No external LLM, Docker, deployment, account creation, email, remote Git, or GitHub push is
   configured. The local Git repository intentionally has no remote.
-- PostgreSQL, redaction/provider boundary, TLS/encryption-at-rest, materialized warm path/P95,
-  bonus learning/data decay, final brief PDF, and demo video are explicit remaining gates.
+- PostgreSQL, TLS/encryption-at-rest, bonus learning/data decay, final brief PDF, and demo video
+  are explicit remaining gates. The local redaction/provider boundary and materialized warm
+  path/P95 are implemented and evidenced, but do not establish hosted production guarantees.

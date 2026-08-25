@@ -1,6 +1,8 @@
 import type {
+  AIJob,
   ApiErrorShape,
   Comment,
+  Conflict,
   Diff,
   GlanceItem,
   Me,
@@ -77,6 +79,8 @@ export const api = {
     }),
   versions: (entryId: string) =>
     request<Version[]>(`/entries/${entryId}/versions`),
+  conflicts: (entryId: string) =>
+    request<Conflict[]>(`/entries/${entryId}/conflicts`),
   diff: (entryId: string, fromVersion: number, toVersion: number) =>
     request<Diff>(
       `/entries/${entryId}/diff?from_version=${fromVersion}&to_version=${toVersion}`,
@@ -99,8 +103,22 @@ export const api = {
       }),
     }),
   reviewHighlight: (highlightId: string, reviewStatus: GlanceItem["status"]) =>
-    request(`/highlights/${highlightId}/review`, {
+    request<GlanceItem>(`/highlights/${highlightId}/review`, {
       method: "PATCH",
       ...json({ status: reviewStatus }),
     }),
+  submitAIProcessing: (
+    patientId: string,
+    payload: {
+      interaction_type: string;
+      text: string;
+      source_reference: string;
+      idempotency_key: string;
+    },
+  ) =>
+    request<AIJob>(`/patients/${patientId}/ai-processing`, {
+      method: "POST",
+      ...json(payload),
+    }),
+  aiJob: (jobId: string) => request<AIJob>(`/ai-processing/${jobId}`),
 };

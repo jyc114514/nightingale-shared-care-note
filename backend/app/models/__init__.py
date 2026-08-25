@@ -1,6 +1,7 @@
 """ORM model registry."""
 
 from app.models.audit_log import AuditLog
+from app.models.ai_processing_job import AIProcessingJob
 from app.models.clinic import Clinic
 from app.models.comment import Comment
 from app.models.conflict import Conflict
@@ -20,10 +21,12 @@ from app.models.entry_version import EntryVersion
 from app.models.highlight import Highlight
 from app.models.membership import ClinicMembership
 from app.models.patient import Patient, PatientUserLink
+from app.models.patient_glance_item import PatientGlanceItem
 from app.models.user import User
 
 __all__ = [
     "AuditLog",
+    "AIProcessingJob",
     "Clinic",
     "ClinicMembership",
     "Comment",
@@ -40,6 +43,7 @@ __all__ = [
     "HighlightStatus",
     "MembershipRole",
     "Patient",
+    "PatientGlanceItem",
     "PatientUserLink",
     "SourceKind",
     "User",

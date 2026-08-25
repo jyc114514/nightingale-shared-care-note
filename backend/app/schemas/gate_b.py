@@ -12,7 +12,9 @@ class TimelineEntryOut(BaseModel):
     clinic_id: str | None = None
     patient_id: str
     entry_type: str
+    owner_role: str
     author_role: str
+    author_id: str | None = None
     created_by_user_id: str | None = None
     current_version: int
     content: str
@@ -83,6 +85,8 @@ class GlanceItemOut(BaseModel):
     action_state: HighlightActionState
     source_entry_id: str
     source_version_id: str
+    version_number: int
+    current_entry_version: int
     source_label: str
     entry_type: str
     occurred_at: datetime
@@ -93,6 +97,8 @@ class ProvenanceSourceOut(BaseModel):
     highlight: HighlightOut
     source_entry_id: str
     source_version_id: str
+    version_number: int
+    current_entry_version: int
     entry_type: str
     source_kind: str
     source_reference: str | None

@@ -1,9 +1,10 @@
-# Nightingale technical brief - Phase 2 / Gate B
+# Nightingale technical brief - Phase 3 / Gate C local implementation
 
-This brief records only behavior that exists in the local synthetic prototype. Gate B delivers
-the shared-care-note experience on top of the Gate A security and revision foundation. It does
-not claim a live LLM provider, PHI redaction, materialized warm reads, PostgreSQL validation,
-bonus learning, TLS, encryption at rest, or final submission assets.
+This brief records only behavior that exists in the local synthetic prototype. Gate C adds a
+fail-closed redaction boundary, a typed deterministic fixture provider, synchronous write-path
+processing, and a materialized Glance read model on top of the Gate A/Gate B foundation. It does
+not claim a live external LLM, hosted PostgreSQL validation, deployment TLS, encryption at rest,
+bonus learning, or final submission assets.
 
 ## Product boundary and runtime
 
@@ -71,6 +72,26 @@ non-browser API tests without an `Origin` remain usable. A stale same-entry edit
 deterministic `409`, preserves the attempted content in `conflicts`, and never uses silent
 last-write-wins. A revert copies an earlier snapshot into a new version.
 
+## Gate C redaction and processing boundary
+
+The local provider boundary accepts only the Pydantic `RedactedPayload` contract. The processing
+service first redacts deliberately supplied synthetic patient/staff/clinician names, Singapore
+NRIC/FIN/IC/ID forms, and Singapore phone forms (+65, spaced/hyphenated, and local eight-digit
+forms). It then runs a second detector. Any detector failure or remaining match creates a
+`failed_redaction` job with a safe category code and does not call the provider.
+
+`FixtureProvider` is deterministic and has no network, API key, or external model dependency.
+Its validated output creates a new `system`-authored AI-scribed entry and a `suggested`
+highlight anchored to that entry's first immutable version and exact codepoint span. It never
+updates a human entry. Idempotency keys prevent duplicate entries; malformed or unavailable
+provider output creates only a failed job. Job payloads, audit rows, and logs do not contain raw
+input, provider prompts, or provider responses.
+
+The active `GET /patients/{patient_id}/glance` endpoint reads only `patient_glance_items`, with
+clinic authorization, deterministic ordering, a six-item cap, and rejection/supersession filters.
+Highlight creation/review and seed updates refresh the projection. This is a local materialized
+read model; no external provider is present on the warm read path.
+
 ## Gate B API and UI path
 
 The implemented routes include:
@@ -82,32 +103,41 @@ The implemented routes include:
 - `PATCH /highlights/{highlight_id}/review` for clinician trust decisions;
 - `GET/POST /entries/{entry_id}/comments` and `PATCH /comments/{comment_id}/resolution`;
 - Gate A login, `/auth/me`, patient, version, diff, edit, revert, and conflict routes.
+- `POST /patients/{patient_id}/ai-processing` and `GET /ai-processing/{job_id}` for the local
+  redacted fixture write path and safe job metadata.
 
 The UI uses real cookie login and `/auth/me`, clinic-scoped patient selection, a calm light
 clinical layout, a six-or-fewer-item Top Card, timeline source labels, AI review badges, source
-navigation with quote highlighting and scroll/focus state, comments/replies/resolve controls,
-history/diff/revert controls, optimistic-concurrency error display, and role-aware review/edit
-controls. The patient projection does not render internal Glance, comments, raw AI notes, or
-review states because the server does not return them.
+navigation with validated `Array.from` codepoint quote highlighting and deep-link restoration,
+comments/replies/resolve controls, history/diff/revert controls, optimistic-concurrency conflict
+comparison, and role-aware review/edit controls. The patient projection does not render
+internal Glance, comments, raw AI notes, or review states because the server does not return them.
 
 ## Verification actually performed
 
-- Backend full pytest, Ruff check/format, mypy, and `pip check` pass in the existing Python
-  3.10.20 environment. The required Gate A tests remain present; Gate B adds migration,
-  provenance, API, security, comments, timeline, and trust coverage.
+- Backend full pytest, Ruff check/format, mypy `app tests`, and `pip check` pass in the existing
+  Python 3.10.20 environment. The required Gate A tests remain present; Gate B and Gate C add
+  migration, provenance, API, security, comments, timeline, trust, redaction, provider-boundary,
+  AI-processing, materialized-read, and log-safety coverage.
 - `test_migrations.py` runs real Alembic upgrade/check/downgrade/re-upgrade against temporary
   file-backed SQLite, checks the revision and key indexes/columns, proves seed fails before
   migration, and proves consecutive seed counts are stable without `Base.metadata.create_all`.
 - The exact twelve-check `test_highlight_provenance.py` exercises manual/AI source identity,
   exact slices, hash, Unicode offsets, old-version resolution, invalid offsets/quotes,
   cross-source, patient, cross-clinic, and review authorization behavior.
-- Frontend Vitest, ESLint, TypeScript type-check, and Vite production build pass. Playwright
-  completed `4 passed` against real Uvicorn, real Vite, migrated synthetic SQLite, and two
-  viewports: 1440x900 and 390x844. The runner produced four ignored Gate B screenshots and
-  cleaned ports 8000/5173, the temporary database, and the generated password.
+- Frontend Vitest, ESLint, Prettier check, TypeScript type-check, and Vite production build pass.
+  Playwright completed `8 passed` against real Uvicorn, real Vite, migrated synthetic SQLite, and
+  two viewports: 1440x900 and 390x844. It covered exact source/deep-link/review, diff/revert/
+  thread, real 409 conflict, and patient privacy. The runner cleaned ports 8000/5173, the
+  temporary database, and the generated password.
 
-The active Glance query is intentionally a deterministic database query with no LLM call, but
-it is not yet a materialized read model and no P95 target is claimed. Provider integration,
-redaction-before-provider tests, log-leakage tests, PostgreSQL execution, warm-path P95, bonus
-importance learning/data decay, and voice remain later work. UX-01 also needs a human timed
-review rather than an automated assertion.
+- The real-TCP warm-path benchmark used file-backed SQLite, 26 synthetic patients, 208 benchmark
+  entries/highlights/materialized rows, 50 warm-up requests, 1,000 measured requests, and
+  concurrency 10. It recorded P50 54.366 ms, P95 79.13 ms, P99 98.812 ms, max 117.205 ms, zero
+  errors, and six response items. See
+  `docs/evidence/gate_c_warm_path.md` and its JSON companion. This is a measured local
+  approximation, not hosted PostgreSQL production evidence. UX-01 still needs a human timed
+  review.
+
+PostgreSQL integration, external provider authorization, deployment TLS/encryption-at-rest,
+bonus importance/data decay, voice, final PDF, attribution audit, and video remain uncompleted.

@@ -5,11 +5,11 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | ID | Requirement / risk | Class | Planned evidence | Current status |
 | --- | --- | --- | --- | --- |
 | UX-01 | Glance View readable and actionable in under 10 seconds | Mandatory | Six-or-fewer-item UI, timed demo script, usability screenshot/video | in progress |
-| UX-02 | Top Card includes content, open actions, and explicit flags | Mandatory | Seed scenario plus UI/E2E assertions | passed |
+| UX-02 | Top Card includes content, open actions, and explicit flags | Mandatory | Seed scenario plus explicit action/risk/status UI assertions | passed |
 | UX-03 | Continuous time-ordered longitudinal timeline | Mandatory | Timeline API ordering test and demo | passed |
-| DATA-01 | Manual, system, patient, clinician, and staff entry metadata | Mandatory | SQLAlchemy schema, synthetic seed, and API serialization in [Gate A tests](../backend/tests/test_rbac_scope.py) | passed |
+| DATA-01 | Manual, system, patient, clinician, and staff entry metadata | Mandatory | Current immutable-version author/owner assertions in [test_gate_b_api.py](../backend/tests/test_gate_b_api.py) | passed |
 | AI-01 | Three distinct system-authored AI-scribed entry types | Mandatory | Seed/ingestion test for doctor, nurse, and patient session types | passed |
-| COL-01 | Threaded comments with resolve/unresolve | Mandatory | API test and Scenario B demo | passed |
+| COL-01 | Threaded comments with resolve/unresolve | Mandatory | Nested-tree API/UI assertions and Scenario B root/reply/resolve/unresolve | passed |
 | COL-02 | Mentions | Optional | Parser/UI smoke test | deferred |
 | COL-03 | Assignment | Optional | Task ownership API/UI test | deferred |
 | REV-01 | Full snapshots and version increment | Mandatory | [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
@@ -17,7 +17,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | REV-03 | Revert to prior content without erasing history | Mandatory | Revert/version assertions in [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
 | AUD-01 | Who changed what, metadata-only audit log | Mandatory | Audit metadata/content exclusion assertion in [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
 | PROV-01 | Every highlight has resolvable provenance | Mandatory | `test_highlight_provenance.py` | passed |
-| PROV-02 | Click jumps to exact entry/span | Mandatory | Playwright source navigation plus immutable-source assertions | passed |
+| PROV-02 | Click jumps to exact entry/span | Mandatory | Codepoint exact-span, immutable-version, deep-link, and Playwright source assertions | passed |
 | TRUST-01 | AI suggestions visibly distinct and accept/rejectable | Mandatory | Backend review authorization and frontend role-control tests | passed |
 | TRUST-02 | Semantic conflict is flagged or clinician-adjudicated | Mandatory | Conflict-review fixture, source preservation, and UI warning state | passed |
 | AUTH-01 | Patient sees summaries/instructions only | Mandatory | Patient response-field and raw-AI denial assertions in [`test_rbac_scope.py`](../backend/tests/test_rbac_scope.py) | passed |
@@ -27,10 +27,10 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | CONC-01 | Different-section concurrent writes do not overwrite | Mandatory | Independent-session parallel writes in [`test_concurrent_edits.py`](../backend/tests/test_concurrent_edits.py) | passed |
 | CONC-02 | Same-section stale write has deterministic resolution | Mandatory | `409` plus preserved conflict assertion in [`test_concurrent_edits.py`](../backend/tests/test_concurrent_edits.py) | passed |
 | PRIV-01 | Synthetic data only | Mandatory | Seed provenance and repository scan | passed |
-| PRIV-02 | Names, IC/ID, phones redacted before external LLM | Mandatory | Unit/integration redaction tests with provider spy | planned |
-| PRIV-03 | Clean logs; raw note content absent | Mandatory | Log-capture test and manual scan | planned |
+| PRIV-02 | Names, IC/ID, phones redacted before external LLM | Mandatory | [test_redaction.py](../backend/tests/test_redaction.py), provider spy, and fail-closed job test | passed |
+| PRIV-03 | Clean logs; raw note content absent | Mandatory | [test_ai_processing.py](../backend/tests/test_ai_processing.py) caplog/audit/job safety assertions | passed |
 | PRIV-04 | TLS in transit and encryption at rest | Mandatory | Deployment-provider evidence and explicit local limitation | planned |
-| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Exploratory Gate B timing](evidence/gate_b_warm_path.md); production/materialized-path benchmark still required | planned |
+| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) reports P95 79.13 ms; local SQLite approximation limitation documented | passed |
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | planned |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | planned |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
@@ -71,7 +71,7 @@ redaction/provider/performance or delivery gates are complete.
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
-| GATE-B-MIGRATION | Alembic `0002_gate_b` adds occurred/source metadata, threaded comment fields, and highlights; upgrade/check/downgrade/re-upgrade pass without `create_all` | passed | [0002_gate_b.py](../backend/migrations/versions/0002_gate_b.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| GATE-B-MIGRATION | Alembic `0002_gate_b` plus corrective `0003_gate_b_repair` preserve fresh and legacy upgrade paths; upgrade/check/downgrade/re-upgrade pass without `create_all` | passed | [0002_gate_b.py](../backend/migrations/versions/0002_gate_b.py), [0003_gate_b_repair.py](../backend/migrations/versions/0003_gate_b_repair.py), [test_migrations.py](../backend/tests/test_migrations.py) |
 | GATE-B-TIMELINE | Timeline orders by `occurred_at DESC, id DESC`; seed contains doctor, nurse, and patient-session AI-scribed sources with non-empty references | passed | [gate_b.py](../backend/app/api/routes/gate_b.py), [test_gate_b_api.py](../backend/tests/test_gate_b_api.py), [seed_demo.py](../backend/app/scripts/seed_demo.py) |
 | GATE-B-PROVENANCE | Twelve focused checks cover manual/AI highlights, source IDs, exact slices, SHA-256, Unicode offsets, immutable versions, invalid/cross-source/cross-clinic/patient cases | passed | [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py), [highlights.py](../backend/app/services/highlights.py) |
 | GATE-B-GLANCE | Internal Glance API caps at six, has deterministic priority ordering, keeps display priority separate from risk level, and excludes rejected/superseded items | passed | [test_gate_b_api.py](../backend/tests/test_gate_b_api.py), [App.tsx](../frontend/src/App.tsx) |
@@ -81,12 +81,36 @@ redaction/provider/performance or delivery gates are complete.
 | GATE-B-SECURITY | Production secure-cookie fail-closed validation and foreign-Origin write rejection pass; SQLite test pool releases temporary files | passed | [config.py](../backend/app/config.py), [dependencies.py](../backend/app/api/dependencies.py), [test_gate_b_api.py](../backend/tests/test_gate_b_api.py) |
 | GATE-B-UX | Human timed under-10-second checklist and final usability review are still pending | in progress | [gate-b README](../frontend/tests/e2e/README.md) |
 
-The browser run completed `4 passed` using real Uvicorn, real Vite, a migrated file-backed SQLite
-database, and synthetic seed data at 1440x900 and 390x844. The run produced four ignored
-screenshots and verified that ports 8000/5173 and the temporary database were removed by teardown.
-An exploratory Gate B timing is recorded in [gate_b_warm_path.md](evidence/gate_b_warm_path.md),
-but the Glance endpoint is currently a direct database-backed prototype read rather than a
-measured materialized warm path; `PERF-01` therefore remains planned.
+The browser run completed `8 passed` using real Uvicorn, real Vite, a migrated file-backed SQLite
+database, and synthetic seed data at 1440x900 and 390x844. It covered exact source/deep-link/
+review, diff/revert/thread, real stale-write conflict, and patient privacy. Teardown removed
+ports 8000/5173 and the temporary database. The earlier exploratory timing remains recorded in
+[gate_b_warm_path.md](evidence/gate_b_warm_path.md); Gate C now owns the materialized warm-path
+benchmark and evidence.
+
+## Phase 2.5 / Gate B closeout evidence - 2026-08-25
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| GATE-B-CLOSEOUT-MIGRATION | Legacy 0001 index drift is repaired by 0003 without editing 0001/0002; `alembic check` is clean after fresh and stamped legacy upgrades | passed | [0003_gate_b_repair.py](../backend/migrations/versions/0003_gate_b_repair.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| GATE-B-CLOSEOUT-METADATA | Timeline serializes immutable current-version author role/id separately from owner role; review timestamps use current UTC and audit actions distinguish accepted/rejected | passed | [gate_b.py](../backend/app/api/routes/gate_b.py), [highlights.py](../backend/app/services/highlights.py), [test_gate_b_api.py](../backend/tests/test_gate_b_api.py), [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py) |
+| GATE-B-CLOSEOUT-PROVENANCE | Frontend validates Array.from codepoint spans with no indexOf fallback, renders immutable source version in Timeline, and restores patient/highlight URL links | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+| GATE-B-CLOSEOUT-TRUST-UI | Top Card visibly shows item kind/status/risk/action/source/priority; nested comments and conflict comparison are browser-tested | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+
+## Phase 3 / Gate C local evidence - 2026-08-25
+
+These rows establish the local synthetic boundary only. They do not claim external-provider,
+hosted PostgreSQL, TLS, or encryption-at-rest evidence.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| GATE-C-MIGRATION | `0004_gate_c` creates processing jobs and materialized Glance rows, backfills existing highlights, and leaves `alembic check` clean | passed | [0004_gate_c.py](../backend/migrations/versions/0004_gate_c.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| GATE-C-REDACTION | Known synthetic names, SG IDs/FIN/NRIC/IC, phone formats, stable tokens, second-detector fail-closed behavior, and no-provider-on-failure are tested | passed | [redaction.py](../backend/app/ai/redaction.py), [test_redaction.py](../backend/tests/test_redaction.py), [test_ai_processing.py](../backend/tests/test_ai_processing.py) |
+| GATE-C-PROVIDER | Typed `RedactedPayload` boundary, deterministic fixture provider, spy payload inspection, schema validation, malformed/unavailable failure paths pass without external network/API keys | passed | [provider.py](../backend/app/ai/provider.py), [schemas.py](../backend/app/ai/schemas.py), [test_ai_provider_boundary.py](../backend/tests/test_ai_provider_boundary.py), [test_ai_processing.py](../backend/tests/test_ai_processing.py) |
+| GATE-C-JOBS | Three interaction types create new system-authored AI entries and suggested exact immutable highlights; idempotency prevents duplicates; patient mutation/read is denied | passed | [ai_processing.py](../backend/app/services/ai_processing.py), [ai_processing.py](../backend/app/api/routes/ai_processing.py), [test_ai_processing.py](../backend/tests/test_ai_processing.py) |
+| GATE-C-MATERIALIZED | Glance reads only `patient_glance_items`, remains capped/ordered/filtered, retains source IDs/offset/hash, and makes zero provider calls | passed | [glance.py](../backend/app/services/glance.py), [gate_b.py](../backend/app/api/routes/gate_b.py), [test_materialized_glance.py](../backend/tests/test_materialized_glance.py) |
+| GATE-C-LOGS | Job/audit metadata excludes raw note/comment/provider content; provider failure and validation paths expose only safe error codes; caplog sentinel checks pass | passed | [test_ai_processing.py](../backend/tests/test_ai_processing.py), [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py) |
+| GATE-C-PERF | Real Uvicorn TCP benchmark: 50 warm-up, 1,000 samples, concurrency 10, 26 patients, 208 benchmark rows, zero errors, P50 54.366 ms, P95 79.13 ms, P99 98.812 ms, max 117.205 ms, six items | passed | [gate_c_warm_path.md](evidence/gate_c_warm_path.md), [gate_c_warm_path.json](evidence/gate_c_warm_path.json), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
 
 ## Hard release gate
 

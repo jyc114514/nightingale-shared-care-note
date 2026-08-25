@@ -17,6 +17,7 @@ from app.models import (
     HighlightStatus,
 )
 from app.services.entries import enum_value, record_audit
+from app.services.glance import sync_highlight_projection
 
 
 class HighlightValidationError(Exception):
@@ -114,10 +115,11 @@ def create_highlight_record(
         created_by_user_id=created_by_user_id,
         created_by_role=created_by_role,
         reviewed_by_user_id=reviewed_by_user_id,
-        reviewed_at=reviewed_at,
+        reviewed_at=reviewed_at or (utcnow() if reviewed_by_user_id else None),
     )
     db.add(highlight)
     db.flush()
+    sync_highlight_projection(db, highlight)
     record_audit(
         db,
         clinic_id=highlight.clinic_id,
@@ -144,17 +146,19 @@ def review_highlight(
 ) -> Highlight:
     if status is HighlightStatus.SUGGESTED:
         raise HighlightValidationError("Review status must be a human decision")
+    reviewed_at = utcnow()
     highlight.status = status.value
     highlight.reviewed_by_user_id = reviewer_user_id
-    highlight.reviewed_at = utcnow()
-    highlight.updated_at = utcnow()
+    highlight.reviewed_at = reviewed_at
+    highlight.updated_at = reviewed_at
+    sync_highlight_projection(db, highlight)
     record_audit(
         db,
         clinic_id=highlight.clinic_id,
         patient_id=highlight.patient_id,
         actor_user_id=reviewer_user_id,
         actor_role="clinician",
-        action="highlight_reviewed",
+        action=f"highlight_{status.value}",
         entity_type="highlight",
         entity_id=highlight.id,
         request_id=request_id,

@@ -9,6 +9,7 @@ import {
 import { ApiError, api } from "./api";
 import type {
   Comment,
+  Conflict,
   Diff,
   GlanceItem,
   Me,
@@ -43,6 +44,18 @@ const statusLabels: Record<string, string> = {
   rejected: "Rejected",
   superseded: "Superseded",
   conflict_review: "Conflict review",
+};
+
+const itemKindLabels: Record<string, string> = {
+  information: "Information",
+  action: "Open action",
+  flag: "Flag",
+};
+
+const actionStateLabels: Record<string, string> = {
+  open: "Open",
+  completed: "Completed",
+  not_applicable: "No action state",
 };
 
 function formatDate(value: string) {
@@ -84,23 +97,78 @@ function canEditEntry(user: Me, entry: TimelineEntry) {
   );
 }
 
-function renderQuote(
+type ExactSpanResult =
+  | { valid: true; before: string; quote: string; after: string }
+  | { valid: false; reason: string };
+
+export function exactCodepointSpan(
   text: string,
-  quote?: string,
-  startOffset?: number,
-): ReactNode {
-  if (!quote) return text;
-  const hintedIndex = startOffset ?? text.indexOf(quote);
-  const index =
-    text.slice(hintedIndex, hintedIndex + quote.length) === quote
-      ? hintedIndex
-      : text.indexOf(quote);
-  if (index < 0) return text;
+  quote: string,
+  startOffset: number,
+  endOffset: number,
+): ExactSpanResult {
+  const codepoints = Array.from(text);
+  if (
+    !Number.isInteger(startOffset) ||
+    !Number.isInteger(endOffset) ||
+    startOffset < 0 ||
+    endOffset <= startOffset ||
+    endOffset > codepoints.length
+  ) {
+    return { valid: false, reason: "Offsets are outside the immutable text." };
+  }
+  const selected = codepoints.slice(startOffset, endOffset).join("");
+  if (selected !== quote) {
+    return {
+      valid: false,
+      reason: "The immutable codepoint slice does not match the stored quote.",
+    };
+  }
+  return {
+    valid: true,
+    before: codepoints.slice(0, startOffset).join(""),
+    quote: selected,
+    after: codepoints.slice(endOffset).join(""),
+  };
+}
+
+function ExactSpanView({
+  text,
+  quote,
+  startOffset,
+  endOffset,
+}: {
+  text: string;
+  quote: string;
+  startOffset: number;
+  endOffset: number;
+}) {
+  const result = exactCodepointSpan(text, quote, startOffset, endOffset);
+  if (!result.valid) {
+    return (
+      <div>
+        <p
+          className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-800"
+          role="alert"
+          data-testid="provenance-integrity-warning"
+        >
+          Integrity warning: {result.reason} No approximate text match was
+          highlighted.
+        </p>
+        <p className="mt-3 whitespace-pre-wrap">{text}</p>
+      </div>
+    );
+  }
   return (
     <>
-      {text.slice(0, index)}
-      <mark className="rounded bg-amber-100 px-1 text-amber-950">{quote}</mark>
-      {text.slice(index + quote.length)}
+      {result.before}
+      <mark
+        className="rounded bg-amber-100 px-1 text-amber-950"
+        data-testid="source-quote"
+      >
+        {result.quote}
+      </mark>
+      {result.after}
     </>
   );
 }
@@ -295,6 +363,9 @@ function SourcePanel({ source }: { source: ProvenanceSource | null }) {
     <section
       className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5"
       aria-label="Immutable source"
+      data-source-entry-id={source.source_entry_id}
+      data-source-version-id={source.source_version_id}
+      data-source-version={source.version_number}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -305,10 +376,18 @@ function SourcePanel({ source }: { source: ProvenanceSource | null }) {
             {entryTypeLabels[source.entry_type] ?? source.entry_type}
           </h2>
         </div>
-        <Pill tone="blue">
-          v{source.highlight.source_version_id.slice(0, 6)}
-        </Pill>
+        <Pill tone="blue">v{source.version_number}</Pill>
       </div>
+      {source.version_number !== source.current_entry_version && (
+        <p
+          className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
+          data-testid="immutable-version-warning"
+        >
+          This highlight is anchored to immutable version v
+          {source.version_number}; current entry is v
+          {source.current_entry_version}.
+        </p>
+      )}
       <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
         <div>
           <dt className="text-slate-500">Occurred</dt>
@@ -330,13 +409,113 @@ function SourcePanel({ source }: { source: ProvenanceSource | null }) {
         </div>
       </dl>
       <blockquote className="mt-4 rounded-xl border border-blue-100 bg-white p-4 text-sm leading-7 text-slate-800">
-        {renderQuote(source.version_content, source.quote, source.start_offset)}
+        <ExactSpanView
+          text={source.version_content}
+          quote={source.quote}
+          startOffset={source.start_offset}
+          endOffset={source.end_offset}
+        />
       </blockquote>
       <p className="mt-3 text-xs leading-5 text-slate-500">
         Exact span: [{source.start_offset}, {source.end_offset}) · SHA-256 is
         stored with the highlight.
       </p>
     </section>
+  );
+}
+
+function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
+  return (
+    <section
+      className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
+      aria-label="Immutable timeline source"
+      data-testid="immutable-timeline-source"
+      data-source-entry-id={source.source_entry_id}
+      data-source-version={source.version_number}
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">
+        Immutable source span
+      </p>
+      <p className="mt-2 text-xs leading-5 text-amber-900">
+        Anchored to immutable version v{source.version_number}; current entry is
+        v{source.current_entry_version}.
+      </p>
+      <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">
+        <ExactSpanView
+          text={source.version_content}
+          quote={source.quote}
+          startOffset={source.start_offset}
+          endOffset={source.end_offset}
+        />
+      </div>
+    </section>
+  );
+}
+
+function CommentNode({
+  comment,
+  childrenByParent,
+  depth,
+  visited,
+  onReply,
+  onResolve,
+  busy,
+}: {
+  comment: Comment;
+  childrenByParent: Map<string, Comment[]>;
+  depth: number;
+  visited: Set<string>;
+  onReply: (id: string | null) => void;
+  onResolve: (comment: Comment) => Promise<void>;
+  busy: boolean;
+}) {
+  if (visited.has(comment.id)) return null;
+  const nextVisited = new Set(visited).add(comment.id);
+  const children = childrenByParent.get(comment.id) ?? [];
+  return (
+    <article
+      data-testid={`comment-${comment.id}`}
+      className={`rounded-xl border p-3 ${depth > 0 ? "ml-5 border-slate-100 bg-slate-50" : "border-slate-200 bg-white"}`}
+    >
+      <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
+        <span>
+          {comment.author_user_id.slice(0, 8)} ·{" "}
+          {formatDate(comment.created_at)}
+        </span>
+        <Pill tone={comment.is_resolved ? "green" : "slate"}>
+          {comment.is_resolved ? "Resolved" : "Open"}
+        </Pill>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button kind="quiet" onClick={() => onReply(comment.id)}>
+          Reply
+        </Button>
+        <Button
+          kind="quiet"
+          onClick={() => void onResolve(comment)}
+          disabled={busy}
+        >
+          {comment.is_resolved ? "Unresolve" : "Resolve"}
+        </Button>
+      </div>
+      {children.length > 0 && (
+        <div className="mt-3 space-y-3" data-testid={`replies-${comment.id}`}>
+          {children.map((child) => (
+            <CommentNode
+              key={child.id}
+              comment={child}
+              childrenByParent={childrenByParent}
+              depth={depth + 1}
+              visited={nextVisited}
+              onReply={onReply}
+              onResolve={onResolve}
+              busy={busy}
+            />
+          ))}
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -360,13 +539,19 @@ function CommentsPanel({
   busy: boolean;
 }) {
   const [body, setBody] = useState("");
+  const commentIds = new Set(comments.map((comment) => comment.id));
+  const childrenByParent = new Map<string, Comment[]>();
+  for (const comment of comments) {
+    if (comment.parent_comment_id === null) continue;
+    const children = childrenByParent.get(comment.parent_comment_id) ?? [];
+    children.push(comment);
+    childrenByParent.set(comment.parent_comment_id, children);
+  }
   const roots = comments.filter(
-    (comment) => comment.parent_comment_id === null,
+    (comment) =>
+      comment.parent_comment_id === null ||
+      !commentIds.has(comment.parent_comment_id),
   );
-  const replies = comments.filter(
-    (comment) => comment.parent_comment_id !== null,
-  );
-  const ordered = [...roots, ...replies];
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -394,39 +579,22 @@ function CommentsPanel({
         </Button>
       </div>
       <div className="mt-4 space-y-3">
-        {ordered.length === 0 && (
+        {comments.length === 0 && (
           <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
             No comments yet.
           </p>
         )}
-        {ordered.map((comment) => (
-          <article
+        {roots.map((comment) => (
+          <CommentNode
             key={comment.id}
-            className={`rounded-xl border p-3 ${comment.parent_comment_id ? "ml-5 border-slate-100 bg-slate-50" : "border-slate-200 bg-white"}`}
-          >
-            <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
-              <span>
-                {comment.author_user_id.slice(0, 8)} ·{" "}
-                {formatDate(comment.created_at)}
-              </span>
-              {comment.is_resolved && <Pill tone="green">Resolved</Pill>}
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              {comment.body}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button kind="quiet" onClick={() => onReply(comment.id)}>
-                Reply
-              </Button>
-              <Button
-                kind="quiet"
-                onClick={() => void onResolve(comment)}
-                disabled={busy}
-              >
-                {comment.is_resolved ? "Unresolve" : "Resolve"}
-              </Button>
-            </div>
-          </article>
+            comment={comment}
+            childrenByParent={childrenByParent}
+            depth={0}
+            visited={new Set()}
+            onReply={onReply}
+            onResolve={onResolve}
+            busy={busy}
+          />
         ))}
       </div>
       <form
@@ -464,6 +632,7 @@ function HistoryPanel({
   entry,
   versions,
   diff,
+  conflicts,
   canEdit,
   onDiff,
   onRevert,
@@ -471,6 +640,7 @@ function HistoryPanel({
   entry: TimelineEntry;
   versions: Version[];
   diff: Diff | null;
+  conflicts: Conflict[];
   canEdit: boolean;
   onDiff: (version: number) => void;
   onRevert: (version: number) => void;
@@ -530,6 +700,46 @@ function HistoryPanel({
           </p>
         </div>
       )}
+      {conflicts.length > 0 && (
+        <section
+          className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-950"
+          aria-label="Optimistic concurrency conflicts"
+          data-testid="conflict-panel"
+        >
+          <p className="font-bold">Optimistic concurrency conflict</p>
+          <p className="mt-1">
+            A stale write was preserved for human review. This is a revision
+            conflict, not a clinical semantic decision.
+          </p>
+          <div className="mt-3 space-y-3">
+            {conflicts.map((conflict) => (
+              <article
+                key={conflict.id}
+                className="rounded-lg border border-rose-200 bg-white p-3"
+                data-testid={"conflict-" + conflict.id}
+              >
+                <p className="font-semibold">
+                  Expected v{conflict.expected_version}; actual v
+                  {conflict.actual_version}
+                </p>
+                <p className="mt-2">
+                  <span className="font-semibold">Current content:</span>{" "}
+                  {entry.content}
+                </p>
+                <p className="mt-1">
+                  <span className="font-semibold">
+                    Preserved attempted content:
+                  </span>{" "}
+                  {conflict.attempted_content}
+                </p>
+                <p className="mt-2 text-rose-700">
+                  Status: {conflict.status}; no silent last-write-wins.
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </section>
   );
 }
@@ -538,7 +748,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const internal = isInternalUser(user);
   const role = primaryRole(user);
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [patientId, setPatientId] = useState(user.patient_ids[0] ?? "");
+  const queryParams = new URLSearchParams(window.location.search);
+  const [patientId, setPatientId] = useState(
+    queryParams.get("patient") ?? user.patient_ids[0] ?? "",
+  );
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [glance, setGlance] = useState<GlanceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -554,6 +767,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [diff, setDiff] = useState<Diff | null>(null);
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [mutationError, setMutationError] = useState<string | null>(null);
@@ -566,7 +780,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       .then((result) => {
         if (!active) return;
         setPatients(result);
-        setPatientId((current) => current || result[0]?.id || "");
+        setPatientId((current) =>
+          result.some((patient) => patient.id === current)
+            ? current
+            : result[0]?.id || "",
+        );
       })
       .catch((error) => active && setLoadError(displayError(error)))
       .finally(() => active && setLoading(false));
@@ -581,15 +799,43 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setLoading(true);
     setLoadError(null);
     setSource(null);
+    setSourceLoading(false);
+    setFocusEntryId(null);
     setCommentsEntryId(null);
+    const requestedHighlightId = new URLSearchParams(
+      window.location.search,
+    ).get("highlight");
     const glanceRequest = internal
       ? api.glance(patientId)
       : Promise.resolve([] as GlanceItem[]);
     Promise.all([api.timeline(patientId), glanceRequest])
-      .then(([timelineResult, glanceResult]) => {
+      .then(async ([timelineResult, glanceResult]) => {
         if (!active) return;
         setTimeline(timelineResult);
         setGlance(glanceResult);
+        if (internal && requestedHighlightId) {
+          setSourceLoading(true);
+          const linkedSource = await api.source(requestedHighlightId);
+          if (
+            active &&
+            linkedSource.highlight.patient_id === patientId &&
+            timelineResult.some(
+              (entry) => entry.id === linkedSource.source_entry_id,
+            )
+          ) {
+            setSource(linkedSource);
+            setFocusEntryId(linkedSource.source_entry_id);
+            window.setTimeout(() => {
+              document
+                .getElementById(
+                  "timeline-entry-" + linkedSource.source_entry_id,
+                )
+                ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+            }, 0);
+            window.setTimeout(() => setFocusEntryId(null), 2400);
+          }
+          if (active) setSourceLoading(false);
+        }
       })
       .catch((error) => active && setLoadError(displayError(error)))
       .finally(() => active && setLoading(false));
@@ -632,6 +878,17 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     } finally {
       setSourceLoading(false);
     }
+  }
+
+  async function loadHistory(entryId: string) {
+    const [nextVersions, nextConflicts] = await Promise.all([
+      api.versions(entryId),
+      api.conflicts(entryId),
+    ]);
+    setHistoryEntryId(entryId);
+    setVersions(nextVersions);
+    setConflicts(nextConflicts);
+    setDiff(null);
   }
 
   async function openComments(entryId: string) {
@@ -684,13 +941,12 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setHistoryEntryId(null);
       setVersions([]);
       setDiff(null);
+      setConflicts([]);
       return;
     }
     setMutationError(null);
     try {
-      setHistoryEntryId(entryId);
-      setVersions(await api.versions(entryId));
-      setDiff(null);
+      await loadHistory(entryId);
     } catch (error) {
       setMutationError(displayError(error));
     }
@@ -710,9 +966,17 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       await api.revert(entry.id, version, entry.current_version);
       setRefreshToken((value) => value + 1);
-      setVersions(await api.versions(entry.id));
+      if (historyEntryId === entry.id) await loadHistory(entry.id);
     } catch (error) {
       setMutationError(displayError(error));
+      if (error instanceof ApiError && error.status === 409) {
+        try {
+          setRefreshToken((value) => value + 1);
+          await loadHistory(entry.id);
+        } catch (historyError) {
+          setMutationError(displayError(historyError));
+        }
+      }
     } finally {
       setMutationBusy(false);
     }
@@ -730,8 +994,17 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       );
       setEditingEntryId(null);
       setRefreshToken((value) => value + 1);
+      if (historyEntryId === entry.id) await loadHistory(entry.id);
     } catch (error) {
       setMutationError(displayError(error));
+      if (error instanceof ApiError && error.status === 409) {
+        try {
+          setRefreshToken((value) => value + 1);
+          await loadHistory(entry.id);
+        } catch (historyError) {
+          setMutationError(displayError(historyError));
+        }
+      }
     } finally {
       setMutationBusy(false);
     }
@@ -743,7 +1016,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       await api.reviewHighlight(item.id, status);
       setRefreshToken((value) => value + 1);
-      if (source?.highlight.id === item.id) setSource(null);
+      if (source?.highlight.id === item.id) {
+        setSource(null);
+        window.history.replaceState({}, "", "?patient=" + patientId);
+      }
     } catch (error) {
       setMutationError(displayError(error));
     } finally {
@@ -803,7 +1079,15 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               id="patient-select"
               aria-label="Select patient"
               value={patientId}
-              onChange={(event) => setPatientId(event.target.value)}
+              onChange={(event) => {
+                const nextPatientId = event.target.value;
+                setPatientId(nextPatientId);
+                window.history.replaceState(
+                  {},
+                  "",
+                  "?patient=" + nextPatientId,
+                );
+              }}
               className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold outline-none focus:border-blue-500"
             >
               {patients.map((patient) => (
@@ -907,19 +1191,32 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                   {glance.map((item) => (
                     <article
                       key={item.id}
+                      data-testid="glance-item"
                       className="rounded-2xl border border-white bg-white p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <Pill
-                          tone={
-                            item.status === "suggested" ||
-                            item.status === "conflict_review"
-                              ? "amber"
-                              : "green"
-                          }
-                        >
-                          {statusLabels[item.status]}
-                        </Pill>
+                        <div className="flex flex-wrap gap-2">
+                          <Pill
+                            tone={
+                              item.status === "suggested" ||
+                              item.status === "conflict_review"
+                                ? "amber"
+                                : "green"
+                            }
+                          >
+                            {statusLabels[item.status]}
+                          </Pill>
+                          <Pill
+                            tone={
+                              item.item_kind === "action" ||
+                              item.item_kind === "flag"
+                                ? "amber"
+                                : "slate"
+                            }
+                          >
+                            {itemKindLabels[item.item_kind]}
+                          </Pill>
+                        </div>
                         <span className="text-xs font-semibold text-slate-400">
                           P{item.display_priority}
                         </span>
@@ -930,6 +1227,21 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                       <p className="mt-2 text-xs leading-5 text-slate-500">
                         {item.risk_reason}
                       </p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        <Pill tone={item.risk_level ? "red" : "slate"}>
+                          {item.risk_level
+                            ? `Explicit risk: ${item.risk_level}`
+                            : "No explicit risk tag"}
+                        </Pill>
+                        <span
+                          className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
+                          data-testid="glance-action"
+                        >
+                          Action: {item.action_label ?? "No action label"} ·{" "}
+                          {actionStateLabels[item.action_state] ??
+                            item.action_state}
+                        </span>
+                      </div>
                       <p className="mt-3 text-xs font-semibold text-blue-700">
                         {item.source_label}
                       </p>
@@ -1017,6 +1329,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                     <article
                       key={entry.id}
                       id={`timeline-entry-${entry.id}`}
+                      data-testid={`timeline-entry-${entry.id}`}
                       className={`relative ml-0 rounded-2xl border bg-white p-4 pl-8 transition sm:p-5 sm:pl-10 ${isFocused ? "border-amber-400 ring-4 ring-amber-100" : "border-slate-200"}`}
                     >
                       <span
@@ -1040,6 +1353,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             {formatDate(entry.occurred_at)} ·{" "}
                             {sourceKindLabels[entry.source_kind] ??
                               entry.source_kind}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Authored by {entry.author_role} · owner{" "}
+                            {entry.owner_role}
                           </p>
                         </div>
                         <Pill>v{entry.current_version}</Pill>
@@ -1071,14 +1388,12 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           </div>
                         </div>
                       ) : (
-                        <p className="mt-4 text-sm leading-7 text-slate-700">
-                          {renderQuote(
-                            entry.content,
-                            source?.source_entry_id === entry.id
-                              ? source.quote
-                              : undefined,
-                          )}
+                        <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                          {entry.content}
                         </p>
+                      )}
+                      {isFocused && source?.source_entry_id === entry.id && (
+                        <ImmutableTimelineSource source={source} />
                       )}
                       <div className="mt-4 flex flex-wrap gap-2">
                         {internal && (
@@ -1117,6 +1432,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           entry={entry}
                           versions={versions}
                           diff={diff}
+                          conflicts={conflicts}
                           canEdit={editable}
                           onDiff={(version) => void openDiff(entry, version)}
                           onRevert={(version) => void revert(entry, version)}

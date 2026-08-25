@@ -25,11 +25,13 @@ from app.models import (
     HighlightItemKind,
     HighlightStatus,
     Patient,
+    PatientGlanceItem,
     PatientUserLink,
     User,
 )
 from app.services.entries import create_entry_record, record_audit
 from app.services.highlights import create_highlight_record
+from app.services.glance import sync_highlight_projection
 
 
 def get_or_create_clinic(db: Session, name: str) -> Clinic:
@@ -267,6 +269,7 @@ def ensure_highlight(
         existing.risk_reason = risk_reason
         existing.action_label = action_label
         existing.action_state = action_state
+        sync_highlight_projection(db, existing)
         db.commit()
         return
     start_offset = version.content.index(quote)
@@ -534,6 +537,7 @@ def seed_demo() -> dict[str, object]:
             "entries": db.query(Entry).count(),
             "comments": db.query(Comment).count(),
             "highlights": db.query(Highlight).count(),
+            "glance_items": db.query(PatientGlanceItem).count(),
         }
         return {
             "clinic_ids": [clinic_a.id, clinic_b.id],

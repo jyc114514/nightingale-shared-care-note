@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { App } from "../src/App";
+import { App, exactCodepointSpan } from "../src/App";
 import type { Me } from "../src/types";
 
 const staffUser: Me = {
@@ -36,7 +36,9 @@ const timeline = [
     clinic_id: "clinic-a",
     patient_id: "patient-a",
     entry_type: "staff_note",
+    owner_role: "staff",
     author_role: "staff",
+    author_id: "staff-user",
     created_by_user_id: "staff-user",
     current_version: 2,
     content: "Pending renal panel requires coordination.",
@@ -51,7 +53,9 @@ const timeline = [
     clinic_id: "clinic-a",
     patient_id: "patient-a",
     entry_type: "ai_nurse_consult_summary",
+    owner_role: "system",
     author_role: "system",
+    author_id: null,
     created_by_user_id: null,
     current_version: 1,
     content: "Unresolved cardiology referral noted in the nurse consult.",
@@ -76,6 +80,8 @@ const glance = Array.from({ length: 6 }, (_, index) => ({
   action_state: "open",
   source_entry_id: index === 0 ? "entry-staff" : "entry-ai",
   source_version_id: "version-1",
+  version_number: 1,
+  current_entry_version: index === 0 ? 2 : 1,
   source_label: index === 1 ? "AI-scribed · Nurse consult" : "Manual note",
   entry_type: index === 1 ? "ai_nurse_consult_summary" : "staff_note",
   occurred_at: "2026-08-25T08:00:00Z",
@@ -101,7 +107,10 @@ function renderApp() {
   );
 }
 
-function mockAuthenticatedApi(user = staffUser) {
+function mockAuthenticatedApi(
+  user = staffUser,
+  sourceOptions: { startOffset?: number; endOffset?: number } = {},
+) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -118,8 +127,8 @@ function mockAuthenticatedApi(user = staffUser) {
             patient_id: "patient-a",
             source_entry_id: "entry-staff",
             source_version_id: "version-1",
-            start_offset: 0,
-            end_offset: 18,
+            start_offset: sourceOptions.startOffset ?? 0,
+            end_offset: sourceOptions.endOffset ?? 18,
             quote: "Pending renal panel",
             quote_sha256: "hash",
             offset_unit: "unicode_codepoint",
@@ -139,18 +148,21 @@ function mockAuthenticatedApi(user = staffUser) {
           },
           source_entry_id: "entry-staff",
           source_version_id: "version-1",
+          version_number: 1,
+          current_entry_version: 2,
           entry_type: "staff_note",
           source_kind: "manual",
           source_reference: "self-manual",
           occurred_at: "2026-08-25T08:00:00Z",
           version_content: "Pending renal panel requires coordination.",
           quote: "Pending renal panel",
-          start_offset: 0,
-          end_offset: 18,
+          start_offset: sourceOptions.startOffset ?? 0,
+          end_offset: sourceOptions.endOffset ?? 18,
         });
       }
       if (url.includes("/comments")) return response([]);
       if (url.includes("/versions")) return response([]);
+      if (url.includes("/conflicts")) return response([]);
       if (url.endsWith("/auth/logout")) return response(undefined, 204);
       if (init?.method === "POST" || init?.method === "PATCH")
         return response({});
@@ -166,6 +178,26 @@ describe("Gate B shared care note", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("renders exact non-BMP codepoint occurrences and rejects approximate spans", () => {
+    const text = "A😀 repeat 😀 repeat";
+    const quote = "😀 repeat";
+    const start = Array.from("A😀 repeat ").length;
+    const valid = exactCodepointSpan(
+      text,
+      quote,
+      start,
+      start + Array.from(quote).length,
+    );
+    expect(valid).toEqual({
+      valid: true,
+      before: "A😀 repeat ",
+      quote,
+      after: "",
+    });
+    const invalid = exactCodepointSpan(text, "repeat", 0, 6);
+    expect(invalid).toMatchObject({ valid: false });
   });
 
   it("shows loading then a real login error", async () => {
@@ -226,6 +258,19 @@ describe("Gate B shared care note", () => {
     await waitFor(() =>
       expect(screen.getByLabelText("Comment body")).toHaveValue(""),
     );
+  });
+
+  it("shows an integrity warning instead of approximating an invalid span", async () => {
+    mockAuthenticatedApi(staffUser, { startOffset: 99, endOffset: 100 });
+    renderApp();
+    const sourceButtons = await screen.findAllByRole("button", {
+      name: "Open source",
+    });
+    fireEvent.click(sourceButtons[0]);
+    expect(
+      await screen.findAllByTestId("provenance-integrity-warning"),
+    ).not.toHaveLength(0);
+    expect(screen.queryAllByTestId("source-quote")).toHaveLength(0);
   });
 
   it("does not expose internal Glance or comments to a patient session", async () => {

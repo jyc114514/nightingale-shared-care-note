@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    AuditLog,
     EntryOwnerRole,
     EntryType,
     EntryVersion,
@@ -119,7 +120,7 @@ async def test_unicode_offsets_are_python_codepoint_offsets(
     demo_data: DemoData,
     db_session: Session,
 ) -> None:
-    content = "剂量变化 🩺 requires review"
+    content = "Dose change \U0001f600 requires review"
     entry = create_entry_record(
         db_session,
         clinic_id=demo_data.clinic_a.id,
@@ -134,7 +135,7 @@ async def test_unicode_offsets_are_python_codepoint_offsets(
         source_kind="manual",
         source_reference="synthetic-unicode-note",
     )
-    quote = "🩺 requires"
+    quote = "\U0001f600 requires"
     await login(client, "clinician@clinic-a.test")
     response = await create_highlight(
         client,
@@ -149,6 +150,47 @@ async def test_unicode_offsets_are_python_codepoint_offsets(
     body = response.json()
     assert content[body["start_offset"] : body["end_offset"]] == quote
     assert body["offset_unit"] == "unicode_codepoint"
+
+
+@pytest.mark.asyncio
+async def test_repeated_non_bmp_quote_uses_the_requested_occurrence(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    content = "Repeat \U0001f600. Repeat \U0001f600."
+    quote = "Repeat \U0001f600"
+    entry = create_entry_record(
+        db_session,
+        clinic_id=demo_data.clinic_a.id,
+        patient_id=demo_data.patient_a.id,
+        entry_type=EntryType.STAFF_NOTE,
+        owner_role=EntryOwnerRole.STAFF,
+        visibility=EntryVisibility.INTERNAL,
+        content=content,
+        created_by_user_id=demo_data.staff_a.id,
+        created_by_role="staff",
+        request_id="repeated-unicode-highlight-test",
+    )
+    start = content.rfind(quote)
+    await login(client, "clinician@clinic-a.test")
+    response = await client.post(
+        f"/entry-versions/{version_id(db_session, entry.id)}/highlights",
+        json={
+            "start_offset": start,
+            "end_offset": start + len(quote),
+            "quote": quote,
+            "item_kind": "information",
+            "display_priority": 55,
+            "risk_reason": "Repeated Unicode span test",
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["start_offset"] == start
+    source = await client.get(f"/highlights/{response.json()['id']}/source")
+    assert source.status_code == 200, source.text
+    source_body = source.json()
+    assert source_body["version_content"][start : start + len(quote)] == quote
 
 
 @pytest.mark.asyncio
@@ -353,3 +395,56 @@ async def test_staff_cannot_review_highlight_and_clinician_can_change_status(
     assert reviewed.json()["status"] == "conflict_review"
     assert reviewed.json()["display_priority"] == 90
     assert reviewed.json()["risk_level"] == "high"
+
+
+@pytest.mark.asyncio
+async def test_highlight_review_audit_distinguishes_decisions_and_keeps_source_immutable(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    await login(client, "clinician@clinic-a.test")
+    created = await create_highlight(
+        client,
+        version_id(db_session, demo_data.ai_doctor.id),
+        "Synthetic doctor consult finding",
+        "doctor consult finding",
+        display_priority=88,
+        risk_level="high",
+        risk_reason="Synthetic review decision",
+    )
+    assert created.status_code == 200, created.text
+    highlight_id = created.json()["id"]
+    source_version = db_session.scalar(
+        select(EntryVersion).where(EntryVersion.id == created.json()["source_version_id"])
+    )
+    assert source_version is not None
+
+    rejected = await client.patch(f"/highlights/{highlight_id}/review", json={"status": "rejected"})
+    assert rejected.status_code == 200, rejected.text
+    accepted = await client.patch(f"/highlights/{highlight_id}/review", json={"status": "accepted"})
+    assert accepted.status_code == 200, accepted.text
+    assert accepted.json()["reviewed_at"]
+    assert accepted.json()["reviewed_at"] >= source_version.created_at.isoformat()
+
+    audit_rows = list(
+        db_session.scalars(
+            select(AuditLog)
+            .where(
+                AuditLog.entity_type == "highlight",
+                AuditLog.entity_id == highlight_id,
+            )
+            .order_by(AuditLog.created_at)
+        )
+    )
+    assert [row.action for row in audit_rows[-2:]] == [
+        "highlight_rejected",
+        "highlight_accepted",
+    ]
+    assert all(row.request_id for row in audit_rows)
+    assert not any(
+        hasattr(row, field) for row in audit_rows for field in ("quote", "content", "raw_text")
+    )
+    source = await client.get(f"/highlights/{highlight_id}/source")
+    assert source.status_code == 200, source.text
+    assert source.json()["version_content"] == "Synthetic doctor consult finding"

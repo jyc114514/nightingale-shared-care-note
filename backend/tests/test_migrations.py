@@ -66,6 +66,8 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "entry_versions",
             "comments",
             "highlights",
+            "ai_processing_jobs",
+            "patient_glance_items",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -95,9 +97,10 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         }
         assert "ix_patient_user_links_patient_id" not in patient_link_indexes
         with engine.connect() as connection:
-            assert connection.execute(
-                text("SELECT version_num FROM alembic_version")
-            ).scalar_one() == ("0002_gate_b")
+            assert (
+                connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+                == "0004_gate_c"
+            )
     finally:
         engine.dispose()
 
@@ -109,6 +112,52 @@ def test_migration_downgrade_and_reupgrade_are_reversible(migrated_database: str
     assert upgraded.returncode == 0, upgraded.stderr
     checked = run_alembic(migrated_database, "check")
     assert checked.returncode == 0, checked.stderr
+
+
+def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) -> None:
+    database_url = f"sqlite:///{(tmp_path / 'legacy.sqlite').as_posix()}"
+    upgraded_to_legacy = run_alembic(database_url, "upgrade", "0001_gate_a")
+    assert upgraded_to_legacy.returncode == 0, upgraded_to_legacy.stderr
+
+    engine = create_engine(database_url, future=True)
+    try:
+        with engine.begin() as connection:
+            connection.execute(text("DROP INDEX IF EXISTS ix_users_email"))
+            connection.execute(text("CREATE INDEX ix_users_email ON users (email)"))
+            connection.execute(
+                text(
+                    "CREATE INDEX ix_patient_user_links_patient_id "
+                    "ON patient_user_links (patient_id)"
+                )
+            )
+    finally:
+        engine.dispose()
+
+    stamped = run_alembic(database_url, "stamp", "0001_gate_a")
+    assert stamped.returncode == 0, stamped.stderr
+    repaired = run_alembic(database_url, "upgrade", "head")
+    assert repaired.returncode == 0, repaired.stderr
+    checked = run_alembic(database_url, "check")
+    assert checked.returncode == 0, checked.stderr
+
+    engine = create_engine(database_url, future=True)
+    try:
+        database_inspector = inspect(engine)
+        email_indexes = {
+            index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
+        }
+        patient_link_indexes = {
+            index["name"] for index in database_inspector.get_indexes("patient_user_links")
+        }
+        assert email_indexes["ix_users_email"] == 1
+        assert "ix_patient_user_links_patient_id" not in patient_link_indexes
+        with engine.connect() as connection:
+            assert (
+                connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
+                == "0004_gate_c"
+            )
+    finally:
+        engine.dispose()
 
 
 def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
@@ -127,6 +176,7 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
     second_result = json.loads(second.stdout)
     assert first_result["counts"] == second_result["counts"]
     assert first_result["counts"]["highlights"] >= 5
+    assert first_result["counts"]["glance_items"] == first_result["counts"]["highlights"]
 
     engine = create_engine(database_url, future=True)
     try:

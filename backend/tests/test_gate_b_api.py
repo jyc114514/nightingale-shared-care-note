@@ -1,6 +1,7 @@
 """Gate B API checks for timeline, Glance, comments, trust, and browser boundaries."""
 
 from datetime import datetime, timezone
+from typing import cast
 
 import httpx
 import pytest
@@ -37,11 +38,14 @@ async def create_highlight(
     risk_level: str | None,
     quote: str | None = None,
 ) -> str:
-    content = db_session.scalar(
-        select(EntryVersion.content).where(
-            EntryVersion.entry_id == entry.id,
-            EntryVersion.version_number == 1,
-        )
+    content = cast(
+        str | None,
+        db_session.scalar(
+            select(EntryVersion.content).where(
+                EntryVersion.entry_id == entry.id,
+                EntryVersion.version_number == 1,
+            )
+        ),
     )
     assert content is not None
     selected_quote = quote or content
@@ -61,7 +65,7 @@ async def create_highlight(
         },
     )
     assert response.status_code == 200, response.text
-    return response.json()["id"]
+    return cast(str, response.json()["id"])
 
 
 @pytest.mark.asyncio
@@ -103,6 +107,31 @@ async def test_timeline_is_occurred_at_descending_and_ai_sources_are_explicit(
         "patient_ai_session",
     }
     assert all(entry["source_reference"] for entry in ai_entries.values())
+    assert (
+        next(entry for entry in entries if entry["entry_type"] == "patient_facing_summary")[
+            "owner_role"
+        ]
+        == "patient"
+    )
+    assert (
+        next(entry for entry in entries if entry["entry_type"] == "patient_facing_summary")[
+            "author_role"
+        ]
+        == "system"
+    )
+    assert (
+        next(entry for entry in entries if entry["entry_type"] == "patient_facing_summary")[
+            "author_id"
+        ]
+        is None
+    )
+    assert ai_entries["ai_doctor_consult_summary"]["owner_role"] == "system"
+    assert ai_entries["ai_doctor_consult_summary"]["author_role"] == "system"
+    assert ai_entries["ai_doctor_consult_summary"]["author_id"] is None
+    assert (
+        next(entry for entry in entries if entry["entry_type"] == "staff_note")["author_id"]
+        == demo_data.staff_a.id
+    )
 
 
 @pytest.mark.asyncio
@@ -143,6 +172,10 @@ async def test_glance_has_six_item_cap_deterministic_priority_and_separate_risk(
     )
     assert items[0]["display_priority"] == 16
     assert items[0]["risk_level"] == "low"
+    assert all(
+        item["version_number"] >= 1 and item["current_entry_version"] >= item["version_number"]
+        for item in items
+    )
     assert highlight_ids[0] not in {item["id"] for item in items}
 
 

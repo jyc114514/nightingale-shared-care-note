@@ -6,7 +6,15 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.db.session import get_db
-from app.models import ClinicMembership, Entry, EntryType, Patient, PatientUserLink, User
+from app.models import (
+    ClinicMembership,
+    Entry,
+    EntryType,
+    EntryVersion,
+    Patient,
+    PatientUserLink,
+    User,
+)
 from app.schemas.entry import InternalEntryOut, PatientEntryOut
 from app.schemas.patient import PatientOut
 from app.services.authorization import enum_value, get_patient_context
@@ -47,9 +55,7 @@ def patient_entry_out(entry: Entry, content: str) -> PatientEntryOut:
     )
 
 
-def _current_content(db: Session, entry: Entry) -> str:
-    from app.models import EntryVersion
-
+def _current_version(db: Session, entry: Entry) -> EntryVersion:
     version = db.scalar(
         select(EntryVersion).where(
             EntryVersion.entry_id == entry.id,
@@ -58,6 +64,11 @@ def _current_content(db: Session, entry: Entry) -> str:
     )
     if version is None:
         raise RuntimeError("Entry has no current immutable version")
+    return version
+
+
+def _current_content(db: Session, entry: Entry) -> str:
+    version = _current_version(db, entry)
     return version.content
 
 
