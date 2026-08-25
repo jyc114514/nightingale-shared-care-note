@@ -1,20 +1,33 @@
-"""Minimal FastAPI application for Nightingale Phase 0."""
+"""FastAPI application for the Nightingale Phase 1 Gate A prototype."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.auth import router as auth_router
+from app.api.routes.comments import router as comments_router
+from app.api.routes.conflicts import router as conflicts_router
+from app.api.routes.entries import router as entries_router
+from app.api.routes.patients import router as patients_router
+from app.config import settings
+
 app = FastAPI(title="Nightingale", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=False,
-    allow_methods=["GET"],
+    allow_origins=settings.allowed_origin_list,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+app.include_router(patients_router)
+app.include_router(entries_router)
+app.include_router(comments_router)
+app.include_router(conflicts_router)
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
     """Return a fixed, non-sensitive process health response."""
 
-    return {"status": "ok", "phase": "0-scaffold"}
+    return {"status": "ok", "phase": "1-gate-a"}
