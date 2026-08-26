@@ -75,7 +75,7 @@ quotes, revisions, conflict content, source references, or other user-entered so
 
 ## 3. Evidence, trade-offs, and remaining boundary
 
-Implemented and independently checked at the feature-freeze checkpoint:
+Implemented and independently checked at the Phase 7.1 application checkpoint `30a90bf`:
 
 - Backend: **51 passed**, **88%** reproducible coverage, Ruff, mypy, pip check; Alembic head
   `0008_collaboration_events`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.

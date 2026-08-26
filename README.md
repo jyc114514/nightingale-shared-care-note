@@ -118,8 +118,8 @@ clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable 
 codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
 badges, role-aware controls, a collapsed **Why ranked?** explanation with pin/unpin feedback,
 English/简体中文 application-chrome localization, a read-only bilingual Learning Guide, keyboard
-  mention autocomplete, contextual assignment/task drawers, fixed-viewport Desktop/Mobile demo
-  preview, and a reconnecting live-update indicator. Clinical
+mention autocomplete, contextual assignment/task drawers, fixed-viewport Desktop/Mobile demo
+preview, and a reconnecting live-update indicator. Clinical
 note content, comments, quotes, revisions and user-entered source data remain in their original
 language; the UI never calls a translation API.
 There is no UI-only role switch.
@@ -135,7 +135,7 @@ executable/health boundary before stopping them. Unknown port owners are never k
 
 Manual setup commands remain supported. Clinical source text is deliberately not translated.
 
-The Phase 7 delivery set includes the editable and rendered Technical Brief, attribution audit,
+The Phase 7.1 delivery set includes the editable and rendered Technical Brief, attribution audit,
 demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
 synthetic browser screenshots.
 There is no final video claim while a reliable local recorder/codec is unavailable.
@@ -173,7 +173,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 7.1 application checkpoint this suite reports **51 passed**. Reproducible coverage is **88%**
+At the Phase 7.1 application checkpoint `30a90bf`, this suite reports **51 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 

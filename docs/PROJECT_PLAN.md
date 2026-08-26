@@ -284,8 +284,8 @@ assignments/tasks with materialized open actions, metadata-only DB-backed SSE in
 low-risk accessibility pass. These additions do not translate clinical source text, add a live LLM,
 change RBAC/provenance, or implement CRDT/OT.
 
-The feature-freeze application checkpoint is `3129da3`. Final local evidence is 51 backend tests,
-88% reproducible coverage, 14 Vitest tests, 10 Playwright tests, and a real-TCP warm-path P95 of
+The Phase 7.1 application checkpoint is `30a90bf`. Final local evidence is 51 backend tests,
+88% reproducible coverage, 17 Vitest tests, 12 Playwright tests, and a real-TCP warm-path P95 of
 67.823 ms on the SQLite approximation. Hosted PostgreSQL, TLS/encryption-at-rest, production
 retention/deletion policy, human UX-01 sign-off, final video, GitHub upload, and email remain
 outside the local implementation boundary.
