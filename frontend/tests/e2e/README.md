@@ -15,9 +15,11 @@ mobile viewports:
 - Patient privacy: cookie patient sees only patient-facing entries; direct internal Glance access
   is denied and no raw AI/internal comment is rendered.
 
-The current run completed 8 passed tests: four scenarios in each of the 1440x900 and 390x844
-projects. The global setup records only the PIDs it started; teardown stops those exact process
-trees before removing temporary files.
+The current run completed 10 passed tests: five scenarios in each of the 1440x900 and 390x844
+projects. Scenario B includes keyboard mention autocomplete, assignment/task creation and
+completion, and a second browser receiving metadata-only SSE invalidation. The global setup
+records only the PIDs it started; teardown stops those exact process trees before removing
+temporary files.
 
 The temporary demo password is generated at test setup and written only to the ignored
 `frontend/test-results/gate-b/e2e-password.txt`; teardown removes it together with the database.
