@@ -14,4 +14,6 @@ Included handoff materials:
 - `MANIFEST.txt`: generated SHA-256 inventory for the local bundle.
 
 The final video and human UX-01 sign-off are intentionally not claimed. Hosted PostgreSQL,
-TLS/encryption-at-rest, and external LLM/provider evidence also remain outside this local bundle.
+TLS/encryption-at-rest, provider data-processing/compliance, and model-quality evidence remain
+outside this local bundle. The source snapshot records one bounded synthetic DeepSeek smoke without
+including any key, path, prompt, or response body.

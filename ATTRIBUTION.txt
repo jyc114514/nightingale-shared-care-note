@@ -6,7 +6,8 @@ Audit date: 2026-08-26
 This file records the direct runtime/development dependencies actually used by this repository.
 Versions come from backend/requirements.lock and frontend/pnpm-lock.yaml or installed package
 metadata in the verified local environment. No external model, API key, patient dataset, or
-third-party visual asset is bundled. The AI demo uses an original deterministic fixture provider.
+third-party visual asset is bundled. The AI demo uses an original deterministic fixture provider
+by default, with an optional HTTPX-based DeepSeek V4 Flash adapter behind the redaction boundary.
 
 Backend direct dependencies
 ---------------------------
@@ -74,8 +75,10 @@ replacement for a deployment-specific SBOM/license review.
 Original work in this repository
 ---------------------------------
 
-The Nightingale application code, synthetic fixtures, deterministic provider, ranking logic,
+The Nightingale application code, synthetic fixtures, deterministic provider, optional DeepSeek
+adapter, ranking logic,
 archival policy, metadata-only SSE event boundary, typed bilingual dictionaries, Windows
 PowerShell launcher, diagrams, and documentation in this repository are original project work for
-the 72-hour prototype. Phase 7 added no new runtime dependency and no external model/API call.
-No real patient information is included.
+the 72-hour prototype. Phase 8 adds no runtime dependency; live DeepSeek calls are opt-in only and
+use the official OpenAI-compatible Chat Completions contract. No live API response or key is
+bundled. No real patient information is included.

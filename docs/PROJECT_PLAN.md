@@ -276,17 +276,19 @@ These do not block the local scaffold:
 - External LLM provider and API key.
 - Final deployment host and public/private repository choice.
 
-## Phase 7 local feature-freeze record
+## Phase 8 optional-provider record
 
-The local prototype now includes bilingual application chrome and a closed-by-default bilingual
+The local prototype includes bilingual application chrome and a closed-by-default bilingual
 Learning Guide, a safe Windows one-click launcher, clinic-scoped stable-ID mentions, internal
-assignments/tasks with materialized open actions, metadata-only DB-backed SSE invalidation, and a
-low-risk accessibility pass. These additions do not translate clinical source text, add a live LLM,
-change RBAC/provenance, or implement CRDT/OT.
+assignments/tasks with materialized open actions, metadata-only DB-backed SSE invalidation, a
+low-risk accessibility pass, and an opt-in DeepSeek V4 Flash adapter. These additions do not
+translate clinical source text, make live LLM calls the default, change RBAC/provenance, or
+implement CRDT/OT.
 
-The Phase 7.1 application checkpoint is `30a90bf`. Final local evidence is 51 backend tests,
-88% reproducible coverage, 17 Vitest tests, 12 Playwright tests, and a real-TCP warm-path P95 of
-67.823 ms on the SQLite approximation. Hosted PostgreSQL, TLS/encryption-at-rest, production
+The Phase 8 application checkpoint is `d0caff7`. Final local evidence is 71 backend tests,
+88% reproducible coverage, 19 Vitest tests, 12 Playwright tests, and a real-TCP warm-path P95 of
+67.823 ms on the SQLite approximation. The optional DeepSeek V4 Flash adapter has a bounded
+synthetic live smoke record. Hosted PostgreSQL, TLS/encryption-at-rest, production
 retention/deletion policy, human UX-01 sign-off, final video, GitHub upload, and email remain
 outside the local implementation boundary.
 - Candidate name in the submission subject.

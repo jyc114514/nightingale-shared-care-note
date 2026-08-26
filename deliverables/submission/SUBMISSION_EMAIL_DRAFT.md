@@ -10,13 +10,13 @@ Please find the Nightingale 72-hour challenge submission attached:
 - technical brief: `Nightingale_Technical_Brief.pdf`
 - attribution and setup documentation are included in the source snapshot and local bundle.
 
-The prototype uses synthetic data and a deterministic local provider boundary. The local evidence
-covers clinic-scoped RBAC, immutable revisions, exact-span provenance, threaded collaboration,
+The prototype uses synthetic data and a deterministic fixture provider by default, with an optional
+redaction-gated DeepSeek V4 Flash adapter. The local evidence covers clinic-scoped RBAC, immutable revisions, exact-span provenance, threaded collaboration,
 stable clinic-scoped mentions, assignment/tasks with CAS, metadata-only SSE invalidation, bilingual
 application chrome, redaction-gated AI jobs, materialized Glance reads, adaptive importance, and
-hybrid historical context. The README and Technical Brief explicitly separate local evidence from
-unverified hosted PostgreSQL, TLS/encryption-at-rest, external-provider, and human UX sign-off
-claims.
+hybrid historical context. One bounded live smoke is recorded without making a model-quality claim.
+The README and Technical Brief explicitly separate local evidence from unverified hosted PostgreSQL,
+TLS/encryption-at-rest, provider-compliance, and human UX sign-off claims.
 
 Repository (if a private repository is used): `<private-repository-url>`
 

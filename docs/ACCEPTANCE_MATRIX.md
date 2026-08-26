@@ -171,6 +171,22 @@ Phase 7.1 regression evidence is **51 backend tests**, **17 Vitest tests**, and 
 tests** across 1440x900 and 390x844. The independent UX-01 participant, deployment PRIV-04,
 final video, and external submission remain open.
 
+## Phase 8 / optional DeepSeek provider evidence - 2026-08-26
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-8-SELECTOR | Implementation checkpoint `d0caff7` keeps fixture as the default; explicit `LLM_PROVIDER=deepseek` selects only the DeepSeek provider, rejects missing/unknown configuration, and records safe provider identity | passed | [`provider.py`](../backend/app/ai/provider.py), [`test_deepseek_provider.py`](../backend/tests/test_deepseek_provider.py) |
+| PHASE-8-BOUNDARY | MockTransport proves only typed redacted synthetic text and the JSON shape cross the HTTP boundary; source reference, IDs, names, phone/IC/ID, comments, tasks, cookies, keys, and raw response are excluded | passed | [`deepseek.py`](../backend/app/ai/deepseek.py), [`test_deepseek_provider.py`](../backend/tests/test_deepseek_provider.py), [`test_ai_processing.py`](../backend/tests/test_ai_processing.py) |
+| PHASE-8-OUTPUT | JSON schema, empty/truncated/invalid output, duplicate/missing quote, local Unicode span, HTTP error mapping, bounded retry, and no silent fixture fallback are tested | passed | [`schemas.py`](../backend/app/ai/schemas.py), [`deepseek.py`](../backend/app/ai/deepseek.py), [`test_deepseek_provider.py`](../backend/tests/test_deepseek_provider.py) |
+| PHASE-8-JOB | Mock DeepSeek success creates a suggested system entry/highlight, refreshes materialized state, emits metadata-only SSE, and patient projection remains private; failure creates no source | passed | [`ai_processing.py`](../backend/app/services/ai_processing.py), [`test_ai_processing.py`](../backend/tests/test_ai_processing.py) |
+| PHASE-8-UI | Staff/clinician-only AI Scribe Demo shows synthetic warning/provider badge and processing/completed/failed states; patient/admin do not receive the panel | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx) |
+| PHASE-8-LAUNCHER | Ignored `.nightingale-local.json`, Configure DeepSeek, Use Local Fixture, child-only key injection, safe runtime/log boundary, fixture launcher smoke | passed | [`demo_common.ps1`](../scripts/demo_common.ps1), [`start_demo.ps1`](../scripts/start_demo.ps1), [`README_DEMO_LAUNCHER.md`](../scripts/README_DEMO_LAUNCHER.md) |
+| PHASE-8-LIVE-SMOKE | One bounded official `deepseek-v4-flash` synthetic smoke returned `2xx`, valid schema, 1,342.11 ms, and 276 total tokens; no model-quality claim | recorded | [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md) |
+
+Phase 8 regression evidence is **71 backend tests / 88% coverage**, **19 Vitest tests**, and
+**12 Playwright tests**. The live path is opt-in and cost/network dependent; UX-01, PRIV-04,
+final video, and external submission remain open.
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

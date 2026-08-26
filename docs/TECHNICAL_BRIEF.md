@@ -2,8 +2,8 @@
 
 ## A trust-centered longitudinal shared-care note
 
-Status: Phase 7.1 local observed-UX prototype, measured on 2026-08-26 after the Phase 7.1
-application fixes.
+Status: Phase 8 local prototype with an optional DeepSeek adapter, measured on 2026-08-26 at
+application checkpoint `d0caff7`.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic
@@ -39,9 +39,10 @@ Materialized projections
   archival summaries -> hot/warm/cold derived context pointers
 ```
 
-AI processing is local and deterministic. A typed redacted payload is validated before the fixture
-provider; a second detector makes redaction fail closed. No external LLM, API key, patient
-identifier, quote, embedding, or raw note text is required by the local implementation.
+AI processing remains fixture-first and deterministic by default. A typed redacted payload is
+validated before either provider; a second detector makes redaction fail closed. DeepSeek is an
+explicit optional adapter, not a default dependency. No API key, patient identifier, quote,
+embedding, or raw note text is required by the local fixture path.
 
 ## 2. Data, provenance, and collaboration semantics
 
@@ -70,32 +71,53 @@ source of truth and does not overwrite a dirty editor.
 The UI supports English and Simplified Chinese for application chrome, Help, labels, statuses,
 ARIA names, safety explanations, and the Desktop/Mobile demo-preview selector. Comments and task
 actions open in a fixed contextual drawer rather than a distant responsive aside. It deliberately
-does not translate clinical notes, comments,
-quotes, revisions, conflict content, source references, or other user-entered source data.
+does not translate clinical notes, comments, quotes, revisions, conflict content, source references,
+or other user-entered source data.
 
-## 3. Evidence, trade-offs, and remaining boundary
+## 3. Optional DeepSeek provider boundary
 
-Implemented and independently checked at the Phase 7.1 application checkpoint `30a90bf`:
+`LLM_PROVIDER=fixture` remains the default and makes ordinary tests and demos network-free. An
+explicit `LLM_PROVIDER=deepseek` selects the `deepseek-v4-flash` Chat Completions adapter at
+`https://api.deepseek.com`; JSON output and disabled thinking are requested with a bounded token
+limit and at most one retry for transient connection/5xx failures.
 
-- Backend: **51 passed**, **88%** reproducible coverage, Ruff, mypy, pip check; Alembic head
+The external request contains only the system safety instruction, interaction type, redacted
+synthetic interaction text, and the JSON shape example. `source_reference`, patient/clinic/user
+IDs, names, phones, IC/ID values, comments, tasks, cookies, and raw note text stay local. The model
+returns only summary/quote/action fields. The application sets `risk_level=null`, status
+`suggested`, system authorship, immutable local codepoint offsets, quote hash, provenance, and
+materialized Glance state. Invalid/duplicate/missing quotes fail closed; provider failures never
+silently become fixture output.
+
+The Windows launcher reads an external key file only when `.nightingale-local.json` explicitly
+selects DeepSeek. It passes the key to the backend child process, clears the parent variable before
+starting Vite, and writes no key or key-file path to logs, runtime metadata, browser responses, or
+artifacts. The bounded synthetic live smoke is recorded in
+[`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md); it is not a quality evaluation.
+
+## 4. Evidence, trade-offs, and remaining boundary
+
+Implemented and independently checked at the Phase 8 application checkpoint:
+
+- Backend: **71 passed**, **88%** reproducible coverage, Ruff, mypy, pip check; Alembic head
   `0008_collaboration_events`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.
-- Frontend: **17 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
+- Frontend: **19 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
 - Browser: **12 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
   provenance persistence, distinguishable original-record rows, contextual comments/tasks,
   Desktop/Mobile preview, mentions, assignments, two-browser SSE invalidation, conflict handling,
   and patient privacy.
-- Clean clone: fresh clone from `3129da3` passed backend/frontend checks, 51 backend tests,
-  14 Phase 7 baseline Vitest tests, 10 Phase 7 baseline Playwright tests, and one-click launcher
-  smoke; the Phase 7.1 changes are verified in the current working checkpoint above.
+- Clean clone: the prior clean-clone rehearsal from `3129da3` passed the Phase 7 baseline; no
+  Phase 8 clean-clone rehearsal or hosted-provider guarantee is claimed in this local run.
 - Warm path: real Uvicorn TCP, file-backed SQLite approximation, 26 patients, 208 entries/highlights,
   50 warm-up, 1,000 measured requests, concurrency 10, zero errors; P50 **49.774 ms**, P95
   **67.823 ms**, P99 **80.593 ms**, max **86.835 ms**.
 
-The central trade-off remains trust over automation. Materialized reads and deterministic local
-providers make the prototype reproducible. SSE is invalidation only, not simultaneous character
-editing; CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience,
-not deployment. Hosted PostgreSQL, TLS/encryption-at-rest, external LLM quality, production
-retention/deletion policy, final video, and human UX-01 sign-off remain unclaimed.
+The central trade-off remains trust over automation. Materialized reads and the fixture provider
+make the default prototype reproducible; the optional adapter adds network, balance, provider-data
+processing, and latency dependencies. SSE is invalidation only, not simultaneous character editing;
+CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience, not
+deployment. Hosted PostgreSQL, TLS/encryption-at-rest, model quality, production retention/deletion
+policy, final video, and human UX-01 sign-off remain unclaimed.
 
 ## Demo scenarios
 
@@ -110,8 +132,14 @@ Scenario C: two writes use one expected version; the stale write returns `409` a
 the winner. Historical context discloses a derived summary that is not the original record and
 offers labelled immutable original-record rows.
 
+Optional Phase 8: staff or clinician opens **AI Scribe Demo**, confirms the synthetic-only warning,
+checks the active fixture/DeepSeek provider badge, and generates a suggestion. The resulting entry
+is system-authored, suggested, source-linked, and requires clinician review.
+
 ## Delivery limitation
 
 The PDF, screenshots, source ZIP, and local rehearsal package are delivery artifacts, not hosted
-compliance evidence. No GitHub push, deployment, external provider call, or email submission is
-implied by this brief. Voice capture and live LLM integration remain explicitly out of scope.
+compliance evidence. No GitHub push, deployment, or email submission is implied by this brief. The
+DeepSeek adapter is integrated as an optional live path, but one smoke does not establish model
+quality, provider compliance, or production reliability. Voice capture remains explicitly out of
+scope.

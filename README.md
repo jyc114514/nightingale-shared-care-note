@@ -87,8 +87,11 @@ clinic-scoped collaboration APIs so the seed remains deterministic and read-only
 - Existing Gate A routes provide role-owned edits, immutable version history, diff, revert-as-new-
   version, and deterministic `409` stale-write conflicts.
 - `POST /patients/{patient_id}/ai-processing` accepts the three AI-scribed entry types through a
-  typed redacted payload and deterministic fixture provider. It creates a new system-authored
-  entry and suggested immutable highlight; it never overwrites a human entry.
+  typed redacted payload. The deterministic fixture remains the default; an explicitly configured
+  optional DeepSeek V4 Flash adapter uses only redacted synthetic text and never overwrites a human
+  entry. Provider failures stay failures and do not silently fall back to fixture.
+- `GET /ai-processing/provider` exposes only safe provider name/model/configured metadata to
+  authorized staff/clinicians; it never returns a key, key-file path, or base URL.
 - `GET /ai-processing/{job_id}` exposes job metadata and safe error codes, not raw input,
   provider prompts, or provider responses.
 - `POST /highlights/{highlight_id}/feedback` records clinic-scoped staff/clinician feedback with
@@ -116,7 +119,8 @@ clinic-scoped collaboration APIs so the seed remains deterministic and read-only
 The frontend uses real cookie login and `/auth/me`, a clinic-scoped patient list, a calm light
 clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable Unicode
 codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
-badges, role-aware controls, a collapsed **Why ranked?** explanation with pin/unpin feedback,
+badges, role-aware controls, an internal AI Scribe Demo panel, a collapsed **Why ranked?**
+explanation with pin/unpin feedback,
 English/简体中文 application-chrome localization, a read-only bilingual Learning Guide, keyboard
 mention autocomplete, contextual assignment/task drawers, fixed-viewport Desktop/Mobile demo
 preview, and a reconnecting live-update indicator. Clinical
@@ -124,7 +128,7 @@ note content, comments, quotes, revisions and user-entered source data remain in
 language; the UI never calls a translation API.
 There is no UI-only role switch.
 
-## Phase 7 local demo
+## Phase 7/8 local demo
 
 Double-click `Start Nightingale Demo.cmd` for English or `启动 Nightingale 中文演示.cmd` for
 Chinese UI chrome. The launcher discovers the existing local Python/pnpm/Node tools, runs
@@ -133,7 +137,17 @@ and opens the browser only after both services are ready. It records only verifi
 logs under ignored `artifacts/local-runtime/`; `Stop Nightingale Demo.cmd` verifies the PID and
 executable/health boundary before stopping them. Unknown port owners are never killed.
 
-Manual setup commands remain supported. Clinical source text is deliberately not translated.
+Manual setup commands remain supported. `Configure DeepSeek.cmd` stores only an external key-file
+path in ignored `.nightingale-local.json`; `Use Local Fixture.cmd` restores the no-network default.
+Clinical source text is deliberately not translated.
+
+The optional DeepSeek adapter uses `deepseek-v4-flash` through the official
+`https://api.deepseek.com/chat/completions` endpoint. It receives only validated redacted synthetic
+text and returns schema-checked summary/action fields; local code computes immutable codepoint
+offsets and sets risk/provenance/review state. A provider failure is recorded as a safe error and
+never silently becomes fixture output. The bounded live smoke is recorded in
+[`deepseek_live_smoke.md`](docs/evidence/deepseek_live_smoke.md); it is not a model-quality
+evaluation or production compliance claim.
 
 The Phase 7.1 delivery set includes the editable and rendered Technical Brief, attribution audit,
 demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
@@ -173,7 +187,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 7.1 application checkpoint `30a90bf`, this suite reports **51 passed**. Reproducible coverage is **88%**
+At the Phase 8 application checkpoint `d0caff7`, this suite reports **71 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 
@@ -238,9 +252,11 @@ hosted PostgreSQL production benchmark.
 - AI output is a suggestion. It cannot silently overwrite a human source or present an
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
-- No external LLM, Docker, deployment, account creation, or email is configured. Both Bonus paths
-  and collaboration events are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest,
+- No external LLM key is committed or required. Docker, deployment, account creation, and email are
+  not configured. The optional DeepSeek path is explicitly selected, redaction-gated, and cost/network
+  dependent; both Bonus paths and collaboration events remain local and deterministic by default.
+  Hosted PostgreSQL, TLS/encryption-at-rest,
   final video, and external submission remain explicit delivery gates. The local Technical Brief
-  PDF is feature-freeze evidence, not hosted compliance evidence.
+  PDF is local evidence, not hosted compliance evidence.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

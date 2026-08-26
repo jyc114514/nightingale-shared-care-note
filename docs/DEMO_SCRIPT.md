@@ -59,6 +59,17 @@ The bilingual Learning Guide is closed by default and may be opened for learning
 formal UX-01 test. Close it before the ten-second test. The Guide explicitly lists actions that
 modify demo state: Accept, Reject, Edit, Revert, Comment, and Task creation/update.
 
+## Optional Phase 8 - AI Scribe provider (30-45 seconds)
+
+1. Use **Use Local Fixture.cmd** for the deterministic default, or configure an external key file
+   with **Configure DeepSeek.cmd** and restart the demo. Never enter a real patient record.
+2. As staff or clinician, open **AI Scribe Demo**. Confirm the warning, interaction type, synthetic
+   example, source reference, and active provider badge.
+3. Generate a suggestion. Show that the result is system-authored, `Suggested`, source-linked,
+   highlighted by a locally computed exact span, and marked **Requires clinician review**.
+4. If the live provider fails, show the safe error code and continue with the fixture path. Do not
+   claim a successful model result or model quality from the bounded smoke.
+
 ## If a live action fails
 
 Use the seeded state and reviewed synthetic screenshots. Do not invent a successful provider call,
