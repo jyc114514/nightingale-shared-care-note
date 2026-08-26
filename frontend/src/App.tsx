@@ -7,6 +7,8 @@ import {
 } from "react";
 
 import { ApiError, api } from "./api";
+import { I18nProvider, LanguageToggle, useI18n } from "./i18n";
+import type { Locale, Translate, TranslationKey } from "./i18n/types";
 import type {
   Comment,
   PatientContext,
@@ -21,65 +23,85 @@ import type {
   Version,
 } from "./types";
 
-const sourceKindLabels: Record<string, string> = {
-  doctor_consult: "AI-scribed · Doctor consult",
-  nurse_consult: "AI-scribed · Nurse consult",
-  patient_ai_session: "AI-scribed · Patient session",
-  system_event: "System event",
-  manual: "Manual note",
+const sourceKindKeys: Record<string, TranslationKey> = {
+  doctor_consult: "sourceKind.doctor",
+  nurse_consult: "sourceKind.nurse",
+  patient_ai_session: "sourceKind.patient",
+  system_event: "sourceKind.system",
+  manual: "sourceKind.manual",
 };
 
-const entryTypeLabels: Record<string, string> = {
-  patient_facing_summary: "Patient summary",
-  patient_instruction: "Patient instruction",
-  staff_note: "Staff note",
-  clinician_section: "Clinician section",
-  ai_doctor_consult_summary: "Doctor consult summary",
-  ai_nurse_consult_summary: "Nurse consult summary",
-  ai_patient_session_summary: "Patient session summary",
-  system_event: "System event",
+const sourceLabelKeys: Record<string, TranslationKey> = {
+  "AI-scribed · Doctor consult": "sourceKind.doctor",
+  "AI-scribed · Nurse consult": "sourceKind.nurse",
+  "AI-scribed · Patient session": "sourceKind.patient",
+  "AI-scribed - Doctor consult": "sourceKind.doctor",
+  "AI-scribed - Nurse consult": "sourceKind.nurse",
+  "AI-scribed - Patient session": "sourceKind.patient",
+  "System event": "sourceKind.system",
+  "Manual note": "sourceKind.manual",
 };
 
-const statusLabels: Record<string, string> = {
-  suggested: "Suggested",
-  accepted: "Accepted",
-  rejected: "Rejected",
-  superseded: "Superseded",
-  conflict_review: "Conflict review",
+const entryTypeKeys: Record<string, TranslationKey> = {
+  patient_facing_summary: "entryType.patientSummary",
+  patient_instruction: "entryType.patientInstruction",
+  staff_note: "entryType.staffNote",
+  clinician_section: "entryType.clinicianSection",
+  ai_doctor_consult_summary: "entryType.doctorSummary",
+  ai_nurse_consult_summary: "entryType.nurseSummary",
+  ai_patient_session_summary: "entryType.patientSession",
+  system_event: "entryType.systemEvent",
 };
 
-const itemKindLabels: Record<string, string> = {
-  information: "Information",
-  action: "Open action",
-  flag: "Flag",
+const statusKeys: Record<string, TranslationKey> = {
+  suggested: "status.suggested",
+  accepted: "status.accepted",
+  rejected: "status.rejected",
+  superseded: "status.superseded",
+  conflict_review: "status.conflictReview",
 };
 
-const actionStateLabels: Record<string, string> = {
-  open: "Open",
-  completed: "Completed",
-  not_applicable: "No action state",
+const itemKindKeys: Record<string, TranslationKey> = {
+  information: "itemKind.information",
+  action: "itemKind.action",
+  flag: "itemKind.flag",
 };
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-SG", {
+const actionStateKeys: Record<string, TranslationKey> = {
+  open: "actionState.open",
+  completed: "actionState.completed",
+  not_applicable: "actionState.notApplicable",
+};
+
+const roleKeys: Record<string, TranslationKey> = {
+  patient: "role.patient",
+  staff: "role.staff",
+  clinician: "role.clinician",
+  admin: "role.admin",
+  system: "sourceKind.system",
+};
+
+function formatDate(value: string, locale: Locale = "en") {
+  return new Intl.DateTimeFormat(locale === "zh-CN" ? "zh-CN" : "en-SG", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-function displayError(error: unknown) {
+function displayError(error: unknown, t: Translate) {
   if (error instanceof ApiError) {
     if (
       typeof error.body.detail === "object" &&
       error.body.detail?.actual_version
     ) {
-      return `${error.message}. Current version is ${error.body.detail.actual_version}; reload the history before retrying.`;
+      return t("error.versionConflict", {
+        message: error.message,
+        version: error.body.detail.actual_version,
+      });
     }
     return error.message;
   }
-  return error instanceof Error
-    ? error.message
-    : "The request could not be completed.";
+  return error instanceof Error ? error.message : t("error.request");
 }
 
 function isInternalUser(user: Me) {
@@ -145,6 +167,7 @@ function ExactSpanView({
   startOffset: number;
   endOffset: number;
 }) {
+  const { t } = useI18n();
   const result = exactCodepointSpan(text, quote, startOffset, endOffset);
   if (!result.valid) {
     return (
@@ -154,8 +177,8 @@ function ExactSpanView({
           role="alert"
           data-testid="provenance-integrity-warning"
         >
-          Integrity warning: {result.reason} No approximate text match was
-          highlighted.
+          {t("source.integrity", { reason: result.reason })}{" "}
+          {t("source.noApprox")}
         </p>
         <p className="mt-3 whitespace-pre-wrap">{text}</p>
       </div>
@@ -234,6 +257,152 @@ function Button({
   );
 }
 
+function LearningGuide({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/40 px-4 py-8"
+      data-testid="learning-guide-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-7"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="learning-guide-title"
+        data-testid="learning-guide"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
+              {t("brand.gate")}
+            </p>
+            <h2
+              id="learning-guide-title"
+              className="mt-2 text-2xl font-semibold"
+            >
+              {t("guide.title")}
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              {t("guide.intro")}
+            </p>
+          </div>
+          <Button kind="quiet" onClick={onClose} ariaLabel={t("guide.close")}>
+            {t("guide.close")}
+          </Button>
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <article className="rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:col-span-2">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.product.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.product.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.roles.title")}
+            </h3>
+            <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+              <li>{t("guide.roles.staff")}</li>
+              <li>{t("guide.roles.clinician")}</li>
+              <li>{t("guide.roles.patient")}</li>
+              <li>{t("guide.roles.system")}</li>
+            </ul>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.top.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.top.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.status.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.status.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.provenance.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.provenance.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.collaboration.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.collaboration.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.ai.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.ai.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.context.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.context.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.checklist.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.checklist.body")}
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 p-4">
+            <h3 className="font-semibold text-slate-900">
+              {t("guide.ux.title")}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("guide.ux.body")}
+            </p>
+          </article>
+        </div>
+        <p className="mt-5 text-xs leading-5 text-slate-500">
+          {t("guide.sourceNotice")}
+        </p>
+      </section>
+    </div>
+  );
+}
+
 function LoginScreen({
   onLogin,
   initialError,
@@ -241,10 +410,12 @@ function LoginScreen({
   onLogin: (user: Me) => void;
   initialError?: string | null;
 }) {
+  const { t } = useI18n();
   const [email, setEmail] = useState("staff.a@clinic-a.test");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -254,7 +425,7 @@ function LoginScreen({
       const result = await api.login(email, password);
       onLogin(result.user);
     } catch (requestError) {
-      setError(displayError(requestError));
+      setError(displayError(requestError, t));
     } finally {
       setBusy(false);
     }
@@ -263,23 +434,30 @@ function LoginScreen({
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f4f7fb] px-5 py-10 text-slate-900">
       <section className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
-        <div className="mb-8">
-          <p className="text-xs font-bold uppercase tracking-[0.28em] text-blue-700">
-            Nightingale · Gate B
-          </p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
-            Shared Care Note
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Sign in to review synthetic longitudinal care records. Every
-            AI-scribed item remains a suggestion until a clinician reviews it.
-          </p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.28em] text-blue-700">
+              {t("login.eyebrow")}
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+              {t("login.title")}
+            </h1>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <LanguageToggle />
+            <Button kind="quiet" onClick={() => setGuideOpen(true)}>
+              {t("login.guide")}
+            </Button>
+          </div>
         </div>
+        <p className="-mt-4 mb-8 text-sm leading-6 text-slate-500">
+          {t("login.description")}
+        </p>
         <form className="space-y-4" onSubmit={submit}>
           <label className="block text-sm font-semibold text-slate-700">
-            Email
+            {t("login.email")}
             <input
-              aria-label="Email"
+              aria-label={t("login.email")}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-4"
@@ -289,9 +467,9 @@ function LoginScreen({
             />
           </label>
           <label className="block text-sm font-semibold text-slate-700">
-            Password
+            {t("login.password")}
             <input
-              aria-label="Password"
+              aria-label={t("login.password")}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 font-normal outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-4"
@@ -309,18 +487,18 @@ function LoginScreen({
             </p>
           )}
           <Button type="submit" kind="primary" disabled={busy}>
-            {busy ? "Signing in…" : "Sign in"}
+            {busy ? t("login.signingIn") : t("login.signIn")}
           </Button>
         </form>
         <div className="mt-8 border-t border-slate-100 pt-5">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            Synthetic demo personas
+            {t("login.personasTitle")}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {[
-              ["staff.a@clinic-a.test", "Staff"],
-              ["clinician.a@clinic-a.test", "Clinician"],
-              ["sarah.patient@clinic-a.test", "Patient"],
+              ["staff.a@clinic-a.test", t("login.persona.staff")],
+              ["clinician.a@clinic-a.test", t("login.persona.clinician")],
+              ["sarah.patient@clinic-a.test", t("login.persona.patient")],
             ].map(([personaEmail, label]) => (
               <Button
                 key={personaEmail}
@@ -332,11 +510,11 @@ function LoginScreen({
             ))}
           </div>
           <p className="mt-3 text-xs leading-5 text-slate-400">
-            Persona buttons select the synthetic email only; password is never
-            embedded in the UI.
+            {t("login.personaHint")}
           </p>
         </div>
       </section>
+      <LearningGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </main>
   );
 }
@@ -348,21 +526,21 @@ function SourcePanel({
   source: ProvenanceSource | null;
   onClose: () => void;
 }) {
+  const { locale, t } = useI18n();
   if (!source) {
     return (
       <section
         className="rounded-2xl border border-slate-200 bg-white p-5"
-        aria-label="Source navigation"
+        aria-label={t("source.navigation")}
       >
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-          Source navigation
+          {t("source.navigation")}
         </p>
         <h2 className="mt-2 text-lg font-semibold text-slate-800">
-          Choose a Glance item
+          {t("source.chooseTitle")}
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
-          The exact immutable quote, version and source reference will appear
-          here when you click a card.
+          {t("source.chooseBody")}
         </p>
       </section>
     );
@@ -370,7 +548,7 @@ function SourcePanel({
   return (
     <section
       className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5"
-      aria-label="Immutable source"
+      aria-label={t("source.immutable")}
       data-source-entry-id={source.source_entry_id}
       data-source-version-id={source.source_version_id}
       data-source-version={source.version_number}
@@ -378,16 +556,16 @@ function SourcePanel({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
-            Immutable source
+            {t("source.immutable")}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            {entryTypeLabels[source.entry_type] ?? source.entry_type}
+            {t(entryTypeKeys[source.entry_type] ?? "entryType.systemEvent")}
           </h2>
         </div>
         <div className="flex items-start gap-2">
           <Pill tone="blue">v{source.version_number}</Pill>
           <Button kind="quiet" onClick={onClose}>
-            Close source
+            {t("source.close")}
           </Button>
         </div>
       </div>
@@ -396,28 +574,29 @@ function SourcePanel({
           className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900"
           data-testid="immutable-version-warning"
         >
-          This highlight is anchored to immutable version v
-          {source.version_number}; current entry is v
-          {source.current_entry_version}.
+          {t("source.versionWarning", {
+            version: source.version_number,
+            current: source.current_entry_version,
+          })}
         </p>
       )}
       <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <dt className="text-slate-500">Occurred</dt>
+          <dt className="text-slate-500">{t("source.occurred")}</dt>
           <dd className="mt-1 font-semibold text-slate-800">
-            {formatDate(source.occurred_at)}
+            {formatDate(source.occurred_at, locale)}
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Offset unit</dt>
+          <dt className="text-slate-500">{t("source.offsetUnit")}</dt>
           <dd className="mt-1 font-semibold text-slate-800">
-            Python code point
+            {t("source.pythonCodepoint")}
           </dd>
         </div>
         <div className="col-span-2">
-          <dt className="text-slate-500">Source reference</dt>
+          <dt className="text-slate-500">{t("source.reference")}</dt>
           <dd className="mt-1 break-words font-mono text-slate-800">
-            {source.source_reference ?? "—"}
+            {source.source_reference ?? t("source.noReference")}
           </dd>
         </div>
       </dl>
@@ -430,14 +609,18 @@ function SourcePanel({
         />
       </blockquote>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        Exact span: [{source.start_offset}, {source.end_offset}) · SHA-256 is
-        stored with the highlight.
+        {t("source.exactSpan", {
+          start: source.start_offset,
+          end: source.end_offset,
+        })}{" "}
+        {t("source.sha")}
       </p>
     </section>
   );
 }
 
 function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
+  const { t } = useI18n();
   return (
     <section
       className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
@@ -447,11 +630,13 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
       data-source-version={source.version_number}
     >
       <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">
-        Immutable source span
+        {t("source.timelineTitle")}
       </p>
       <p className="mt-2 text-xs leading-5 text-amber-900">
-        Anchored to immutable version v{source.version_number}; current entry is
-        v{source.current_entry_version}.
+        {t("source.anchored", {
+          version: source.version_number,
+          current: source.current_entry_version,
+        })}
       </p>
       <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">
         <ExactSpanView
@@ -482,6 +667,7 @@ function CommentNode({
   onResolve: (comment: Comment) => Promise<void>;
   busy: boolean;
 }) {
+  const { locale, t } = useI18n();
   if (visited.has(comment.id)) return null;
   const nextVisited = new Set(visited).add(comment.id);
   const children = childrenByParent.get(comment.id) ?? [];
@@ -493,23 +679,25 @@ function CommentNode({
       <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
         <span>
           {comment.author_user_id.slice(0, 8)} ·{" "}
-          {formatDate(comment.created_at)}
+          {formatDate(comment.created_at, locale)}
         </span>
         <Pill tone={comment.is_resolved ? "green" : "slate"}>
-          {comment.is_resolved ? "Resolved" : "Open"}
+          {comment.is_resolved ? t("comments.resolved") : t("comments.open")}
         </Pill>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button kind="quiet" onClick={() => onReply(comment.id)}>
-          Reply
+          {t("comments.reply")}
         </Button>
         <Button
           kind="quiet"
           onClick={() => void onResolve(comment)}
           disabled={busy}
         >
-          {comment.is_resolved ? "Unresolve" : "Resolve"}
+          {comment.is_resolved
+            ? t("comments.unresolve")
+            : t("comments.resolve")}
         </Button>
       </div>
       {children.length > 0 && (
@@ -551,6 +739,7 @@ function CommentsPanel({
   onClose: () => void;
   busy: boolean;
 }) {
+  const { t } = useI18n();
   const [body, setBody] = useState("");
   const commentIds = new Set(comments.map((comment) => comment.id));
   const childrenByParent = new Map<string, Comment[]>();
@@ -576,25 +765,25 @@ function CommentsPanel({
   return (
     <section
       className="rounded-2xl border border-slate-200 bg-white p-5"
-      aria-label="Comments"
+      aria-label={t("button.comments")}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-            Internal discussion
+            {t("comments.internal")}
           </p>
           <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            {entryTypeLabels[entry.entry_type] ?? entry.entry_type}
+            {t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")}
           </h2>
         </div>
-        <Button kind="quiet" onClick={onClose} ariaLabel="Close comments">
-          Close
+        <Button kind="quiet" onClick={onClose} ariaLabel={t("comments.close")}>
+          {t("comments.close")}
         </Button>
       </div>
       <div className="mt-4 space-y-3">
         {comments.length === 0 && (
           <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
-            No comments yet.
+            {t("comments.noComments")}
           </p>
         )}
         {roots.map((comment) => (
@@ -616,25 +805,25 @@ function CommentsPanel({
       >
         {replyTo && (
           <p className="text-xs text-blue-700">
-            Replying to a comment{" "}
+            {t("comments.replying")}{" "}
             <button
               className="underline"
               type="button"
               onClick={() => onReply(null)}
             >
-              cancel
+              {t("comments.cancel")}
             </button>
           </p>
         )}
         <textarea
-          aria-label="Comment body"
+          aria-label={t("comments.bodyLabel")}
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Add an internal follow-up…"
+          placeholder={t("comments.placeholder")}
           className="min-h-24 w-full resize-y rounded-xl border border-slate-200 p-3 text-sm outline-none ring-blue-200 focus:border-blue-500 focus:ring-4"
         />
         <Button type="submit" kind="primary" disabled={busy || !body.trim()}>
-          Add comment
+          {t("comments.add")}
         </Button>
       </form>
     </section>
@@ -658,14 +847,17 @@ function HistoryPanel({
   onDiff: (version: number) => void;
   onRevert: (version: number) => void;
 }) {
+  const { locale, t } = useI18n();
   return (
     <section
       className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4"
-      aria-label="Revision history"
+      aria-label={t("history.title")}
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-bold text-slate-800">Revision history</h3>
-        <Pill>Current v{entry.current_version}</Pill>
+        <h3 className="text-sm font-bold text-slate-800">
+          {t("history.title")}
+        </h3>
+        <Pill>{t("history.current", { version: entry.current_version })}</Pill>
       </div>
       <div className="mt-3 space-y-2">
         {versions.map((version) => (
@@ -674,10 +866,13 @@ function HistoryPanel({
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-2 text-xs"
           >
             <span className="font-semibold text-slate-700">
-              v{version.version_number} · {version.created_by_role}
+              {t("history.versionRole", {
+                version: version.version_number,
+                role: t(roleKeys[version.created_by_role] ?? "role.system"),
+              })}
             </span>
             <span className="text-slate-400">
-              {formatDate(version.created_at)}
+              {formatDate(version.created_at, locale)}
             </span>
             <div className="flex gap-1">
               {version.version_number !== entry.current_version && (
@@ -685,7 +880,7 @@ function HistoryPanel({
                   kind="quiet"
                   onClick={() => onDiff(version.version_number)}
                 >
-                  Compare
+                  {t("history.compare")}
                 </Button>
               )}
               {canEdit && version.version_number !== entry.current_version && (
@@ -693,7 +888,7 @@ function HistoryPanel({
                   kind="quiet"
                   onClick={() => onRevert(version.version_number)}
                 >
-                  Revert
+                  {t("history.revert")}
                 </Button>
               )}
             </div>
@@ -703,27 +898,29 @@ function HistoryPanel({
       {diff && (
         <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
           <p className="font-bold">
-            Diff v{diff.from_version} → v{diff.to_version}
+            {t("history.diff", {
+              from: diff.from_version,
+              to: diff.to_version,
+            })}
           </p>
           <p className="mt-2">
-            <span className="font-semibold">Before:</span> {diff.from_content}
+            <span className="font-semibold">{t("history.before")}</span>{" "}
+            {diff.from_content}
           </p>
           <p className="mt-1">
-            <span className="font-semibold">After:</span> {diff.to_content}
+            <span className="font-semibold">{t("history.after")}</span>{" "}
+            {diff.to_content}
           </p>
         </div>
       )}
       {conflicts.length > 0 && (
         <section
           className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-950"
-          aria-label="Optimistic concurrency conflicts"
+          aria-label={t("history.conflict.title")}
           data-testid="conflict-panel"
         >
-          <p className="font-bold">Optimistic concurrency conflict</p>
-          <p className="mt-1">
-            A stale write was preserved for human review. This is a revision
-            conflict, not a clinical semantic decision.
-          </p>
+          <p className="font-bold">{t("history.conflict.title")}</p>
+          <p className="mt-1">{t("history.conflict.description")}</p>
           <div className="mt-3 space-y-3">
             {conflicts.map((conflict) => (
               <article
@@ -732,21 +929,25 @@ function HistoryPanel({
                 data-testid={"conflict-" + conflict.id}
               >
                 <p className="font-semibold">
-                  Expected v{conflict.expected_version}; actual v
-                  {conflict.actual_version}
+                  {t("history.conflict.expected", {
+                    expected: conflict.expected_version,
+                    actual: conflict.actual_version,
+                  })}
                 </p>
                 <p className="mt-2">
-                  <span className="font-semibold">Current content:</span>{" "}
+                  <span className="font-semibold">
+                    {t("history.conflict.current")}
+                  </span>{" "}
                   {entry.content}
                 </p>
                 <p className="mt-1">
                   <span className="font-semibold">
-                    Preserved attempted content:
+                    {t("history.conflict.attempted")}
                   </span>{" "}
                   {conflict.attempted_content}
                 </p>
                 <p className="mt-2 text-rose-700">
-                  Status: {conflict.status}; no silent last-write-wins.
+                  {t("history.conflict.status", { status: conflict.status })}
                 </p>
               </article>
             ))}
@@ -770,20 +971,21 @@ function HistoricalContextPanel({
   onRefresh: (() => Promise<void>) | null;
   refreshBusy: boolean;
 }) {
+  const { locale, t } = useI18n();
   if (!context) return null;
   return (
     <section
       className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
-      aria-label="Historical context"
+      aria-label={t("context.title")}
       data-testid="historical-context"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-            Historical context
+            {t("context.title")}
           </p>
           <h2 className="mt-2 text-xl font-semibold">
-            Hot, warm, and derived cold history
+            {t("context.subtitle")}
           </h2>
         </div>
         {onRefresh && (
@@ -792,34 +994,34 @@ function HistoricalContextPanel({
             onClick={() => void onRefresh()}
             disabled={refreshBusy}
           >
-            {refreshBusy ? "Refreshing" : "Refresh derived context"}
+            {refreshBusy ? t("context.refreshing") : t("context.refresh")}
           </Button>
         )}
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700">
-            Hot context
+            {t("context.hot")}
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">
-            {context.hot_entries.length} canonical entries remain available with
-            full detail for this scope.
+            {t("context.hotDescription", { count: context.hot_entries.length })}
           </p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
-            Warm index
+            {t("context.warm")}
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-700">
-            {context.warm_entries.length} older entries remain discoverable by
-            metadata without moving content into the cold summary.
+            {t("context.warmDescription", {
+              count: context.warm_entries.length,
+            })}
           </p>
         </div>
       </div>
       <div className="mt-4 space-y-3">
         {context.archival_summaries.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            No derived archival periods are available yet.
+            {t("context.none")}
           </p>
         ) : (
           context.archival_summaries.map((summary) => (
@@ -830,20 +1032,25 @@ function HistoricalContextPanel({
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-slate-800">
-                  {new Intl.DateTimeFormat("en-SG", {
-                    month: "long",
-                    year: "numeric",
-                  }).format(new Date(summary.period_start))}
+                  {new Intl.DateTimeFormat(
+                    locale === "zh-CN" ? "zh-CN" : "en-SG",
+                    {
+                      month: "long",
+                      year: "numeric",
+                    },
+                  ).format(new Date(summary.period_start))}
                 </p>
-                <Pill tone="amber">Derived summary · not canonical source</Pill>
+                <Pill tone="amber">{t("context.derived")}</Pill>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {summary.summary_text}
               </p>
               <p className="mt-2 text-xs text-slate-500">
-                {summary.source_count} source pointer
-                {summary.source_count === 1 ? "" : "s"} · policy{" "}
-                {summary.policy_version}
+                {t("context.sourcePointer", {
+                  count: summary.source_count,
+                  plural: summary.source_count === 1 ? "" : "s",
+                  policy: summary.policy_version,
+                })}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {summary.sources.map((source) => (
@@ -852,13 +1059,13 @@ function HistoricalContextPanel({
                     kind="secondary"
                     onClick={() => onOpenSource(source.source_entry_id)}
                   >
-                    Open canonical source
+                    {t("context.openCanonical")}
                   </Button>
                 ))}
               </div>
               {!internal && (
                 <p className="mt-3 text-xs text-slate-500">
-                  Only patient-facing source pointers are included in this view.
+                  {t("context.patientPointers")}
                 </p>
               )}
             </article>
@@ -870,6 +1077,7 @@ function HistoricalContextPanel({
 }
 
 function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
+  const { locale, t } = useI18n();
   const internal = isInternalUser(user);
   const role = primaryRole(user);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -900,6 +1108,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [mutationBusy, setMutationBusy] = useState(false);
   const [feedbackBusyId, setFeedbackBusyId] = useState<string | null>(null);
   const [pinnedItems, setPinnedItems] = useState<Set<string>>(new Set());
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -914,7 +1123,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             : result[0]?.id || "",
         );
       })
-      .catch((error) => active && setLoadError(displayError(error)))
+      .catch((error) => active && setLoadError(displayError(error, t)))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
@@ -971,7 +1180,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           if (active) setSourceLoading(false);
         }
       })
-      .catch((error) => active && setLoadError(displayError(error)))
+      .catch((error) => active && setLoadError(displayError(error, t)))
       .finally(() => active && setLoading(false));
     return () => {
       active = false;
@@ -1012,7 +1221,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       }, 0);
       window.setTimeout(() => setFocusEntryId(null), 2400);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setSourceLoading(false);
     }
@@ -1050,7 +1259,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setCommentsEntryId(entryId);
       setReplyTo(null);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setCommentBusy(false);
     }
@@ -1069,7 +1278,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setReplyTo(null);
       await refreshComments();
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setCommentBusy(false);
     }
@@ -1081,7 +1290,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       await api.resolveComment(comment.id, !comment.is_resolved);
       await refreshComments();
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setCommentBusy(false);
     }
@@ -1099,7 +1308,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       await loadHistory(entryId);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     }
   }
 
@@ -1107,7 +1316,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       setDiff(await api.diff(entry.id, version, entry.current_version));
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     }
   }
 
@@ -1119,13 +1328,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setRefreshToken((value) => value + 1);
       if (historyEntryId === entry.id) await loadHistory(entry.id);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
       if (error instanceof ApiError && error.status === 409) {
         try {
           setRefreshToken((value) => value + 1);
           await loadHistory(entry.id);
         } catch (historyError) {
-          setMutationError(displayError(historyError));
+          setMutationError(displayError(historyError, t));
         }
       }
     } finally {
@@ -1147,13 +1356,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setRefreshToken((value) => value + 1);
       if (historyEntryId === entry.id) await loadHistory(entry.id);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
       if (error instanceof ApiError && error.status === 409) {
         try {
           setRefreshToken((value) => value + 1);
           await loadHistory(entry.id);
         } catch (historyError) {
-          setMutationError(displayError(historyError));
+          setMutationError(displayError(historyError, t));
         }
       }
     } finally {
@@ -1172,7 +1381,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         window.history.replaceState({}, "", "?patient=" + patientId);
       }
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setMutationBusy(false);
     }
@@ -1195,7 +1404,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       });
       setRefreshToken((value) => value + 1);
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setFeedbackBusyId(null);
     }
@@ -1221,7 +1430,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       await api.refreshContext(patientId);
       setContext(await api.context(patientId));
     } catch (error) {
-      setMutationError(displayError(error));
+      setMutationError(displayError(error, t));
     } finally {
       setMutationBusy(false);
     }
@@ -1245,10 +1454,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
-                Nightingale · Gate B
+                {t("brand.gate")}
               </p>
               <h1 className="mt-1 text-xl font-semibold tracking-tight">
-                Shared Care Note
+                {t("brand.name")}
               </h1>
             </div>
           </div>
@@ -1257,11 +1466,21 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               <p className="text-sm font-semibold text-slate-800">
                 {user.display_name}
               </p>
-              <p className="text-xs text-slate-500">{role} · cookie session</p>
+              <p className="text-xs text-slate-500">
+                {t("header.cookieSession", {
+                  role: t(roleKeys[role] ?? "role.patient"),
+                })}
+              </p>
             </div>
-            <Button kind="quiet" onClick={() => void logout()}>
-              Sign out
-            </Button>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <LanguageToggle />
+              <Button kind="quiet" onClick={() => setGuideOpen(true)}>
+                {t("header.guide")}
+              </Button>
+              <Button kind="quiet" onClick={() => void logout()}>
+                {t("header.signOut")}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -1270,14 +1489,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         <aside className="space-y-4">
           <section className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-              Patients
+              {t("patients.title")}
             </p>
             <label className="sr-only" htmlFor="patient-select">
-              Select patient
+              {t("patients.select")}
             </label>
             <select
               id="patient-select"
-              aria-label="Select patient"
+              aria-label={t("patients.select")}
               value={patientId}
               onChange={(event) => {
                 const nextPatientId = event.target.value;
@@ -1300,26 +1519,26 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             </select>
             {selectedPatient && (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                Synthetic patient · clinic scope verified server-side.
+                {t("patients.scope")}
               </p>
             )}
           </section>
           <section className="rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-              Trust boundary
+              {t("trust.title")}
             </p>
             <ul className="mt-3 space-y-3 text-sm leading-5 text-slate-600">
               <li>
-                <span className="mr-2 text-emerald-600">●</span>Source versions
-                are immutable.
+                <span className="mr-2 text-emerald-600">●</span>
+                {t("trust.immutable")}
               </li>
               <li>
-                <span className="mr-2 text-amber-600">●</span>AI output stays
-                suggested until review.
+                <span className="mr-2 text-amber-600">●</span>
+                {t("trust.ai")}
               </li>
               <li>
-                <span className="mr-2 text-blue-600">●</span>Clinician actions
-                are audited as metadata.
+                <span className="mr-2 text-blue-600">●</span>
+                {t("trust.audit")}
               </li>
             </ul>
           </section>
@@ -1330,19 +1549,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
-                  Longitudinal workspace
+                  {t("workspace.longitudinal")}
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {selectedPatient?.synthetic_display_name ?? "Loading patient"}
+                  {selectedPatient?.synthetic_display_name ??
+                    t("timeline.loading")}
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                  A calm, source-linked view of what changed, what needs
-                  attention, and which suggestions still require clinical trust
-                  review.
+                  {t("workspace.description")}
                 </p>
               </div>
               <Pill tone={internal ? "blue" : "slate"}>
-                {internal ? `${role} view` : "Patient view"}
+                {internal
+                  ? t("workspace.internalView", {
+                      role: t(roleKeys[role] ?? "role.patient"),
+                    })
+                  : t("workspace.patientView")}
               </Pill>
             </div>
           </section>
@@ -1373,20 +1595,19 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">
-                    Top Card · Glance View
+                    {t("top.eyebrow")}
                   </p>
                   <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                    What needs attention now
+                    {t("top.title")}
                   </h2>
                 </div>
                 <p className="text-xs text-slate-500">
-                  {glance.length} active source-linked items · max 6
+                  {t("top.count", { count: glance.length })}
                 </p>
               </div>
               {glance.length === 0 ? (
                 <p className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-white/70 p-5 text-sm text-slate-500">
-                  No active highlights. Suggestions that were rejected or
-                  superseded stay out of this view but remain in source history.
+                  {t("top.empty")}
                 </p>
               ) : (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1406,7 +1627,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                                 : "green"
                             }
                           >
-                            {statusLabels[item.status]}
+                            {t(statusKeys[item.status] ?? "status.accepted")}
                           </Pill>
                           <Pill
                             tone={
@@ -1416,7 +1637,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                                 : "slate"
                             }
                           >
-                            {itemKindLabels[item.item_kind]}
+                            {t(
+                              itemKindKeys[item.item_kind] ??
+                                "itemKind.information",
+                            )}
                           </Pill>
                         </div>
                         <span className="text-xs font-semibold text-slate-400">
@@ -1432,16 +1656,20 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
                         <Pill tone={item.risk_level ? "red" : "slate"}>
                           {item.risk_level
-                            ? `Explicit risk: ${item.risk_level}`
-                            : "No explicit risk tag"}
+                            ? t("top.explicitRisk", { risk: item.risk_level })
+                            : t("top.noRisk")}
                         </Pill>
                         <span
                           className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
                           data-testid="glance-action"
                         >
-                          Action: {item.action_label ?? "No action label"} ·{" "}
-                          {actionStateLabels[item.action_state] ??
-                            item.action_state}
+                          {t("top.action", {
+                            label: item.action_label ?? t("top.noActionLabel"),
+                            state: t(
+                              actionStateKeys[item.action_state] ??
+                                "actionState.notApplicable",
+                            ),
+                          })}
                         </span>
                       </div>
                       <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
@@ -1449,39 +1677,39 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           className="cursor-pointer font-semibold text-slate-700"
                           data-testid="ranking-details"
                         >
-                          Why ranked?{" "}
+                          {t("ranking.why")}{" "}
                           <span className="font-normal text-slate-500">
-                            Ranking priority, not a medical risk score.
+                            {t("ranking.disclaimer")}
                           </span>
                         </summary>
                         <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
-                          <dt>Base</dt>
+                          <dt>{t("ranking.base")}</dt>
                           <dd className="text-right font-semibold">
                             {item.base_priority}
                           </dd>
-                          <dt>Recency</dt>
+                          <dt>{t("ranking.recency")}</dt>
                           <dd className="text-right font-semibold">
                             +{item.recency_contribution}
                           </dd>
-                          <dt>Explicit risk</dt>
+                          <dt>{t("ranking.explicitRisk")}</dt>
                           <dd className="text-right font-semibold">
                             +{item.explicit_risk_contribution}
                           </dd>
-                          <dt>Open action</dt>
+                          <dt>{t("ranking.openAction")}</dt>
                           <dd className="text-right font-semibold">
                             +{item.unresolved_action_contribution}
                           </dd>
-                          <dt>Clinician confirmation</dt>
+                          <dt>{t("ranking.confirmation")}</dt>
                           <dd className="text-right font-semibold">
                             +{item.clinician_confirmation_contribution}
                           </dd>
-                          <dt>Adaptive feedback</dt>
+                          <dt>{t("ranking.adaptive")}</dt>
                           <dd className="text-right font-semibold">
                             {item.adaptive_feedback_adjustment >= 0 ? "+" : ""}
                             {item.adaptive_feedback_adjustment}
                           </dd>
                           <dt className="font-semibold text-slate-800">
-                            Final priority
+                            {t("ranking.final")}
                           </dt>
                           <dd className="text-right font-bold text-blue-700">
                             {item.display_priority}
@@ -1489,7 +1717,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                         </dl>
                       </details>
                       <p className="mt-3 text-xs font-semibold text-blue-700">
-                        {item.source_label}
+                        {t(
+                          sourceLabelKeys[item.source_label] ??
+                            "sourceKind.manual",
+                        )}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Button
@@ -1497,7 +1728,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           onClick={() => void openSource(item)}
                           disabled={sourceLoading}
                         >
-                          Open source
+                          {t("button.openSource")}
                         </Button>
                         {role !== "admin" && (
                           <Button
@@ -1512,7 +1743,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             }
                             disabled={feedbackBusyId === item.id}
                           >
-                            {pinnedItems.has(item.id) ? "Unpin" : "Pin"}
+                            {pinnedItems.has(item.id)
+                              ? t("button.unpin")
+                              : t("button.pin")}
                           </Button>
                         )}
                         {role === "clinician" &&
@@ -1524,14 +1757,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                                 onClick={() => void review(item, "accepted")}
                                 disabled={mutationBusy}
                               >
-                                Accept
+                                {t("button.accept")}
                               </Button>
                               <Button
                                 kind="danger"
                                 onClick={() => void review(item, "rejected")}
                                 disabled={mutationBusy}
                               >
-                                Reject
+                                {t("button.reject")}
                               </Button>
                             </>
                           )}
@@ -1544,15 +1777,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           ) : (
             <section className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                Patient privacy
+                {t("patient.privacy")}
               </p>
               <h2 className="mt-2 text-xl font-semibold">
-                Internal Glance View is hidden
+                {t("patient.hiddenTitle")}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                This session receives patient-facing summaries and instructions
-                only. Internal comments, raw AI notes and review states are not
-                returned by the server.
+                {t("patient.hiddenBody")}
               </p>
             </section>
           )}
@@ -1572,22 +1803,25 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                  Longitudinal timeline
+                  {t("timeline.title")}
                 </p>
                 <h2 className="mt-2 text-xl font-semibold">
-                  Occurred time, source, and revision state
+                  {t("timeline.subtitle")}
                 </h2>
               </div>
-              {loading && <Pill tone="blue">Loading</Pill>}
+              {loading && <Pill tone="blue">{t("timeline.loading")}</Pill>}
             </div>
             {loading && timeline.length === 0 ? (
-              <div className="mt-5 space-y-3" aria-label="Loading timeline">
+              <div
+                className="mt-5 space-y-3"
+                aria-label={t("timeline.loadingLabel")}
+              >
                 <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
                 <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
               </div>
             ) : timeline.length === 0 ? (
               <p className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500">
-                No timeline entries are available for this scope.
+                {t("timeline.empty")}
               </p>
             ) : (
               <div className="relative mt-5 space-y-4 before:absolute before:bottom-3 before:left-3 before:top-3 before:w-px before:bg-slate-200">
@@ -1610,8 +1844,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-semibold text-slate-900">
-                              {entryTypeLabels[entry.entry_type] ??
-                                entry.entry_type}
+                              {t(
+                                entryTypeKeys[entry.entry_type] ??
+                                  "entryType.systemEvent",
+                              )}
                             </h3>
                             {entry.entry_type.startsWith("ai_") && (
                               <Pill tone="amber">
@@ -1620,13 +1856,21 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             )}
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
-                            {formatDate(entry.occurred_at)} ·{" "}
-                            {sourceKindLabels[entry.source_kind] ??
-                              entry.source_kind}
+                            {formatDate(entry.occurred_at, locale)} ·{" "}
+                            {t(
+                              sourceKindKeys[entry.source_kind] ??
+                                "sourceKind.system",
+                            )}
                           </p>
                           <p className="mt-1 text-xs text-slate-400">
-                            Authored by {entry.author_role} · owner{" "}
-                            {entry.owner_role}
+                            {t("timeline.authored", {
+                              author: t(
+                                roleKeys[entry.author_role] ?? "role.patient",
+                              ),
+                              owner: t(
+                                roleKeys[entry.owner_role] ?? "role.patient",
+                              ),
+                            })}
                           </p>
                         </div>
                         <Pill>v{entry.current_version}</Pill>
@@ -1634,7 +1878,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                       {isEditing ? (
                         <div className="mt-4 space-y-2">
                           <textarea
-                            aria-label={`Edit ${entryTypeLabels[entry.entry_type] ?? entry.entry_type}`}
+                            aria-label={`${t("button.edit")} ${t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")}`}
                             value={editingText}
                             onChange={(event) =>
                               setEditingText(event.target.value)
@@ -1647,13 +1891,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                               onClick={() => void saveEntry(entry)}
                               disabled={mutationBusy}
                             >
-                              Save revision
+                              {t("button.saveRevision")}
                             </Button>
                             <Button
                               kind="quiet"
                               onClick={() => setEditingEntryId(null)}
                             >
-                              Cancel
+                              {t("button.cancel")}
                             </Button>
                           </div>
                         </div>
@@ -1672,7 +1916,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             onClick={() => void openComments(entry.id)}
                             disabled={commentBusy}
                           >
-                            Comments
+                            {t("button.comments")}
                           </Button>
                         )}
                         {internal && (
@@ -1681,8 +1925,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             onClick={() => void openHistory(entry.id)}
                           >
                             {historyEntryId === entry.id
-                              ? "Hide history"
-                              : "History"}
+                              ? t("button.hideHistory")
+                              : t("button.history")}
                           </Button>
                         )}
                         {editable && !isEditing && (
@@ -1693,7 +1937,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                               setEditingText(entry.content);
                             }}
                           >
-                            Edit
+                            {t("button.edit")}
                           </Button>
                         )}
                       </div>
@@ -1732,21 +1976,21 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           )}
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-              Workspace note
+              {t("workspace.noteTitle")}
             </p>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Nightingale stores source identity, version and review metadata
-              separately from clinical truth. A conflict state is a prompt for
-              human review, not an automatic diagnosis.
+              {t("workspace.noteBody")}
             </p>
           </section>
         </aside>
       </main>
+      <LearningGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
 
-export function App() {
+function AppContent() {
+  const { t } = useI18n();
   const [user, setUser] = useState<Me | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -1757,7 +2001,7 @@ export function App() {
       .then(setUser)
       .catch((error) => {
         if (!(error instanceof ApiError && error.status === 401))
-          setSessionError(displayError(error));
+          setSessionError(displayError(error, t));
       })
       .finally(() => setCheckingSession(false));
   }, []);
@@ -1765,10 +2009,18 @@ export function App() {
   if (checkingSession) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f4f7fb] text-sm text-slate-500">
-        Checking secure session…
+        {t("app.checking")}
       </main>
     );
   }
   if (user) return <Workspace user={user} onLogout={() => setUser(null)} />;
   return <LoginScreen onLogin={setUser} initialError={sessionError} />;
+}
+
+export function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
+  );
 }

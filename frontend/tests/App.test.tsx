@@ -10,6 +10,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App, exactCodepointSpan } from "../src/App";
+import { en, zhCN } from "../src/i18n";
 import type { Me } from "../src/types";
 
 const staffUser: Me = {
@@ -229,6 +230,8 @@ function mockAuthenticatedApi(
 describe("Gate B shared care note", () => {
   beforeEach(() => {
     window.history.replaceState({}, "", "/");
+    window.localStorage.clear();
+    document.documentElement.lang = "en-SG";
   });
 
   afterEach(() => {
@@ -254,6 +257,75 @@ describe("Gate B shared care note", () => {
     });
     const invalid = exactCodepointSpan(text, "repeat", 0, 6);
     expect(invalid).toMatchObject({ valid: false });
+  });
+
+  it("keeps bilingual dictionaries in parity and localizes chrome only", async () => {
+    expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
+    mockAuthenticatedApi(staffUser, { endOffset: 19 });
+    renderApp();
+    expect(await screen.findByText("Shared Care Note")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "简体中文" }));
+    expect(screen.getByText("共享照护记录")).toBeInTheDocument();
+    const localizedSourceButtons = await screen.findAllByRole("button", {
+      name: "打开来源",
+    });
+    fireEvent.click(localizedSourceButtons[0]);
+    expect(
+      await screen.findByRole("region", { name: "不可变来源" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "关闭来源" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Pending renal panel requires coordination."),
+    ).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("zh-CN");
+    expect(window.localStorage.getItem("nightingale-language")).toBe("zh-CN");
+    fireEvent.click(screen.getByRole("button", { name: "使用指南" }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "关闭指南" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("restores saved locale while URL locale takes precedence", async () => {
+    mockAuthenticatedApi();
+    const first = renderApp();
+    await screen.findByText("Shared Care Note");
+    fireEvent.click(screen.getByRole("button", { name: "简体中文" }));
+    first.unmount();
+
+    window.history.replaceState({}, "", "/");
+    const restored = renderApp();
+    expect(await screen.findByText("共享照护记录")).toBeInTheDocument();
+    restored.unmount();
+
+    window.history.replaceState({}, "", "/?lang=en");
+    const overridden = renderApp();
+    expect(await screen.findByText("Shared Care Note")).toBeInTheDocument();
+    overridden.unmount();
+  });
+
+  it("honors a deep-linked locale and preserves provenance source data", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?patient=patient-a&highlight=highlight-0&lang=zh-CN",
+    );
+    mockAuthenticatedApi(staffUser, { endOffset: 19 });
+    renderApp();
+    expect(
+      await screen.findByRole("region", { name: "不可变来源" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("不可变来源范围")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("immutable-timeline-source")).getByTestId(
+        "source-quote",
+      ),
+    ).toHaveTextContent("Pending renal panel");
+    expect(new URL(window.location.href).searchParams.get("lang")).toBe(
+      "zh-CN",
+    );
+    expect(document.documentElement.lang).toBe("zh-CN");
   });
 
   it("shows loading then a real login error", async () => {

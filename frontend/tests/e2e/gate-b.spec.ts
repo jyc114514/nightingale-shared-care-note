@@ -380,3 +380,31 @@ test("Patient privacy - cookie patient sees only patient-facing entries and inte
     ),
   ).toBe(true);
 });
+
+test("Chinese chrome keeps source data and provenance controls usable", async ({
+  page,
+}) => {
+  await login(page, "staff.a@clinic-a.test");
+  await page.getByRole("button", { name: "简体中文" }).click();
+  await expect(page.getByText("共享照护记录")).toBeVisible();
+  await expect(page.getByText("纵向时间线")).toBeVisible();
+  await expect(page.getByRole("button", { name: "使用指南" })).toBeVisible();
+
+  const sourceButton = page
+    .getByTestId("glance-item")
+    .first()
+    .getByRole("button", { name: "打开来源" });
+  await sourceButton.click();
+  const source = page.getByRole("region", { name: "不可变来源" });
+  await expect(source).toBeVisible();
+  await expect(source.getByTestId("source-quote")).toBeVisible();
+  await page.waitForTimeout(3000);
+  await expect(page.getByTestId("immutable-timeline-source")).toBeVisible();
+  await expect(
+    page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "关闭来源" }).click();
+  await expect(page.getByRole("region", { name: "不可变来源" })).toHaveCount(0);
+  await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.has("highlight")).toBe(false);
+});
