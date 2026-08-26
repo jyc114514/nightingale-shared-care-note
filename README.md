@@ -1,16 +1,16 @@
 # Nightingale
 
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
-collaboration product. The repository is at **Phase 4 / local Bonus implementation**: Gate A
-authentication, clinic-scoped RBAC, immutable revisions, audit metadata, and optimistic
-concurrency are joined by a Glance View, occurred-time timeline, immutable source navigation,
-threaded comments, trust-state controls, and a redacted deterministic AI write path.
+collaboration product. The repository is at **Phase 7 / local feature freeze**: Gate A-C
+authentication, clinic-scoped RBAC, immutable revisions, audit metadata, optimistic concurrency,
+Glance/timeline/provenance, bilingual UI chrome, safe one-click demo startup, mentions, internal
+assignments, and metadata-only near-real-time invalidation are implemented locally.
 
 The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance and
 hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. This is
-not a hosted production
-deployment: external-provider integration, PostgreSQL execution, TLS/encryption-at-rest
-evidence, data decay, voice capture, final video, and external submission remain deferred. The
+not a hosted production deployment: external-provider integration, PostgreSQL execution,
+TLS/encryption-at-rest evidence, production retention/deletion policy, voice capture, final video,
+and external submission remain deferred. The
 repository-root `requirements.txt` is the candidate brief, **not** a
 pip requirements file; never run `pip install -r requirements.txt`.
 
@@ -67,7 +67,8 @@ Remove-Item Env:DEMO_SEED_PASSWORD
 The seed creates two synthetic clinics, five users, two synthetic patients, seven entries, three
 distinct system AI-scribed entry types, five source-linked highlights/materialized Glance rows,
 a threaded internal comment fixture, and a derived archival summary with immutable source
-pointers. Re-running it preserves aggregate counts.
+pointers. Re-running it preserves aggregate counts. Mentions and tasks are created through the
+clinic-scoped collaboration APIs so the seed remains deterministic and read-only by default.
 
 ## Gate B API and UI
 
@@ -101,15 +102,40 @@ pointers. Re-running it preserves aggregate counts.
   explicit “Derived summary · not canonical source” disclosure. Open actions, explicit risk,
   active conflicts, unresolved discussion, pinned/accepted highlights, and clinician-confirmed
   care-plan entries remain protected from compression.
+- `GET /patients/{patient_id}/mentionable-users` returns only active staff/clinician collaborators
+  in the current clinic. Comment creation accepts stable `mentioned_user_ids`; it never guesses
+  identities by scanning comment text.
+- `GET/POST /patients/{patient_id}/tasks` and `PATCH /tasks/{task_id}` provide clinic-scoped
+  assignments with source entry/comment pointers, assignee validation, status transitions, and
+  deterministic stale-version `409` conflicts. Patient task access is denied server-side.
+- `GET /patients/{patient_id}/events` is a persisted metadata-only SSE invalidation stream with
+  cookie authentication, patient scope, heartbeat, reconnect through `Last-Event-ID`, and no raw
+  note/comment/title/quote payload. The browser refetches canonical APIs after an event.
 
 The frontend uses real cookie login and `/auth/me`, a clinic-scoped patient list, a calm light
 clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable Unicode
 codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
-badges, role-aware controls, and a collapsed **Why ranked?** explanation with pin/unpin feedback.
+badges, role-aware controls, a collapsed **Why ranked?** explanation with pin/unpin feedback,
+English/简体中文 application-chrome localization, a read-only bilingual Learning Guide, keyboard
+mention autocomplete, assignment/task panels, and a reconnecting live-update indicator. Clinical
+note content, comments, quotes, revisions and user-entered source data remain in their original
+language; the UI never calls a translation API.
 There is no UI-only role switch.
 
-The Phase 5 delivery set includes the editable and rendered Technical Brief, attribution audit,
-demo script/shot list, UX timing protocol, deployment checklist, and synthetic browser screenshots.
+## Phase 7 local demo
+
+Double-click `Start Nightingale Demo.cmd` for English or `启动 Nightingale 中文演示.cmd` for
+Chinese UI chrome. The launcher discovers the existing local Python/pnpm/Node tools, runs
+lockfile checks, `alembic upgrade head`, first-run synthetic seed, backend/frontend health checks,
+and opens the browser only after both services are ready. It records only verified child PIDs and
+logs under ignored `artifacts/local-runtime/`; `Stop Nightingale Demo.cmd` verifies the PID and
+executable/health boundary before stopping them. Unknown port owners are never killed.
+
+Manual setup commands remain supported. Clinical source text is deliberately not translated.
+
+The Phase 7 delivery set includes the editable and rendered Technical Brief, attribution audit,
+demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
+synthetic browser screenshots.
 There is no final video claim while a reliable local recorder/codec is unavailable.
 
 ## Bonus importance logic
@@ -145,6 +171,10 @@ Push-Location backend
 Pop-Location
 ```
 
+At the Phase 7 feature freeze this suite reports **51 passed**. Reproducible coverage is **88%**
+when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
+are not exercised by the application suite.
+
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
 `test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
@@ -174,12 +204,11 @@ Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs Scenario A (exact source and
-review), Scenario B (diff/revert/thread), Scenario C (real stale-write conflict plus derived
-context/source pointer), and patient privacy at 1440x900 and 390x844. The custom setup records
-only its own server PIDs and teardown
-removes those processes, the temporary database, generated password, and ignored
-`artifacts/gate-b/` screenshots.
+real Uvicorn and Vite processes on clean local ports, and runs 10 checks at 1440x900 and
+390x844. Scenario B covers revisions, nested comments, keyboard mention selection, assignment
+creation/completion, and a second browser receiving the metadata-only SSE invalidation. The
+custom setup records only its own server PIDs and teardown removes those processes, the temporary
+database, generated password, and ignored `artifacts/gate-b/` screenshots.
 
 Gate C warm-path benchmark:
 
@@ -191,7 +220,8 @@ Pop-Location
 
 This uses a fresh migrated file-backed SQLite database, 26 synthetic patients, 208 benchmark
 entries/highlights, real Uvicorn TCP HTTP, 50 warm-up requests, 1,000 measured requests, and
-10-way concurrency. The current evidence is
+10-way concurrency. On feature-freeze commit `3129da3`, the result was P50 49.774 ms, P95
+67.823 ms, P99 80.593 ms, max 86.835 ms, and zero errors. The current evidence is
 [`gate_c_warm_path.md`](docs/evidence/gate_c_warm_path.md). It is a local approximation, not a
 hosted PostgreSQL production benchmark.
 
@@ -205,8 +235,8 @@ hosted PostgreSQL production benchmark.
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
 - No external LLM, Docker, deployment, account creation, or email is configured. Both Bonus paths
-  are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest, final video, and
-  external submission remain explicit delivery gates. The local Technical Brief PDF is complete
-  and QA-recorded under `docs/evidence/technical_brief_qa.md`.
+  and collaboration events are local and deterministic; hosted PostgreSQL, TLS/encryption-at-rest,
+  final video, and external submission remain explicit delivery gates. The local Technical Brief
+  PDF is feature-freeze evidence, not hosted compliance evidence.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

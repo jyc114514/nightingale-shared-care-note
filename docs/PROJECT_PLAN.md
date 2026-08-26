@@ -275,6 +275,20 @@ These do not block the local scaffold:
 - Hosted PostgreSQL provider and connection string.
 - External LLM provider and API key.
 - Final deployment host and public/private repository choice.
+
+## Phase 7 local feature-freeze record
+
+The local prototype now includes bilingual application chrome and a closed-by-default bilingual
+Learning Guide, a safe Windows one-click launcher, clinic-scoped stable-ID mentions, internal
+assignments/tasks with materialized open actions, metadata-only DB-backed SSE invalidation, and a
+low-risk accessibility pass. These additions do not translate clinical source text, add a live LLM,
+change RBAC/provenance, or implement CRDT/OT.
+
+The feature-freeze application checkpoint is `3129da3`. Final local evidence is 51 backend tests,
+88% reproducible coverage, 14 Vitest tests, 10 Playwright tests, and a real-TCP warm-path P95 of
+67.823 ms on the SQLite approximation. Hosted PostgreSQL, TLS/encryption-at-rest, production
+retention/deletion policy, human UX-01 sign-off, final video, GitHub upload, and email remain
+outside the local implementation boundary.
 - Candidate name in the submission subject.
 
 They must be resolved before the relevant phase. Never paste secrets into chat or commit them; use local environment files and an `.env.example` with placeholders.

@@ -1,7 +1,8 @@
 # Deployment checklist
 
 Status: **not deployed**. This checklist records the evidence required before making production
-claims; no provider, account, or hosting action was taken in this phase.
+claims; Phase 7 adds only a local Windows launcher and metadata-only local SSE. No provider,
+account, or hosting action was taken.
 
 ## Required before a hosted demo
 
@@ -23,4 +24,5 @@ claims; no provider, account, or hosting action was taken in this phase.
 ## Current local boundary
 
 SQLite + real Uvicorn TCP is measured locally. PostgreSQL, TLS, encryption-at-rest, deployment
-backup, and hosted operational controls remain unknown until a provider is explicitly selected.
+backup, hosted operational controls, and external LLM quality remain unknown until a provider is
+explicitly selected. `Start Nightingale Demo.cmd` is a local convenience wrapper, not deployment.

@@ -72,11 +72,11 @@
       <div class="eyebrow">Nightingale / technical brief / 26 Aug 2026</div>
       <h1>Shared care notes that make trust visible.</h1>
       <p class="lede">A clinic-scoped longitudinal collaboration layer for the moment when a care team needs to understand what changed and what needs action in under ten seconds.</p>
-      <p class="meta">Phase 4 local synthetic prototype · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
+      <p class="meta">Phase 7 feature-freeze local prototype · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
       <div class="band">
-        <div class="metric"><strong>46</strong><span>real backend tests</span></div>
-        <div class="metric"><strong>87%</strong><span>backend coverage</span></div>
-        <div class="metric"><strong>78.477 ms</strong><span>Gate C warm-path P95</span></div>
+        <div class="metric"><strong>51</strong><span>real backend tests</span></div>
+        <div class="metric"><strong>88%</strong><span>backend coverage</span></div>
+        <div class="metric"><strong>67.823 ms</strong><span>Gate C warm-path P95</span></div>
       </div>
       <div class="rule"></div>
       <div class="section-label">System boundary</div>
@@ -105,11 +105,11 @@
         <rect x="560" y="35" width="305" height="95" rx="16" fill="#fff4df" stroke="#edc77e"/>
         <text x="712" y="68" text-anchor="middle" font-size="17" font-weight="700" fill="#854a0a">Canonical records</text>
         <text x="712" y="94" text-anchor="middle" font-size="13" fill="#7a6240">entries · versions · highlights</text>
-        <text x="712" y="113" text-anchor="middle" font-size="13" fill="#7a6240">comments · conflicts · audit</text>
+        <text x="712" y="113" text-anchor="middle" font-size="13" fill="#7a6240">comments · mentions · tasks · audit</text>
         <rect x="560" y="170" width="305" height="95" rx="16" fill="#fff0f2" stroke="#e8a7b4"/>
         <text x="712" y="203" text-anchor="middle" font-size="17" font-weight="700" fill="#8e3046">Derived projections</text>
         <text x="712" y="229" text-anchor="middle" font-size="13" fill="#825464">Glance ranking · context bands</text>
-        <text x="712" y="248" text-anchor="middle" font-size="13" fill="#825464">provider-free warm read</text>
+        <text x="712" y="248" text-anchor="middle" font-size="13" fill="#825464">SSE invalidation · provider-free warm read</text>
       </svg>
       <div class="two-col" style="margin-top:4mm">
         <div class="card teal"><h3>Server is canonical</h3><p class="small">Clinic scope and role permissions are enforced on every protected request. No UI-only role switch or database credential reaches the browser.</p></div>
@@ -131,10 +131,10 @@
         <line x1="200" y1="62" x2="265" y2="62" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/><line x1="460" y1="62" x2="525" y2="62" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/>
         <rect x="50" y="145" width="235" height="75" rx="13" fill="#f8fbff" stroke="#b8c7d8"/><text x="167" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#24415f">EntryVersion</text><text x="167" y="198" text-anchor="middle" font-size="12" fill="#5c6b7f">immutable content snapshot</text>
         <rect x="332" y="145" width="235" height="75" rx="13" fill="#f8fbff" stroke="#b8c7d8"/><text x="449" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#24415f">Highlight</text><text x="449" y="198" text-anchor="middle" font-size="12" fill="#5c6b7f">version + exact span + quote hash</text>
-        <rect x="614" y="145" width="235" height="75" rx="13" fill="#f8fbff" stroke="#b8c7d8"/><text x="731" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#24415f">Comments / Conflict</text><text x="731" y="198" text-anchor="middle" font-size="12" fill="#5c6b7f">thread + stale submission</text>
+        <rect x="614" y="145" width="235" height="75" rx="13" fill="#f8fbff" stroke="#b8c7d8"/><text x="731" y="175" text-anchor="middle" font-size="16" font-weight="700" fill="#24415f">Comments / Tasks</text><text x="731" y="198" text-anchor="middle" font-size="12" fill="#5c6b7f">mentions + CAS assignment</text>
         <line x1="670" y1="95" x2="480" y2="140" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/><line x1="690" y1="95" x2="170" y2="140" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/><line x1="730" y1="95" x2="730" y2="140" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/>
         <rect x="110" y="267" width="260" height="45" rx="12" fill="#fff0f2" stroke="#e8a7b4"/><text x="240" y="295" text-anchor="middle" font-size="15" font-weight="700" fill="#8e3046">Glance projection</text>
-        <rect x="530" y="267" width="260" height="45" rx="12" fill="#fff0f2" stroke="#e8a7b4"/><text x="660" y="295" text-anchor="middle" font-size="15" font-weight="700" fill="#8e3046">Archival summary + manifest</text>
+        <rect x="530" y="267" width="260" height="45" rx="12" fill="#fff0f2" stroke="#e8a7b4"/><text x="660" y="295" text-anchor="middle" font-size="15" font-weight="700" fill="#8e3046">Archival + SSE metadata</text>
         <line x1="450" y1="220" x2="300" y2="262" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/><line x1="450" y1="220" x2="600" y2="262" stroke="#55708f" stroke-width="2.5" marker-end="url(#arrow2)"/>
       </svg>
       <div class="two-col" style="margin-top:4mm">
@@ -167,21 +167,21 @@
       <p class="small">Evidence below is synthetic and local. It establishes application behavior, not hosted compliance or PostgreSQL production guarantees.</p>
       <div class="section-label">Quality gates</div>
       <div class="evidence">
-        <div class="card blue"><h3>Backend</h3><p class="small"><strong>46 passed</strong> · 87% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0006_gate_d_archival` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
-        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>8 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Historical context and ranking explanations are unit-covered.</p></div>
-        <div class="card amber"><h3>Browser</h3><p class="small"><strong>8 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, ranking feedback, revisions/comments, 409 conflict, context source pointer, and patient privacy.</p></div>
-        <div class="card rose"><h3>Warm path</h3><p class="small"><strong>P95 78.477 ms</strong> from 1,000 real TCP requests, concurrency 10, 26 patients, 208 materialized rows, zero errors. Local SQLite/Uvicorn approximation.</p></div>
+        <div class="card blue"><h3>Backend</h3><p class="small"><strong>51 passed</strong> · 88% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0008_collaboration_events` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
+        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>14 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Bilingual chrome, Guide focus, mention keyboard flow, and reduced motion are covered.</p></div>
+        <div class="card amber"><h3>Browser</h3><p class="small"><strong>10 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, Chinese chrome, mentions/tasks, two-browser SSE, revisions, 409 conflict, and patient privacy.</p></div>
+        <div class="card rose"><h3>Warm path</h3><p class="small"><strong>P95 67.823 ms</strong> from 1,000 real TCP requests, concurrency 10, 26 patients, 208 materialized rows, zero errors. Local SQLite/Uvicorn approximation.</p></div>
       </div>
       <div class="section-label">Three-minute demonstration path</div>
       <div class="card">
         <div class="scenario"><div class="scenario-number">A</div><div><h3>Trace and trust</h3><p class="small">Clinician opens a Glance item, expands <strong>Why ranked?</strong>, pins/unpins it, follows the exact immutable source, and accepts or rejects a suggestion.</p></div></div>
-        <div class="scenario"><div class="scenario-number">B</div><div><h3>Collaborate without erasure</h3><p class="small">Staff edits a role-owned note, compares versions, reverts as a new version, adds a nested internal comment, and resolves/unresolves the thread.</p></div></div>
+        <div class="scenario"><div class="scenario-number">B</div><div><h3>Collaborate without erasure</h3><p class="small">Staff edits a role-owned note, compares versions, reverts as a new version, selects an @mention, creates/completes an assigned task, and observes a second browser refresh through metadata-only SSE.</p></div></div>
         <div class="scenario"><div class="scenario-number">C</div><div><h3>Surface conflict and history</h3><p class="small">Two writes use one expected version; the stale write returns <strong>409</strong> and remains beside the winner. Historical context then discloses a derived summary and opens a canonical source pointer.</p></div></div>
       </div>
       <div class="section-label">Trade-offs and deferred work</div>
       <div class="two-col">
-        <div class="muted-box"><strong>What is implemented:</strong> server-side RBAC and clinic scope, immutable revisions, exact provenance, comments, conflict preservation, redaction-gated deterministic AI jobs, bounded adaptive ranking, derived archival context, and materialized warm reads.</div>
-        <div class="muted-box"><strong>What is not claimed:</strong> live external LLM quality, PostgreSQL execution, TLS/encryption-at-rest evidence, production retention policy, human 10-second UX sign-off, voice capture, deployment, or email submission.</div>
+        <div class="muted-box"><strong>What is implemented:</strong> server-side RBAC and clinic scope, immutable revisions, exact provenance, comments/mentions/tasks, metadata-only SSE invalidation, conflict preservation, redaction-gated deterministic AI jobs, bounded adaptive ranking, derived archival context, and materialized warm reads.</div>
+        <div class="muted-box"><strong>What is not claimed:</strong> live external LLM quality, PostgreSQL execution, TLS/encryption-at-rest evidence, production retention policy, human 10-second UX sign-off, voice capture, deployment, final video, or email submission.</div>
       </div>
       <div class="rule"></div>
       <div class="card blue final-safety"><h3>Safety sentence</h3><p>AI output is a suggestion. Derived summaries are not canonical sources. Risk is not learned silently. Human review is not replaced by ranking.</p></div>

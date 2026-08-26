@@ -2,17 +2,20 @@
 
 | Shot | View / action | Evidence to capture | Suggested file |
 | --- | --- | --- | --- |
-| 1 | Clinician Top Card | Six-or-fewer cards, action/risk/status/source | `scenario-a-desktop.png` |
-| 2 | “Why ranked?” expanded | Contribution breakdown and ranking disclaimer | `scenario-a-ranking.png` |
-| 3 | Immutable source panel | Source entry/version, exact quote and span | `scenario-a-source.png` |
-| 4 | Timeline after source click | Highlighted immutable source version in context | `scenario-a-timeline.png` |
-| 5 | Staff revision history | Version list, diff, revert-as-new-version | `scenario-b-desktop.png` |
-| 6 | Nested comments | Root, reply, resolve/unresolve state | `scenario-b-comments.png` |
-| 7 | Conflict panel | Winner vs preserved stale submission, `409` | `scenario-c-conflict.png` |
-| 8 | Historical context | Hot/warm/cold and derived-summary disclosure | `scenario-c-context.png` |
-| 9 | Mobile workspace | No horizontal overflow at 390×844 | `mobile-scenario-a.png` |
-| 10 | Patient projection | Patient-facing entries only | `patient-privacy.png` |
+| 1 | English and Chinese chrome | Language toggle, translated heading, original clinical text | `scenario-a-language.png` |
+| 2 | Clinician Top Card | Six-or-fewer cards, action/risk/status/source | `scenario-a-desktop.png` |
+| 3 | Why ranked? | Contribution breakdown and ranking disclaimer | `scenario-a-ranking.png` |
+| 4 | Immutable source | Source entry/version, exact quote/span after focus fades | `scenario-a-source.png` |
+| 5 | Timeline deep link and close | Refresh persistence, Close source, query cleanup | `scenario-a-timeline.png` |
+| 6 | Staff revision history | Version list, diff, revert-as-new-version | `scenario-b-desktop.png` |
+| 7 | Mention autocomplete | Keyboard `@` suggestion and selected collaborator metadata | `scenario-b-mentions.png` |
+| 8 | Assignment/task | Source comment, assignee, status transition, Glance action | `scenario-b-tasks.png` |
+| 9 | Two-browser SSE | Clinician receives comment/task invalidation without page reload | `scenario-b-realtime.png` |
+| 10 | Conflict panel | Winner vs preserved stale submission, `409` | `scenario-c-conflict.png` |
+| 11 | Historical context | Hot/warm/cold and derived-summary disclosure | `scenario-c-context.png` |
+| 12 | Patient projection | Patient-facing entries only; internal tasks/comments absent | `patient-privacy.png` |
+| 13 | Mobile workspace | Chinese chrome, source/task controls, no horizontal overflow at 390x844 | `mobile-scenario-a.png` |
 
-The current Playwright runner emits the Scenario A/B screenshots under ignored
-`artifacts/gate-b/`. Delivery copies are synthetic and should be selected from those outputs after
-visual review; no raw database or password file belongs in the package.
+The Playwright runner emits synthetic Scenario A/B/C screenshots under ignored `artifacts/gate-b/`.
+Delivery copies should be selected after visual review; no database, password file, runtime log, or
+real patient data belongs in the package.

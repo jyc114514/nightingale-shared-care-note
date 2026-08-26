@@ -10,8 +10,8 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | DATA-01 | Manual, system, patient, clinician, and staff entry metadata | Mandatory | Current immutable-version author/owner assertions in [test_gate_b_api.py](../backend/tests/test_gate_b_api.py) | passed |
 | AI-01 | Three distinct system-authored AI-scribed entry types | Mandatory | Seed/ingestion test for doctor, nurse, and patient session types | passed |
 | COL-01 | Threaded comments with resolve/unresolve | Mandatory | Nested-tree API/UI assertions and Scenario B root/reply/resolve/unresolve | passed |
-| COL-02 | Mentions | Optional | Parser/UI smoke test | deferred |
-| COL-03 | Assignment | Optional | Task ownership API/UI test | deferred |
+| COL-02 | Mentions | Optional | Clinic-scoped stable-user API, keyboard autocomplete, and Scenario B E2E | passed |
+| COL-03 | Assignment | Optional | Clinic-scoped task API, CAS/projection tests, and Scenario B E2E | passed |
 | REV-01 | Full snapshots and version increment | Mandatory | [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
 | REV-02 | View changes since version/date | Mandatory | Diff API assertion in [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
 | REV-03 | Revert to prior content without erasing history | Mandatory | Revert/version assertions in [`test_revision_history.py`](../backend/tests/test_revision_history.py) | passed |
@@ -30,7 +30,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | PRIV-02 | Names, IC/ID, phones redacted before external LLM | Mandatory | [test_redaction.py](../backend/tests/test_redaction.py), provider spy, and fail-closed job test | passed |
 | PRIV-03 | Clean logs; raw note content absent | Mandatory | [test_ai_processing.py](../backend/tests/test_ai_processing.py) caplog/audit/job safety assertions | passed |
 | PRIV-04 | TLS in transit and encryption at rest | Mandatory | Deployment-provider evidence and explicit local limitation | planned |
-| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) reports P95 78.477 ms; local SQLite approximation limitation documented | passed |
+| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) on feature-freeze `3129da3` reports P95 67.823 ms; local SQLite approximation limitation documented | passed |
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | passed |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | passed |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Only after all mandatory gates | dropped by default |
@@ -110,7 +110,7 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 | GATE-C-JOBS | Three interaction types create new system-authored AI entries and suggested exact immutable highlights; idempotency prevents duplicates; patient mutation/read is denied | passed | [ai_processing.py](../backend/app/services/ai_processing.py), [ai_processing.py](../backend/app/api/routes/ai_processing.py), [test_ai_processing.py](../backend/tests/test_ai_processing.py) |
 | GATE-C-MATERIALIZED | Glance reads only `patient_glance_items`, remains capped/ordered/filtered, retains source IDs/offset/hash, and makes zero provider calls | passed | [glance.py](../backend/app/services/glance.py), [gate_b.py](../backend/app/api/routes/gate_b.py), [test_materialized_glance.py](../backend/tests/test_materialized_glance.py) |
 | GATE-C-LOGS | Job/audit metadata excludes raw note/comment/provider content; provider failure and validation paths expose only safe error codes; caplog sentinel checks pass | passed | [test_ai_processing.py](../backend/tests/test_ai_processing.py), [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py) |
-| GATE-C-PERF | Real Uvicorn TCP benchmark: 50 warm-up, 1,000 samples, concurrency 10, 26 patients, 208 benchmark rows, zero errors, P50 55.736 ms, P95 78.477 ms, P99 106.919 ms, max 129.497 ms, six items | passed | [gate_c_warm_path.md](evidence/gate_c_warm_path.md), [gate_c_warm_path.json](evidence/gate_c_warm_path.json), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
+| GATE-C-PERF | Real Uvicorn TCP benchmark: 50 warm-up, 1,000 samples, concurrency 10, 26 patients, 208 benchmark rows, zero errors, P50 49.774 ms, P95 67.823 ms, P99 80.593 ms, max 86.835 ms, six items | passed | [gate_c_warm_path.md](evidence/gate_c_warm_path.md), [gate_c_warm_path.json](evidence/gate_c_warm_path.json), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
 
 ## Phase 4A / Bonus adaptive importance evidence - 2026-08-26
 
@@ -129,16 +129,32 @@ hosted PostgreSQL, TLS, or encryption-at-rest evidence.
 | BONUS-02-API | Context read and explicit refresh enforce clinic scope and role permissions; patient projection omits internal entries and raw AI content | passed | [context.py](../backend/app/api/routes/context.py), [test_data_decay.py](../backend/tests/test_data_decay.py) |
 | BONUS-02-UI | Historical context panel discloses derived summaries and follows canonical source pointers on desktop/mobile browser paths | passed | [App.tsx](../frontend/src/App.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
 
-## Phase 5 / Delivery artifact evidence - 2026-08-26
+## Phase 7 / Delivery artifact evidence - 2026-08-26
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
-| DEL-01-CLEAN-CLONE | Final checkpoint `f745574` cloned into a fresh directory; migration, seed, backend/frontend quality, and 8 browser checks passed | passed | [clean_clone_rehearsal.md](evidence/clean_clone_rehearsal.md), [`.gitattributes`](../.gitattributes) |
+| DEL-01-CLEAN-CLONE | Feature-freeze checkpoint `3129da3` cloned into a fresh directory; migration, seed, launcher, backend/frontend quality, and 10 browser checks passed | passed | [clean_clone_rehearsal.md](evidence/clean_clone_rehearsal.md), [`.gitattributes`](../.gitattributes) |
 | DEL-02-CLEAN-SETUP | README setup, migration-first seed, redaction boundary, local limitation, and clean-clone commands were executed successfully | passed | [README.md](../README.md), [clean_clone_rehearsal.md](evidence/clean_clone_rehearsal.md) |
 
 | DEL-03-PDF | Three-page A4 Technical Brief generated from local HTML, rendered to raster, and visually inspected page by page; final page footer overlap was corrected and rechecked | passed | [Nightingale_Technical_Brief.pdf](../deliverables/Nightingale_Technical_Brief.pdf), [technical_brief_qa.md](evidence/technical_brief_qa.md) |
 | DEL-04-AUDIT | Direct backend/frontend dependency versions and observed license metadata recorded without guessing undeclared Python licenses | passed | [ATTRIBUTION.txt](../ATTRIBUTION.txt) |
-| DEL-05-SCRIPT | Scenarios A-C script, shot list, UX timing protocol, and six synthetic browser screenshots are ready; no final video tool is available on PATH | in progress | [DEMO_SCRIPT.md](DEMO_SCRIPT.md), [DEMO_SHOTLIST.md](DEMO_SHOTLIST.md), [screenshots](../deliverables/screenshots/) |
+| DEL-05-SCRIPT | Scenarios A-C script, shot list, bilingual/task/SSE coverage, UX timing protocol, and synthetic browser screenshots are ready; final video still pending | in progress | [DEMO_SCRIPT.md](DEMO_SCRIPT.md), [DEMO_SHOTLIST.md](DEMO_SHOTLIST.md), [screenshots](../deliverables/screenshots/) |
+
+## Phase 7 / usability, local demo, and collaboration evidence - 2026-08-26
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-7A-I18N | Typed English/简体中文 chrome dictionaries, URL-over-localStorage precedence, document language, source-data boundary, translated ARIA names | passed | [`frontend/src/i18n`](../frontend/src/i18n), [`App.test.tsx`](../frontend/tests/App.test.tsx) |
+| PHASE-7A-GUIDE | Closed-by-default bilingual read-only Learning Guide with close/Escape behavior and UX-01 instructions | passed | [`App.tsx`](../frontend/src/App.tsx), [`DEMO_SCRIPT.md`](DEMO_SCRIPT.md) |
+| PHASE-7B-LAUNCHER | Clean runtime, migration/seed/health, second-start idempotency, PID safety, logs/secret scan, safe stop, no port residue | passed | [`scripts/test_demo_launcher.ps1`](../scripts/test_demo_launcher.ps1), [`README_DEMO_LAUNCHER.md`](../scripts/README_DEMO_LAUNCHER.md) |
+| PHASE-7C-MENTIONS | Active same-clinic collaborator directory, stable IDs, dedupe, cross-clinic/patient denial, metadata-only mention audit | passed | [`test_collaboration.py`](../backend/tests/test_collaboration.py), [`comments.py`](../backend/app/api/routes/comments.py) |
+| PHASE-7D-TASKS | Migration 0007, task source pointers, assignee validation, status/projection, CAS conflict, patient/admin policy, Glance action | passed | [`0007_collaboration_mentions_tasks.py`](../backend/migrations/versions/0007_collaboration_mentions_tasks.py), [`tasks.py`](../backend/app/api/routes/tasks.py) |
+| PHASE-7E-SSE | Migration 0008, persisted monotonic events, Last-Event-ID parser, heartbeat, scoped stream, two-browser invalidation E2E | passed | [`events.py`](../backend/app/api/routes/events.py), [`test_events.py`](../backend/tests/test_events.py), [`gate-b.spec.ts`](../frontend/tests/e2e/gate-b.spec.ts) |
+| PHASE-7F-A11Y | Focus trap/return, visible focus, translated names, live status, reduced-motion scrolling, keyboard autocomplete | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx) |
+
+The feature-freeze regression reports backend **51 passed / 88% coverage**, frontend **14 Vitest
+tests**, and **10 Playwright tests**. Warm-path evidence is the real-TCP SQLite approximation on
+`3129da3`: P50 49.774 ms, P95 67.823 ms, P99 80.593 ms, max 86.835 ms, zero errors.
 
 ## Hard release gate
 

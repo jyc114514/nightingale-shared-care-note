@@ -1,47 +1,30 @@
-# Phase 4 Bonus evidence - 2026-08-26
+# Local Bonus and Phase 7 evidence - 2026-08-26
 
-This record covers the local synthetic implementation only. It does not claim hosted PostgreSQL,
-external LLM, TLS, or encryption-at-rest evidence.
+This record covers local synthetic implementation only. It does not claim hosted PostgreSQL,
+external LLM, TLS, encryption-at-rest, deployment, or real patient data.
 
 ## Backend
 
-- Python: 3.10.20 in the pre-existing `ai_env`; `pip check` passed.
-- Alembic head: `0006_gate_d_archival`.
-- `pytest`: **46 passed**.
-- Coverage: **87%** (`2210` statements, `286` missed) from the reproducible
-  `pytest --cov=app --cov-report=term-missing` command; the full test suite still reports
-  **46 passed**. The lower percentage includes unexecuted standalone benchmark scripts in the
-  `app` source scope; data files used for the run were kept outside the repository deliverables.
-- Ruff check, Ruff format check, and `mypy app tests`: passed.
-- `requirements.txt` SHA-256 remains
+- Python 3.10.20 in the pre-existing `ai_env`; pip check passed.
+- Alembic head: `0008_collaboration_events`.
+- Full backend suite: **51 passed**; reproducible coverage: **88%**.
+- Ruff check/format and `mypy app tests`: passed.
+- Requirements SHA-256 remains
   `4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5`.
 
-## Migration and seed
+## Bonus and optional collaboration
 
-- Fresh upgrade, downgrade/re-upgrade, legacy-index repair, and `alembic check` passed.
-- Two consecutive synthetic seed runs produced identical counts:
+- Adaptive importance remains clinic-scoped, idempotent, bounded, and separate from risk/provenance.
+- Hybrid hot/warm/cold context preserves canonical source pointers and protection overrides.
+- Mentions validate stable active same-clinic user IDs and deduplicate comment-user pairs.
+- Assignments validate same-clinic staff/clinician assignees, preserve source pointers, support CAS
+  status updates, and materialize open actions into Glance.
+- SSE events persist only resource identifiers/kinds and actor metadata; no raw title, note,
+  comment, quote, patient name, identifier, phone, or secret is sent in the stream.
 
-  - 2 clinics
-  - 5 users
-  - 2 patients
-  - 7 entries
-  - 5 highlights and 5 materialized Glance items
-  - 2 comments
-  - 1 archival summary and 2 archival source pointers
+## Browser and performance
 
-- Temporary SQLite files used for this check were removed after validation. Canonical entries and
-  immutable entry versions were not deleted by the archival refresh.
-
-## Frontend and browser
-
-- Vitest: **8 passed**.
-- ESLint, Prettier check, TypeScript build/type-check, and production Vite build: passed.
-- Playwright: **8 passed** across desktop `1440x900` and mobile `390x844`.
-- Browser evidence includes ranking explanation/pin feedback, exact immutable provenance, revision
-  and conflict flows, nested comments, derived Historical context disclosure/source pointers,
-  and patient projection/privacy.
-
-## Scope boundary
-
-Adaptive importance and archival context are deterministic local prototype logic. No raw note text,
-patient identifiers, embeddings, external provider call, or API key is used by either Bonus path.
+- Vitest: **14 passed**.
+- Playwright: **10 passed** at desktop `1440x900` and mobile `390x844`.
+- The real-TCP warm-path benchmark on `3129da3` measured P50 49.774 ms, P95 67.823 ms, P99
+  80.593 ms, max 86.835 ms, and zero errors.

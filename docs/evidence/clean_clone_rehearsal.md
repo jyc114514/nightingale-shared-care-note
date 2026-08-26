@@ -1,36 +1,34 @@
 # Clean-clone rehearsal - 2026-08-26
 
-This rehearsal used the final local checkpoint `f745574` and a newly created clone. The clone was
-checked out with the repository `.gitattributes`, so Windows checkout line endings remained LF and
-the committed Prettier check was reproducible.
+This rehearsal cloned the feature-freeze application checkpoint `3129da3` into a new Chinese-path
+directory with no inherited `node_modules`, `dist`, database, `.env`, coverage, or Playwright report.
+The isolated clone then ran the manual setup, full test suite, and one-click launcher smoke.
 
 ## Backend
 
-- `python -m alembic upgrade head`: passed from an empty SQLite database; migrations reached
-  `0006_gate_d_archival`.
-- Synthetic seed: two consecutive runs passed with stable counts: 2 clinics, 5 users, 2 patients,
-  7 entries, 5 highlights, 5 materialized Glance rows, 2 comments, 1 archival summary, and 2
-  archival source pointers.
-- `pytest --cov=app --cov-report=term-missing --basetemp=<clone>/.pytest-tmp`: **46 passed**;
-  the reproducible output is 87% coverage (2,210 statements, 286 missed), including standalone
-  benchmark scripts that are not exercised by the application suite.
-- Ruff check, Ruff format check, `mypy app tests`, and `pip check`: passed.
+- `pip check`, Ruff check/format, and `mypy app tests`: passed.
+- Alembic reached `0008_collaboration_events`; fresh upgrade, `alembic check`, downgrade/re-upgrade,
+  and legacy Gate A index repair passed.
+- Synthetic seed ran twice with stable counts: 2 clinics, 5 users, 2 patients, 7 entries, 5
+  highlights, 5 materialized Glance rows, 2 comments, and 1 archival summary.
+- Full backend suite: **51 passed**.
+- Reproducible coverage: **88%** (2,608 statements, 320 missed) using an audit-root coverage file
+  and audit-root pytest basetemp.
 
 ## Frontend and browser
 
-- `pnpm install --frozen-lockfile`: passed; the lockfile policy check covered 339 entries.
-- ESLint, Prettier check, Vitest (**8 passed**), TypeScript type-check, and Vite production build:
+- `pnpm install --frozen-lockfile`: passed; the lockfile policy covered 339 entries.
+- ESLint, Prettier, Vitest (**14 passed**), TypeScript type-check, and Vite production build:
   passed.
-- Playwright: **8 passed** across desktop `1440x900` and mobile `390x844`, covering Scenarios A-C
-  and patient privacy with real Uvicorn, Vite, Alembic, and synthetic seed data.
+- Playwright: **10 passed** across desktop `1440x900` and mobile `390x844`, covering provenance,
+  bilingual chrome, mention autocomplete, assignments, two-browser SSE invalidation, revisions,
+  conflicts, and patient privacy.
 
-## Rehearsal fixes
+## One-click launcher
 
-- `.gitattributes` makes future Windows clones use LF for text files, preventing a false Prettier
-  failure caused by global `autocrlf` settings.
-- E2E global setup now creates the ignored `.uv-cache` parent directory before opening its temporary
-  SQLite database, so a truly clean clone does not depend on a pre-existing local folder.
-
-Temporary clone, database, dependency tree, browser report, and rehearsal logs were removed after
-validation. No source database, patient data, credentials, API key, or external provider call was
-used.
+- `scripts/test_demo_launcher.ps1` passed in the clean clone with `-NoBrowser -Setup`.
+- The smoke exercised migration, synthetic seed, backend/frontend health, second-start idempotency,
+  runtime secret/password scan, exact-PID safe stop, and port cleanup.
+- The smoke runtime, database, logs, and child processes were removed after validation. No source
+  database, real patient data, credential, API key, external provider call, or remote Git action
+  was used.

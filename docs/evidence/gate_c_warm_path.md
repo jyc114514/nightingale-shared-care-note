@@ -7,7 +7,7 @@ production result and not evidence of deployment TLS or encryption-at-rest.
 
 | Field | Value |
 | --- | --- |
-| Commit | e148368 |
+| Commit | 3129da3 |
 | Python | 3.10.20 |
 | Database | file-backed SQLite local approximation |
 | Transport | real TCP HTTP via Uvicorn and httpx.Client |
@@ -19,10 +19,10 @@ production result and not evidence of deployment TLS or encryption-at-rest.
 | Concurrency | 10 |
 | Response item count | 6 |
 | Errors | 0 |
-| P50 | 55.736 ms |
-| P95 | 78.477 ms |
-| P99 | 106.919 ms |
-| Max | 129.497 ms |
+| P50 | 49.774 ms |
+| P95 | 67.823 ms |
+| P99 | 80.593 ms |
+| Max | 86.835 ms |
 
 The measured endpoint is GET /patients/{patient_id}/glance with a real
 cookie session. It reads patient_glance_items; provider processing is only on

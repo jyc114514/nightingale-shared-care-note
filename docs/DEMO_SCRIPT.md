@@ -1,8 +1,7 @@
 # Nightingale demo script
 
-Target length: 3–4 minutes. Use synthetic seed data only. The demo password is supplied through
-the local `DEMO_SEED_PASSWORD` environment variable and must never be written in the recording,
-repository, or logs.
+Target length: 3-4 minutes. Use synthetic seed data only. The password is supplied locally to the
+launcher or `DEMO_SEED_PASSWORD`; never record, print, commit, or log it.
 
 ## Opening (15 seconds)
 
@@ -10,47 +9,54 @@ repository, or logs.
 needs attention, while every suggestion remains traceable to an immutable source and a human
 review state.”
 
-## Scenario A — trace and trust (75 seconds)
+## Scenario A - trace, trust, and bilingual chrome (70 seconds)
 
-1. Sign in as `clinician.a@clinic-a.test` and select the seeded synthetic patient.
-2. Point out that the Top Card has no more than six items and separately displays item kind,
-   action state, explicit risk, status, and source label.
-3. Open **Why ranked?**. Read the base, recency, action, confirmation, adaptive, and final
-   contributions. Say: “This is ranking priority, not a medical risk score.”
-4. Click **Pin**, then **Unpin**. Explain that feedback is clinic-scoped and idempotent and does
-   not mutate risk or provenance.
-5. Open an AI-scribed doctor-consult source. Show the exact quote in the immutable source panel,
-   then the matching highlighted span in the timeline. Refresh the URL/deep link if time allows.
-6. Accept or reject a suggestion and show that the status changes while the source remains
-   resolvable.
+1. Double-click `Start Nightingale Demo.cmd`, or use the manual setup. Sign in as
+   `clinician.a@clinic-a.test` and select the synthetic patient.
+2. Switch between English and 简体中文. Explain that only application chrome changes; clinical
+   note content and quotes remain in the original language.
+3. Point out that the Top Card has no more than six items and separately displays item kind,
+   action state, explicit risk, status, ranking priority, and source label.
+4. Open **Why ranked?**. Say: “This is ranking priority, not a medical risk score.”
+5. Open an AI-scribed doctor-consult source. Show the exact quote in the immutable source panel
+   and the matching source span in the timeline. Wait beyond the focus animation: the source stays.
+6. Refresh the deep link, then close the source. The panel/span disappears while `patient` stays
+   in the URL and `highlight` is removed.
 
-## Scenario B — collaborate without erasure (75 seconds)
+## Scenario B - collaborate without erasure (85 seconds)
 
 1. Sign in as `staff.a@clinic-a.test`.
-2. Open the staff note, edit it, and save a new revision.
-3. Open history, compare the prior version, and revert it. Say: “Revert creates a new snapshot;
-   it does not delete history.”
-4. Add a root internal comment, reply to it, resolve it, and unresolve it. The reply is nested
-   under its parent rather than flattened into a separate list.
+2. Open the staff note, edit it, compare history, and revert it. Say: “Revert creates a new
+   snapshot; it does not delete history.”
+3. Open Comments, type `@`, use the keyboard suggestion, and choose a clinic collaborator.
+4. Add a root comment and reply. Click **Assign task**, create a task linked to the comment,
+   choose an assignee, move it to **In progress**, then **Done**. The open task appears as a
+   Glance action and leaves the active action list after completion.
+5. Keep a second clinician browser open on the same patient. The second browser receives the
+   comment/task metadata event and refetches the canonical API without a page refresh.
+6. Resolve and unresolve the comment thread.
 
-## Scenario C — surface conflict and history (60 seconds)
+## Scenario C - conflict and history (55 seconds)
 
-1. Keep the staff session and obtain the current version from the history panel.
-2. Submit one current write and one stale write with the same `expected_version`.
-3. Show the `409` conflict panel with current content and preserved attempted content side by
-   side. Say: “There is no silent last-write-wins.”
-4. Open **Historical context**. Point out Hot, Warm index, and the derived cold period.
-5. Read the disclosure “Derived summary · not canonical source” and open a canonical source
-   pointer back in the timeline.
+1. Submit one current write and one stale write with the same `expected_version`.
+2. Show the `409` conflict panel with current and preserved attempted content. Say: “There is no
+   silent last-write-wins.”
+3. Open Historical context. Point out Hot, Warm index, and the derived cold period, then open a
+   canonical source pointer.
 
 ## Privacy close (20 seconds)
 
-Sign in as `sarah.patient@clinic-a.test`. Show that patient-facing summary/instruction entries
-remain visible while internal Glance, comments, raw AI notes, conflict details, and internal source
-pointers are absent. Mention that this is a server-side projection, not a hidden UI control.
+Sign in as `sarah.patient@clinic-a.test`. Show patient-facing entries only. Internal Glance,
+comments, raw AI notes, tasks, conflict details, and internal source pointers remain unavailable
+through server-side projection and authorization.
+
+## Help and UX boundary
+
+The bilingual Learning Guide is closed by default and may be opened for learning before the
+formal UX-01 test. Close it before the ten-second test. The Guide explicitly lists actions that
+modify demo state: Accept, Reject, Edit, Revert, Comment, and Task creation/update.
 
 ## If a live action fails
 
-Use the already seeded state and the static screenshots in `deliverables/screenshots/`. Do not
-invent a successful provider call, hosted database, TLS guarantee, or UX result. The deterministic
-local provider and recorded test evidence are the fallback boundary.
+Use the seeded state and reviewed synthetic screenshots. Do not invent a successful provider call,
+hosted database, TLS guarantee, SSE completion, or human UX result.
