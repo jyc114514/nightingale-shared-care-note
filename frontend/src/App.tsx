@@ -2882,7 +2882,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             </p>
           )}
 
-          {canUseAIScribe && (
+          {canUseAIScribe && patientId && (
             <AIScribePanel
               providerInfo={aiProviderInfo}
               providerError={aiProviderError}
