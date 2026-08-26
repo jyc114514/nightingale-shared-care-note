@@ -272,6 +272,13 @@ def process_voice_session(
             status="failed_asr",
             error_code=exc.error_code,
         )
+    except Exception:
+        return _set_session_failure(
+            db,
+            session,
+            status="failed_asr",
+            error_code="asr_inference_failed",
+        )
 
     persisted_segments: list[TranscriptSegment] = []
     for segment in transcript.segments:

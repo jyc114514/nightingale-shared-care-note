@@ -135,7 +135,11 @@ def voice_sample_audio(
     try:
         get_voice_provider_info(app_settings)
         sample = require_voice_sample(context, sample_id)
-    except (VoiceAuthorizationError, VoiceConfigurationError) as exc:
+    except (
+        VoiceAuthorizationError,
+        VoiceConfigurationError,
+        VoiceProviderError,
+    ) as exc:
         raise _provider_error(exc) from exc
     return FileResponse(
         sample.audio_path,

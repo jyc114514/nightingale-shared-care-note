@@ -72,8 +72,38 @@ async def test_voice_samples_and_audio_are_role_scoped(
 
 
 @pytest.mark.asyncio
-async def test_staff_voice_fixture_creates_immutable_transcript_and_source(
+async def test_voice_disabled_is_explicit_and_does_not_crash(
     client: Any, test_settings: Settings, demo_data: Any
+) -> None:
+    test_settings.voice_provider = "disabled"
+    await login(client, "staff@clinic-a.test")
+    provider = await client.get("/voice/provider")
+    assert provider.status_code == 200
+    assert provider.json() == {
+        "provider_name": "disabled",
+        "model": "none",
+        "mode": "disabled",
+        "enabled": False,
+        "disclosure": "Voice is disabled in this environment.",
+    }
+    patient_id = demo_data.patient_a.id
+    samples = await client.get(f"/patients/{patient_id}/voice/samples")
+    assert samples.status_code == 200
+    assert samples.json() == []
+    process = await client.post(
+        f"/patients/{patient_id}/voice/sessions",
+        json={"sample_id": CLINICAL_SAMPLE.sample_id, "idempotency_key": "voice-disabled"},
+    )
+    assert process.status_code == 503
+    assert process.json()["detail"] == "voice_provider_disabled"
+
+
+@pytest.mark.asyncio
+async def test_staff_voice_fixture_creates_immutable_transcript_and_source(
+    client: Any,
+    test_settings: Settings,
+    demo_data: Any,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     test_settings.voice_provider = "fixture"
     await login(client, "staff@clinic-a.test")
@@ -98,6 +128,7 @@ async def test_staff_voice_fixture_creates_immutable_transcript_and_source(
     assert all(segment["confidence"] is None for segment in body["segments"])
     assert all(segment["start_ms"] < segment["end_ms"] for segment in body["segments"])
     assert [segment["segment_index"] for segment in body["segments"]] == [0, 1, 2]
+    assert "This is a synthetic nurse follow-up" not in caplog.text
 
     fetched = await client.get(f"/patients/{patient_id}/voice/sessions/{body['id']}")
     assert fetched.status_code == 200
