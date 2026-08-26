@@ -72,13 +72,13 @@
   </head>
   <body>
     <section class="page">
-      <div class="eyebrow">Nightingale / technical brief / 26 Aug 2026</div>
+      <div class="eyebrow">Nightingale / technical brief / 27 Aug 2026</div>
       <h1>Shared care notes that make trust visible.</h1>
       <p class="lede">A clinic-scoped longitudinal collaboration layer for the moment when a care team needs to understand what changed and what needs action in under ten seconds.</p>
-      <p class="meta">Phase 8 optional-provider local prototype · application checkpoint 7b1b05e · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
+      <p class="meta">Phase 9 local release candidate · app checkpoint 8d186c6 · optional DeepSeek · Level-C Voice · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
       <div class="band">
-        <div class="metric"><strong>71</strong><span>real backend tests</span></div>
-        <div class="metric"><strong>19</strong><span>Vitest checks</span></div>
+        <div class="metric"><strong>81</strong><span>real backend tests</span></div>
+        <div class="metric"><strong>21</strong><span>Vitest checks</span></div>
         <div class="metric"><strong>88%</strong><span>backend coverage</span></div>
         <div class="metric"><strong>67.823 ms</strong><span>Gate C warm-path P95</span></div>
       </div>
@@ -117,7 +117,7 @@
       </svg>
       <div class="two-col" style="margin-top:4mm">
         <div class="card teal"><h3>Server is canonical</h3><p class="small">Clinic scope and role permissions are enforced on every protected request. No UI-only role switch or database credential reaches the browser.</p></div>
-        <div class="card amber"><h3>AI is bounded</h3><p class="small">Fixture remains the default. The optional DeepSeek V4 Flash adapter is typed, redaction-gated, JSON-validated, and write-path only. Glance reads never call a provider. One bounded synthetic smoke returned 2xx; no model-quality claim.</p></div>
+        <div class="card amber"><h3>AI and Voice are bounded</h3><p class="small">Fixture remains the default. DeepSeek is optional and redaction-gated. Voice is Level-C prerecorded synthetic audio with a mock transcript fixture; Render disables Voice. Glance reads never call a provider.</p></div>
       </div>
       <div class="footer"><span>Trust-centered longitudinal collaboration</span><span>01 / 03</span></div>
     </section>
@@ -171,9 +171,9 @@
       <p class="small">Evidence below is synthetic and local. It establishes application behavior, not hosted compliance or PostgreSQL production guarantees.</p>
       <div class="section-label">Quality gates</div>
       <div class="evidence">
-        <div class="card blue"><h3>Backend</h3><p class="small"><strong>71 passed</strong> · 88% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0008_collaboration_events` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
-        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>19 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Bilingual chrome, Guide focus, contextual drawers, exact text flow, preview dimensions, AI Scribe states, mention keyboard flow, and reduced motion are covered.</p></div>
-        <div class="card amber"><h3>Browser</h3><p class="small"><strong>12 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, original-record rows, contextual comments/tasks, Desktop/Mobile preview, Chinese chrome, mentions/tasks, two-browser SSE, revisions, 409 conflict, and patient privacy.</p></div>
+        <div class="card blue"><h3>Backend</h3><p class="small"><strong>81 passed</strong> · 88% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0009_voice_capture` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
+        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>21 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Bilingual chrome, Guide focus, contextual drawers, exact text flow, preview dimensions, AI Scribe states, Voice fixture states, mentions, and reduced motion are covered.</p></div>
+        <div class="card amber"><h3>Browser</h3><p class="small"><strong>16 Playwright checks</strong> at 1440×900 and 390×844: 12 core Gate B checks plus four isolated Voice fixture checks for scope, audio, timestamps, source navigation, Chinese chrome, mentions/tasks, SSE, revisions, 409 conflict, and patient privacy.</p></div>
         <div class="card rose"><h3>Warm path</h3><p class="small"><strong>P95 67.823 ms</strong> from 1,000 real TCP requests, concurrency 10, 26 patients, 208 materialized rows, zero errors. Local SQLite/Uvicorn approximation.</p></div>
       </div>
       <div class="section-label">Three-minute demonstration path</div>
@@ -184,8 +184,8 @@
       </div>
       <div class="section-label">Trade-offs and deferred work</div>
       <div class="two-col">
-        <div class="muted-box"><strong>What is implemented:</strong> server-side RBAC and clinic scope, immutable revisions, exact provenance, comments/mentions/tasks, metadata-only SSE invalidation, conflict preservation, redaction-gated deterministic AI jobs, bounded adaptive ranking, derived archival context, and materialized warm reads.</div>
-        <div class="muted-box"><strong>What is not claimed:</strong> DeepSeek model quality or provider compliance, PostgreSQL execution, TLS/encryption-at-rest evidence, production retention policy, human 10-second UX sign-off, voice capture, deployment, final video, or email submission.</div>
+        <div class="muted-box"><strong>What is implemented:</strong> server-side RBAC and clinic scope, immutable revisions, exact provenance, comments/mentions/tasks, metadata-only SSE invalidation, conflict preservation, redaction-gated deterministic AI jobs, Level-C synthetic audio/mock transcript fixtures, bounded adaptive ranking, derived archival context, materialized warm reads, and Render-ready Docker/Blueprint files.</div>
+        <div class="muted-box"><strong>What is not claimed:</strong> functional Whisper/ASR or model quality, DeepSeek provider compliance, PostgreSQL execution, hosted Render deployment, TLS/encryption-at-rest evidence, production retention policy, human 10-second UX sign-off, microphone/diarization, final video, or email submission.</div>
       </div>
       <div class="rule"></div>
       <div class="card blue final-safety"><h3>Safety sentence</h3><p>AI output is a suggestion. Derived summaries are not canonical sources. Risk is not learned silently. Human review is not replaced by ranking.</p></div>

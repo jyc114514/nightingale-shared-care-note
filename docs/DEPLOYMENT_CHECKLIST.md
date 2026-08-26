@@ -1,7 +1,8 @@
 # Deployment checklist
 
-Status: **Render deployment attempt pending**. The repository now contains a Docker production
-image and a Render Blueprint; no hosted resource has been created yet in this checkpoint.
+Status: **Render deployment blocked before resource creation**. The repository contains a Docker
+production image and a Render Blueprint, but Render requires a GitHub App permission approval that
+must be performed with the user present.
 
 ## Required before a hosted demo
 
@@ -34,9 +35,16 @@ image and a Render Blueprint; no hosted resource has been created yet in this ch
       database encryption evidence in `docs/evidence/deployment_security.md` or
       `docs/evidence/deployment_attempt.md`.
 
+The actual attempt is recorded in [`deployment_attempt.md`](evidence/deployment_attempt.md).
+No Web Service, Postgres database, public URL, deployment secret, or paid resource was created.
+
 Render Free limitations must remain visible: free web services spin down after inactivity, the
 filesystem is ephemeral, and Free Postgres is limited to 1 GB and expires after 30 days. This is
 an evaluation deployment, not a clinical production guarantee.
+
+Official references used for the readiness design: [Blueprint specification](https://render.com/docs/blueprint-spec),
+[HTTP health checks](https://render.com/docs/health-checks), [Free instance limitations](https://render.com/docs/free),
+[managed TLS](https://render.com/docs/tls), and [Render Postgres encryption](https://render.com/docs/postgresql-creating-connecting).
 
 ## Optional external provider boundary
 
