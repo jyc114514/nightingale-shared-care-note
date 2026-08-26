@@ -8,7 +8,7 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from app.ai.deepseek import DeepSeekProvider, ProviderError
+from app.ai.deepseek import DEEPSEEK_MAX_RESPONSE_BYTES, DeepSeekProvider, ProviderError
 from app.ai.provider import (
     FixtureProvider,
     ProviderConfigurationError,
@@ -230,6 +230,17 @@ def test_provider_retries_one_timeout_then_returns_safe_code() -> None:
         with pytest.raises(ProviderError, match="provider_timeout"):
             provider.process(redacted_payload())
     assert calls == 2
+
+
+def test_provider_rejects_oversized_response_body() -> None:
+    oversized_content = "x" * (DEEPSEEK_MAX_RESPONSE_BYTES + 1)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=oversized_content.encode("utf-8"))
+
+    with provider_for(handler) as provider:
+        with pytest.raises(ProviderError, match="provider_output_invalid"):
+            provider.process(redacted_payload())
 
 
 def test_provider_errors_never_log_raw_response_or_key(caplog: pytest.LogCaptureFixture) -> None:
