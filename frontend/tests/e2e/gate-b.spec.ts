@@ -124,6 +124,11 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
     page.getByTestId("timeline-entry-" + sourceEntryId),
   ).toBeVisible();
 
+  await page.waitForTimeout(3000);
+  await expect(timelineSource.getByTestId("source-quote")).toHaveText(
+    quote ?? "",
+  );
+
   const highlightId = new URL(page.url()).searchParams.get("highlight");
   expect(highlightId).toBeTruthy();
   await page.reload();
@@ -133,6 +138,40 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   await expect(
     page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
   ).toHaveText(quote ?? "");
+
+  const secondCard = page
+    .getByTestId("glance-item")
+    .filter({ hasText: "Patient session" })
+    .first();
+  await secondCard.getByRole("button", { name: "Open source" }).click();
+  const secondTimelineSource = page.getByTestId("immutable-timeline-source");
+  await expect(secondTimelineSource).toBeVisible();
+  await expect(secondTimelineSource).not.toHaveAttribute(
+    "data-source-entry-id",
+    sourceEntryId ?? "",
+  );
+  const secondQuote = await secondTimelineSource
+    .getByTestId("source-quote")
+    .textContent();
+  expect(secondQuote).toBeTruthy();
+  expect(secondQuote).not.toBe(quote);
+
+  const secondHighlightId = new URL(page.url()).searchParams.get("highlight");
+  expect(secondHighlightId).toBeTruthy();
+  await page.reload();
+  await expect(
+    page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
+  ).toHaveText(secondQuote ?? "");
+
+  const patientId = await page.locator("#patient-select").inputValue();
+  await page.getByRole("button", { name: "Close source" }).click();
+  await expect(
+    page.getByRole("region", { name: "Immutable source" }),
+  ).toHaveCount(0);
+  await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
+  const closedUrl = new URL(page.url());
+  expect(closedUrl.searchParams.get("patient")).toBe(patientId);
+  expect(closedUrl.searchParams.has("highlight")).toBe(false);
 
   if (testInfo.project.name === "desktop-1440") {
     const acceptButton = page

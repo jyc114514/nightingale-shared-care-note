@@ -341,7 +341,13 @@ function LoginScreen({
   );
 }
 
-function SourcePanel({ source }: { source: ProvenanceSource | null }) {
+function SourcePanel({
+  source,
+  onClose,
+}: {
+  source: ProvenanceSource | null;
+  onClose: () => void;
+}) {
   if (!source) {
     return (
       <section
@@ -378,7 +384,12 @@ function SourcePanel({ source }: { source: ProvenanceSource | null }) {
             {entryTypeLabels[source.entry_type] ?? source.entry_type}
           </h2>
         </div>
-        <Pill tone="blue">v{source.version_number}</Pill>
+        <div className="flex items-start gap-2">
+          <Pill tone="blue">v{source.version_number}</Pill>
+          <Button kind="quiet" onClick={onClose}>
+            Close source
+          </Button>
+        </div>
       </div>
       {source.version_number !== source.current_entry_version && (
         <p
@@ -1007,6 +1018,19 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     }
   }
 
+  function closeSource() {
+    setSource(null);
+    setFocusEntryId(null);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete("highlight");
+    nextUrl.searchParams.set("patient", patientId);
+    window.history.replaceState(
+      {},
+      "",
+      `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+    );
+  }
+
   async function loadHistory(entryId: string) {
     const [nextVersions, nextConflicts] = await Promise.all([
       api.versions(entryId),
@@ -1258,6 +1282,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               onChange={(event) => {
                 const nextPatientId = event.target.value;
                 setPatientId(nextPatientId);
+                setSource(null);
+                setFocusEntryId(null);
                 window.history.replaceState(
                   {},
                   "",
@@ -1636,7 +1662,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           {entry.content}
                         </p>
                       )}
-                      {isFocused && source?.source_entry_id === entry.id && (
+                      {source?.source_entry_id === entry.id && (
                         <ImmutableTimelineSource source={source} />
                       )}
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -1691,7 +1717,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         </section>
 
         <aside className="space-y-5">
-          <SourcePanel source={source} />
+          <SourcePanel source={source} onClose={closeSource} />
           {selectedEntry && internal && (
             <CommentsPanel
               entry={selectedEntry}

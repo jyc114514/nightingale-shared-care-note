@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -231,6 +232,7 @@ describe("Gate B shared care note", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -330,7 +332,48 @@ describe("Gate B shared care note", () => {
     );
   });
 
-  it("opens an immutable source and the internal comments flow", async () => {
+  it("keeps the selected source visible after focus fades and closes it cleanly", async () => {
+    mockAuthenticatedApi(staffUser, { endOffset: 19 });
+    renderApp();
+    const sourceButtons = await screen.findAllByRole("button", {
+      name: "Open source",
+    });
+    vi.useFakeTimers();
+    await act(async () => {
+      fireEvent.click(sourceButtons[0]);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(
+      screen.getByRole("region", { name: "Immutable source" }),
+    ).toBeInTheDocument();
+    await act(async () => {
+      vi.advanceTimersByTime(3001);
+    });
+    expect(screen.getByTestId("immutable-timeline-source")).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("immutable-timeline-source")).getByTestId(
+        "source-quote",
+      ),
+    ).toHaveTextContent("Pending renal panel");
+    fireEvent.click(screen.getByRole("button", { name: "Close source" }));
+    expect(
+      screen.queryByRole("region", { name: "Immutable source" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("immutable-timeline-source"),
+    ).not.toBeInTheDocument();
+    expect(new URL(window.location.href).searchParams.get("patient")).toBe(
+      "patient-a",
+    );
+    expect(new URL(window.location.href).searchParams.has("highlight")).toBe(
+      false,
+    );
+    vi.useRealTimers();
+  });
+
+  it("keeps the selected source flow available to comments", async () => {
     mockAuthenticatedApi();
     renderApp();
     const sourceButtons = await screen.findAllByRole("button", {
