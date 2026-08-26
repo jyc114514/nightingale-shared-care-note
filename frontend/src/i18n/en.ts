@@ -39,6 +39,7 @@ export const en = {
   "source.exactSpan": "Exact span: [{{start}}, {{end}})",
   "source.sha": "SHA-256 is stored with the highlight.",
   "source.timelineTitle": "Immutable source span",
+  "source.timelineAria": "Immutable timeline source",
   "source.anchored":
     "Anchored to immutable version v{{version}}; current entry is v{{current}}.",
   "source.integrity": "Integrity warning: {{reason}}",
@@ -128,6 +129,7 @@ export const en = {
   "context.patientPointers":
     "Only patient-facing source pointers are included in this view.",
   "top.eyebrow": "Top Card · Glance View",
+  "top.aria": "Top Card",
   "top.title": "What needs attention now",
   "top.count": "{{count}} active source-linked items · max 6",
   "top.empty":
@@ -189,6 +191,7 @@ export const en = {
   "realtime.pending": "A remote update is available after the current edit.",
   "realtime.refresh": "Refresh now",
   "timeline.title": "Longitudinal timeline",
+  "timeline.aria": "Timeline",
   "timeline.subtitle": "Occurred time, source, and revision state",
   "timeline.loading": "Loading",
   "timeline.loadingLabel": "Loading timeline",

@@ -40,6 +40,7 @@ export const zhCN: TranslationDictionary = {
   "source.exactSpan": "精确范围：[{{start}}, {{end}})",
   "source.sha": "该 highlight 保存了 SHA-256。",
   "source.timelineTitle": "不可变来源范围",
+  "source.timelineAria": "不可变时间线来源",
   "source.anchored":
     "锚定到不可变版本 v{{version}}；当前 entry 版本为 v{{current}}。",
   "source.integrity": "完整性警告：{{reason}}",
@@ -125,6 +126,7 @@ export const zhCN: TranslationDictionary = {
   "context.openCanonical": "打开 canonical source",
   "context.patientPointers": "此视图只包含患者可见的 source pointer。",
   "top.eyebrow": "Top Card · Glance View",
+  "top.aria": "Top Card",
   "top.title": "当前需要关注什么",
   "top.count": "{{count}} 个 active source-linked 项目 · 最多 6 个",
   "top.empty":
@@ -186,6 +188,7 @@ export const zhCN: TranslationDictionary = {
   "realtime.pending": "当前编辑完成后有一项远程更新可用。",
   "realtime.refresh": "立即刷新",
   "timeline.title": "纵向时间线",
+  "timeline.aria": "时间线",
   "timeline.subtitle": "发生时间、来源与修订状态",
   "timeline.loading": "加载中",
   "timeline.loadingLabel": "正在加载时间线",

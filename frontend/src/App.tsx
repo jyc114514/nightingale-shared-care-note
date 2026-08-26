@@ -1,9 +1,11 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type Ref,
   type ReactNode,
 } from "react";
 
@@ -108,6 +110,17 @@ function formatDate(value: string, locale: Locale = "en") {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+export function scrollToElement(element: HTMLElement | null) {
+  if (!element || typeof element.scrollIntoView !== "function") return;
+  const reducedMotion = window.matchMedia?.(
+    "(prefers-reduced-motion: reduce)",
+  ).matches;
+  element.scrollIntoView({
+    behavior: reducedMotion ? "auto" : "smooth",
+    block: "center",
+  });
 }
 
 function displayError(error: unknown, t: Translate) {
@@ -250,6 +263,7 @@ function Button({
   kind = "secondary",
   type = "button",
   ariaLabel,
+  buttonRef,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -257,6 +271,7 @@ function Button({
   kind?: "primary" | "secondary" | "quiet" | "danger";
   type?: "button" | "submit";
   ariaLabel?: string;
+  buttonRef?: Ref<HTMLButtonElement>;
 }) {
   const styles = {
     primary: "border-blue-700 bg-blue-700 text-white hover:bg-blue-800",
@@ -269,10 +284,11 @@ function Button({
   return (
     <button
       type={type}
+      ref={buttonRef}
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className={`rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]}`}
+      className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]}`}
     >
       {children}
     </button>
@@ -287,15 +303,45 @@ function LearningGuide({
   onClose: () => void;
 }) {
   const { t } = useI18n();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    window.setTimeout(() => closeButtonRef.current?.focus(), 0);
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+      if (!dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, onClose]);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [open]);
 
   if (!open) return null;
   return (
@@ -328,7 +374,12 @@ function LearningGuide({
               {t("guide.intro")}
             </p>
           </div>
-          <Button kind="quiet" onClick={onClose} ariaLabel={t("guide.close")}>
+          <Button
+            kind="quiet"
+            onClick={() => onCloseRef.current()}
+            ariaLabel={t("guide.close")}
+            buttonRef={closeButtonRef}
+          >
             {t("guide.close")}
           </Button>
         </div>
@@ -646,7 +697,7 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
   return (
     <section
       className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
-      aria-label="Immutable timeline source"
+      aria-label={t("source.timelineAria")}
       data-testid="immutable-timeline-source"
       data-source-entry-id={source.source_entry_id}
       data-source-version={source.version_number}
@@ -1535,11 +1586,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               setSource(linkedSource);
               setFocusEntryId(linkedSource.source_entry_id);
               window.setTimeout(() => {
-                document
-                  .getElementById(
+                scrollToElement(
+                  document.getElementById(
                     "timeline-entry-" + linkedSource.source_entry_id,
-                  )
-                  ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                  ),
+                );
               }, 0);
               window.setTimeout(() => setFocusEntryId(null), 2400);
             }
@@ -1616,13 +1667,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         `?patient=${patientId}&highlight=${item.id}`,
       );
       window.setTimeout(() => {
-        const timelineEntry = document.getElementById(
-          `timeline-entry-${result.source_entry_id}`,
+        scrollToElement(
+          document.getElementById(`timeline-entry-${result.source_entry_id}`),
         );
-        timelineEntry?.scrollIntoView?.({
-          behavior: "smooth",
-          block: "center",
-        });
       }, 0);
       window.setTimeout(() => setFocusEntryId(null), 2400);
     } catch (error) {
@@ -1704,9 +1751,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         : null,
     });
     window.setTimeout(() => {
-      document
-        .getElementById("task-panel")
-        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      scrollToElement(document.getElementById("task-panel"));
     }, 0);
   }
 
@@ -1748,9 +1793,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
 
   function focusTask(taskId: string) {
     window.setTimeout(() => {
-      document
-        .getElementById(`task-${taskId}`)
-        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      scrollToElement(document.getElementById(`task-${taskId}`));
     }, 0);
   }
 
@@ -1886,9 +1929,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setFocusEntryId(entryId);
     window.history.replaceState({}, "", `?patient=${patientId}`);
     window.setTimeout(() => {
-      document
-        .getElementById(`timeline-entry-${entryId}`)
-        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      scrollToElement(document.getElementById(`timeline-entry-${entryId}`));
     }, 0);
     window.setTimeout(() => setFocusEntryId(null), 2400);
   }
@@ -2087,7 +2128,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           {internal ? (
             <section
               className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm sm:p-7"
-              aria-label="Top Card"
+              aria-label={t("top.aria")}
               data-testid="top-card"
             >
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -2313,7 +2354,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
 
           <section
             className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
-            aria-label="Timeline"
+            aria-label={t("timeline.aria")}
           >
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
@@ -2330,6 +2371,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               <div
                 className="mt-5 space-y-3"
                 aria-label={t("timeline.loadingLabel")}
+                aria-live="polite"
+                role="status"
               >
                 <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />
                 <div className="h-24 animate-pulse rounded-2xl bg-slate-100" />

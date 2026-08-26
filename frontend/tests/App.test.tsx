@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { App, exactCodepointSpan } from "../src/App";
+import { App, exactCodepointSpan, scrollToElement } from "../src/App";
 import { en, zhCN } from "../src/i18n";
 import type { Me } from "../src/types";
 
@@ -313,6 +313,32 @@ describe("Gate B shared care note", () => {
     const overridden = renderApp();
     expect(await screen.findByText("Shared Care Note")).toBeInTheDocument();
     overridden.unmount();
+  });
+
+  it("supports guide keyboard return focus and reduced-motion scrolling", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    await screen.findByText("Shared Care Note");
+    const guideButton = screen.getByRole("button", { name: "Guide" });
+    guideButton.focus();
+    fireEvent.click(guideButton);
+    const closeGuide = screen.getByRole("button", { name: "Close guide" });
+    await waitFor(() => expect(document.activeElement).toBe(closeGuide));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(guideButton);
+
+    const target = document.createElement("div");
+    const scrollIntoView = vi.fn();
+    target.scrollIntoView = scrollIntoView;
+    document.body.appendChild(target);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    scrollToElement(target);
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "auto",
+      block: "center",
+    });
+    target.remove();
   });
 
   it("honors a deep-linked locale and preserves provenance source data", async () => {
