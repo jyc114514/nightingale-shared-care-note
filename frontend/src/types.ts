@@ -40,6 +40,8 @@ export type TimelineEntry = {
 
 export type GlanceItem = {
   id: string;
+  resource_type?: "highlight" | "task";
+  task_id?: string | null;
   content_summary: string;
   feature_signature: string;
   item_kind: "information" | "action" | "flag";
@@ -65,6 +67,42 @@ export type GlanceItem = {
   entry_type: string;
   occurred_at: string;
   quote: string;
+  assigned_to_user_id?: string | null;
+  assigned_to_display_name?: string | null;
+  task_status?: TaskStatus | null;
+  task_version?: number | null;
+};
+
+export type MentionUser = {
+  user_id: string;
+  display_name: string;
+  role: string;
+};
+
+export type Mention = {
+  id: string;
+  mentioned_user_id: string;
+  display_name: string;
+  role: string;
+  created_at: string;
+};
+
+export type TaskStatus = "open" | "in_progress" | "done";
+
+export type Task = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  source_entry_id: string | null;
+  source_comment_id: string | null;
+  title: string;
+  created_by_user_id: string;
+  assigned_to: MentionUser;
+  status: TaskStatus;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
 };
 
 export type FeedbackEventType =
@@ -203,6 +241,7 @@ export type Comment = {
   resolved_by_user_id: string | null;
   created_at: string;
   updated_at: string;
+  mentions?: Mention[];
 };
 
 export type Version = {

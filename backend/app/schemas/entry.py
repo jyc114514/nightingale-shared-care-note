@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import EntryType
+from app.schemas.collaboration import MentionOut
 
 
 class EntryCreate(BaseModel):
@@ -105,11 +106,13 @@ class CommentOut(BaseModel):
     resolved_by_user_id: str | None
     created_at: datetime
     updated_at: datetime
+    mentions: list[MentionOut] = Field(default_factory=list)
 
 
 class CommentCreate(BaseModel):
     body: str = Field(min_length=1, max_length=5000)
     parent_comment_id: str | None = None
+    mentioned_user_ids: list[str] = Field(default_factory=list, max_length=20)
 
     model_config = ConfigDict(extra="ignore")
 

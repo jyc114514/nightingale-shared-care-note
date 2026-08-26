@@ -10,8 +10,11 @@ import type {
   GlanceItem,
   ImportanceFeedback,
   Me,
+  MentionUser,
   Patient,
   ProvenanceSource,
+  Task,
+  TaskStatus,
   TimelineEntry,
   Version,
 } from "./types";
@@ -77,11 +80,45 @@ export const api = {
     request<ProvenanceSource>(`/highlights/${highlightId}/source`),
   comments: (entryId: string) =>
     request<Comment[]>(`/entries/${entryId}/comments`),
-  addComment: (entryId: string, body: string, parentCommentId?: string) =>
+  addComment: (
+    entryId: string,
+    body: string,
+    parentCommentId?: string,
+    mentionedUserIds: string[] = [],
+  ) =>
     request<Comment>(`/entries/${entryId}/comments`, {
       method: "POST",
-      ...json({ body, parent_comment_id: parentCommentId ?? null }),
+      ...json({
+        body,
+        parent_comment_id: parentCommentId ?? null,
+        mentioned_user_ids: mentionedUserIds,
+      }),
     }),
+  mentionableUsers: (patientId: string) =>
+    request<MentionUser[]>(`/patients/${patientId}/mentionable-users`),
+  tasks: (patientId: string) => request<Task[]>(`/patients/${patientId}/tasks`),
+  createTask: (
+    patientId: string,
+    payload: {
+      title: string;
+      assigned_to_user_id: string;
+      source_entry_id?: string;
+      source_comment_id?: string;
+    },
+  ) =>
+    request<Task>(`/patients/${patientId}/tasks`, {
+      method: "POST",
+      ...json(payload),
+    }),
+  updateTask: (
+    taskId: string,
+    payload: {
+      expected_version: number;
+      title?: string;
+      assigned_to_user_id?: string;
+      status?: TaskStatus;
+    },
+  ) => request<Task>(`/tasks/${taskId}`, { method: "PATCH", ...json(payload) }),
   resolveComment: (commentId: string, isResolved: boolean) =>
     request<Comment>(`/comments/${commentId}/resolution`, {
       method: "PATCH",

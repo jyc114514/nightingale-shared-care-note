@@ -7,9 +7,10 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import get_current_user, get_request_id, require_allowed_origin
 from app.db.base import utcnow
 from app.db.session import get_db
-from app.models import Comment, User
+from app.models import Comment, Mention, User
 from app.schemas.entry import CommentCreate, CommentOut, CommentResolution
 from app.services.authorization import get_entry_context, get_patient_context, require_internal
+from app.services.collaboration import comment_mentions, validate_collaborator_ids
 from app.services.entries import record_audit
 
 
@@ -22,6 +23,22 @@ def require_comment_writer(actor_role: str) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only staff or clinicians can mutate comments",
         )
+
+
+def comment_out(db: Session, comment: Comment) -> CommentOut:
+    return CommentOut(
+        id=comment.id,
+        entry_id=comment.entry_id,
+        parent_comment_id=comment.parent_comment_id,
+        author_user_id=comment.author_user_id,
+        body=comment.body,
+        is_resolved=comment.is_resolved,
+        resolved_at=comment.resolved_at,
+        resolved_by_user_id=comment.resolved_by_user_id,
+        created_at=comment.created_at,
+        updated_at=comment.updated_at,
+        mentions=comment_mentions(db, comment),
+    )
 
 
 @router.get("/entries/{entry_id}/comments", response_model=list[CommentOut])
@@ -39,7 +56,7 @@ def list_comments(
             .order_by(Comment.created_at, Comment.id)
         )
     )
-    return [CommentOut.model_validate(comment) for comment in comments]
+    return [comment_out(db, comment) for comment in comments]
 
 
 @router.post(
@@ -57,6 +74,16 @@ def create_comment(
     context, entry = get_entry_context(db, user, entry_id)
     require_internal(context)
     require_comment_writer(context.actor_role)
+    try:
+        mentioned_users = validate_collaborator_ids(
+            db,
+            clinic_id=context.clinic_id,
+            user_ids=payload.mentioned_user_ids,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     if payload.parent_comment_id is not None:
         parent = db.get(Comment, payload.parent_comment_id)
         if parent is None:
@@ -79,6 +106,25 @@ def create_comment(
     )
     db.add(comment)
     db.flush()
+    for mentioned_user in mentioned_users:
+        mention = Mention(
+            clinic_id=context.clinic_id,
+            comment_id=comment.id,
+            mentioned_user_id=mentioned_user.id,
+        )
+        db.add(mention)
+        db.flush()
+        record_audit(
+            db,
+            clinic_id=context.clinic_id,
+            patient_id=entry.patient_id,
+            actor_user_id=user.id,
+            actor_role=context.actor_role,
+            action="mention_created",
+            entity_type="mention",
+            entity_id=mention.id,
+            request_id=request_id,
+        )
     record_audit(
         db,
         clinic_id=context.clinic_id,
@@ -92,7 +138,7 @@ def create_comment(
     )
     db.commit()
     db.refresh(comment)
-    return CommentOut.model_validate(comment)
+    return comment_out(db, comment)
 
 
 @router.patch(
@@ -130,4 +176,4 @@ def update_comment_resolution(
     )
     db.commit()
     db.refresh(comment)
-    return CommentOut.model_validate(comment)
+    return comment_out(db, comment)

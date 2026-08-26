@@ -75,3 +75,9 @@ class FeedbackEventType(str, Enum):
     MANUALLY_HIGHLIGHTED = "manually_highlighted"
     COMMENTED = "commented"
     RESOLVED_AFTER_ACTION = "resolved_after_action"
+
+
+class TaskStatus(str, Enum):
+    OPEN = "open"
+    IN_PROGRESS = "in_progress"
+    DONE = "done"

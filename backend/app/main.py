@@ -11,6 +11,7 @@ from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
 from app.api.routes.gate_b import router as gate_b_router
 from app.api.routes.patients import router as patients_router
+from app.api.routes.tasks import router as tasks_router
 from app.config import settings
 
 settings.validate_runtime_security()
@@ -32,6 +33,7 @@ app.include_router(gate_b_router)
 app.include_router(comments_router)
 app.include_router(conflicts_router)
 app.include_router(context_router)
+app.include_router(tasks_router)
 
 
 @app.get("/health")

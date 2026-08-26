@@ -3,6 +3,7 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -17,8 +18,11 @@ import type {
   FeedbackEventType,
   GlanceItem,
   Me,
+  MentionUser,
   Patient,
   ProvenanceSource,
+  Task,
+  TaskStatus,
   TimelineEntry,
   Version,
 } from "./types";
@@ -40,6 +44,7 @@ const sourceLabelKeys: Record<string, TranslationKey> = {
   "AI-scribed - Patient session": "sourceKind.patient",
   "System event": "sourceKind.system",
   "Manual note": "sourceKind.manual",
+  "Assigned task": "sourceKind.task",
 };
 
 const entryTypeKeys: Record<string, TranslationKey> = {
@@ -71,6 +76,7 @@ const actionStateKeys: Record<string, TranslationKey> = {
   open: "actionState.open",
   completed: "actionState.completed",
   not_applicable: "actionState.notApplicable",
+  in_progress: "task.status.inProgress",
 };
 
 const roleKeys: Record<string, TranslationKey> = {
@@ -79,6 +85,12 @@ const roleKeys: Record<string, TranslationKey> = {
   clinician: "role.clinician",
   admin: "role.admin",
   system: "sourceKind.system",
+};
+
+const taskStatusKeys: Record<TaskStatus, TranslationKey> = {
+  open: "task.status.open",
+  in_progress: "task.status.inProgress",
+  done: "task.status.done",
 };
 
 function formatDate(value: string, locale: Locale = "en") {
@@ -657,6 +669,7 @@ function CommentNode({
   visited,
   onReply,
   onResolve,
+  onAssignTask,
   busy,
 }: {
   comment: Comment;
@@ -665,6 +678,7 @@ function CommentNode({
   visited: Set<string>;
   onReply: (id: string | null) => void;
   onResolve: (comment: Comment) => Promise<void>;
+  onAssignTask: (commentId: string) => void;
   busy: boolean;
 }) {
   const { locale, t } = useI18n();
@@ -686,6 +700,17 @@ function CommentNode({
         </Pill>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-700">{comment.body}</p>
+      {comment.mentions && comment.mentions.length > 0 && (
+        <p
+          className="mt-2 text-xs text-blue-700"
+          data-testid="comment-mentions"
+        >
+          {t("comments.mentionsLabel")}:{" "}
+          {comment.mentions
+            .map((mention) => `@${mention.display_name}`)
+            .join(", ")}
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         <Button kind="quiet" onClick={() => onReply(comment.id)}>
           {t("comments.reply")}
@@ -699,6 +724,9 @@ function CommentNode({
             ? t("comments.unresolve")
             : t("comments.resolve")}
         </Button>
+        <Button kind="quiet" onClick={() => onAssignTask(comment.id)}>
+          {t("comments.assignTask")}
+        </Button>
       </div>
       {children.length > 0 && (
         <div className="mt-3 space-y-3" data-testid={`replies-${comment.id}`}>
@@ -711,6 +739,7 @@ function CommentNode({
               visited={nextVisited}
               onReply={onReply}
               onResolve={onResolve}
+              onAssignTask={onAssignTask}
               busy={busy}
             />
           ))}
@@ -727,6 +756,8 @@ function CommentsPanel({
   onReply,
   onSubmit,
   onResolve,
+  mentionableUsers,
+  onAssignTask,
   onClose,
   busy,
 }: {
@@ -734,13 +765,25 @@ function CommentsPanel({
   comments: Comment[];
   replyTo: string | null;
   onReply: (id: string | null) => void;
-  onSubmit: (body: string) => Promise<void>;
+  onSubmit: (body: string, mentionedUserIds: string[]) => Promise<void>;
   onResolve: (comment: Comment) => Promise<void>;
+  mentionableUsers: MentionUser[];
+  onAssignTask: (commentId: string) => void;
   onClose: () => void;
   busy: boolean;
 }) {
   const { t } = useI18n();
   const [body, setBody] = useState("");
+  const [selectedMentionIds, setSelectedMentionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const mentionMatch = /(?:^|\s)@([^\s@]*)$/.exec(body);
+  const mentionOptions = mentionMatch
+    ? mentionableUsers.filter((user) =>
+        user.display_name.toLowerCase().includes(mentionMatch[1].toLowerCase()),
+      )
+    : [];
   const commentIds = new Set(comments.map((comment) => comment.id));
   const childrenByParent = new Map<string, Comment[]>();
   for (const comment of comments) {
@@ -758,8 +801,38 @@ function CommentsPanel({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!body.trim()) return;
-    await onSubmit(body.trim());
+    await onSubmit(body.trim(), Array.from(selectedMentionIds));
     setBody("");
+    setSelectedMentionIds(new Set());
+  }
+
+  function selectMention(user: MentionUser) {
+    if (!mentionMatch || mentionMatch.index === undefined) return;
+    const tokenStart = mentionMatch.index + mentionMatch[0].indexOf("@");
+    setBody(`${body.slice(0, tokenStart)}@${user.display_name} `);
+    setSelectedMentionIds((current) => new Set(current).add(user.user_id));
+    setMentionIndex(0);
+  }
+
+  function handleBodyKeyDown(event: ReactKeyboardEvent<HTMLTextAreaElement>) {
+    if (mentionOptions.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setMentionIndex((current) => (current + 1) % mentionOptions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setMentionIndex(
+        (current) =>
+          (current - 1 + mentionOptions.length) % mentionOptions.length,
+      );
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectMention(mentionOptions[mentionIndex]);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setMentionIndex(0);
+      setBody(body.replace(/(?:^|\s)@[^\s@]*$/, ""));
+    }
   }
 
   return (
@@ -795,6 +868,7 @@ function CommentsPanel({
             visited={new Set()}
             onReply={onReply}
             onResolve={onResolve}
+            onAssignTask={onAssignTask}
             busy={busy}
           />
         ))}
@@ -818,10 +892,38 @@ function CommentsPanel({
         <textarea
           aria-label={t("comments.bodyLabel")}
           value={body}
-          onChange={(event) => setBody(event.target.value)}
+          onChange={(event) => {
+            setBody(event.target.value);
+            setMentionIndex(0);
+          }}
+          onKeyDown={handleBodyKeyDown}
           placeholder={t("comments.placeholder")}
+          aria-autocomplete="list"
+          aria-controls="mention-suggestions"
           className="min-h-24 w-full resize-y rounded-xl border border-slate-200 p-3 text-sm outline-none ring-blue-200 focus:border-blue-500 focus:ring-4"
         />
+        {mentionOptions.length > 0 && (
+          <div
+            id="mention-suggestions"
+            className="rounded-xl border border-blue-100 bg-blue-50 p-2"
+            role="listbox"
+            aria-label={t("comments.mentionSuggestions")}
+          >
+            {mentionOptions.map((user, index) => (
+              <button
+                key={user.user_id}
+                type="button"
+                role="option"
+                aria-selected={index === mentionIndex}
+                className="block w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectMention(user)}
+              >
+                @{user.display_name} · {user.role}
+              </button>
+            ))}
+          </div>
+        )}
         <Button type="submit" kind="primary" disabled={busy || !body.trim()}>
           {t("comments.add")}
         </Button>
@@ -1076,6 +1178,229 @@ function HistoricalContextPanel({
   );
 }
 
+function TaskPanel({
+  tasks,
+  collaborators,
+  canEdit,
+  sourceLabel,
+  sourceComment,
+  onCreate,
+  onUpdate,
+  onCloseComposer,
+}: {
+  tasks: Task[];
+  collaborators: MentionUser[];
+  canEdit: boolean;
+  sourceLabel: string | null;
+  sourceComment: string | null;
+  onCreate: (title: string, assigneeId: string) => Promise<void>;
+  onUpdate: (
+    task: Task,
+    patch: {
+      title?: string;
+      assigned_to_user_id?: string;
+      status?: TaskStatus;
+    },
+  ) => Promise<void>;
+  onCloseComposer: () => void;
+}) {
+  const { t } = useI18n();
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [assigneeId, setAssigneeId] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!assigneeId && collaborators[0])
+      setAssigneeId(collaborators[0].user_id);
+  }, [assigneeId, collaborators]);
+
+  useEffect(() => {
+    if (sourceLabel || sourceComment) setComposerOpen(true);
+  }, [sourceComment, sourceLabel]);
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!title.trim() || !assigneeId) return;
+    setBusy(true);
+    try {
+      await onCreate(title.trim(), assigneeId);
+      setTitle("");
+      setComposerOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function update(
+    task: Task,
+    patch: {
+      title?: string;
+      assigned_to_user_id?: string;
+      status?: TaskStatus;
+    },
+  ) {
+    setBusy(true);
+    try {
+      await onUpdate(task, patch);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section
+      className="rounded-2xl border border-slate-200 bg-white p-5"
+      aria-label={t("task.panel")}
+      data-testid="task-panel"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+            {t("task.panel")}
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-slate-900">
+            {tasks.length} · {t("task.panel")}
+          </h2>
+        </div>
+        {canEdit && (
+          <Button kind="quiet" onClick={() => setComposerOpen(true)}>
+            {t("task.new")}
+          </Button>
+        )}
+      </div>
+      {(sourceLabel || sourceComment) && (
+        <p className="mt-3 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-800">
+          {sourceLabel
+            ? t("task.sourceEntry", { label: sourceLabel })
+            : t("task.sourceComment")}
+        </p>
+      )}
+      {composerOpen && canEdit && (
+        <form
+          className="mt-4 space-y-3 border-t border-slate-100 pt-4"
+          onSubmit={create}
+        >
+          <label className="block text-sm font-semibold text-slate-700">
+            {t("task.titleLabel")}
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={t("task.titlePlaceholder")}
+              aria-label={t("task.titleLabel")}
+              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              required
+            />
+          </label>
+          <label className="block text-sm font-semibold text-slate-700">
+            {t("task.assigneeLabel")}
+            <select
+              value={assigneeId}
+              onChange={(event) => setAssigneeId(event.target.value)}
+              aria-label={t("task.assigneeLabel")}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              required
+            >
+              <option value="">{t("task.chooseAssignee")}</option>
+              {collaborators.map((user) => (
+                <option key={user.user_id} value={user.user_id}>
+                  {user.display_name} · {user.role}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="submit"
+              kind="primary"
+              disabled={busy || !title.trim()}
+            >
+              {t("task.create")}
+            </Button>
+            <Button
+              kind="quiet"
+              onClick={() => {
+                setComposerOpen(false);
+                onCloseComposer();
+              }}
+            >
+              {t("task.cancel")}
+            </Button>
+          </div>
+        </form>
+      )}
+      <div className="mt-4 space-y-3">
+        {tasks.length === 0 ? (
+          <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
+            {t("task.empty")}
+          </p>
+        ) : (
+          tasks.map((task) => (
+            <article
+              key={task.id}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+              data-testid={`task-${task.id}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-800">
+                  {task.title}
+                </p>
+                <Pill tone={task.status === "done" ? "green" : "amber"}>
+                  {t(taskStatusKeys[task.status])}
+                </Pill>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">
+                {t("task.assignedTo", { name: task.assigned_to.display_name })}{" "}
+                · {t("task.version", { version: task.version })}
+              </p>
+              {canEdit && task.status !== "done" && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <select
+                    value={task.status}
+                    aria-label={`${t("task.statusLabel")}: ${task.title}`}
+                    onChange={(event) =>
+                      void update(task, {
+                        status: event.target.value as TaskStatus,
+                      })
+                    }
+                    disabled={busy}
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:ring-4 focus:ring-blue-100"
+                  >
+                    <option value="open">{t("task.status.open")}</option>
+                    <option value="in_progress">
+                      {t("task.status.inProgress")}
+                    </option>
+                    <option value="done">{t("task.status.done")}</option>
+                  </select>
+                  {collaborators.length > 0 && (
+                    <select
+                      value={task.assigned_to.user_id}
+                      aria-label={`${t("task.assigneeLabel")}: ${task.title}`}
+                      onChange={(event) =>
+                        void update(task, {
+                          assigned_to_user_id: event.target.value,
+                        })
+                      }
+                      disabled={busy}
+                      className="max-w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs outline-none focus:ring-4 focus:ring-blue-100"
+                    >
+                      {collaborators.map((user) => (
+                        <option key={user.user_id} value={user.user_id}>
+                          {user.display_name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
+            </article>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const { locale, t } = useI18n();
   const internal = isInternalUser(user);
@@ -1088,6 +1413,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [glance, setGlance] = useState<GlanceItem[]>([]);
   const [context, setContext] = useState<PatientContext | null>(null);
+  const [collaborators, setCollaborators] = useState<MentionUser[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskSource, setTaskSource] = useState<{
+    entryId: string | null;
+    commentId: string | null;
+    label: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -1137,6 +1469,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setLoadError(null);
     setSource(null);
     setContext(null);
+    setCollaborators([]);
+    setTasks([]);
+    setTaskSource(null);
     setSourceLoading(false);
     setFocusEntryId(null);
     setCommentsEntryId(null);
@@ -1146,40 +1481,58 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     const glanceRequest = internal
       ? api.glance(patientId)
       : Promise.resolve([] as GlanceItem[]);
+    const collaboratorsRequest = internal
+      ? api.mentionableUsers(patientId)
+      : Promise.resolve([] as MentionUser[]);
+    const tasksRequest = internal
+      ? api.tasks(patientId)
+      : Promise.resolve([] as Task[]);
     Promise.all([
       api.timeline(patientId),
       glanceRequest,
       api.context(patientId),
+      collaboratorsRequest,
+      tasksRequest,
     ])
-      .then(async ([timelineResult, glanceResult, contextResult]) => {
-        if (!active) return;
-        setTimeline(timelineResult);
-        setGlance(glanceResult);
-        setContext(contextResult);
-        if (internal && requestedHighlightId) {
-          setSourceLoading(true);
-          const linkedSource = await api.source(requestedHighlightId);
-          if (
-            active &&
-            linkedSource.highlight.patient_id === patientId &&
-            timelineResult.some(
-              (entry) => entry.id === linkedSource.source_entry_id,
-            )
-          ) {
-            setSource(linkedSource);
-            setFocusEntryId(linkedSource.source_entry_id);
-            window.setTimeout(() => {
-              document
-                .getElementById(
-                  "timeline-entry-" + linkedSource.source_entry_id,
-                )
-                ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
-            }, 0);
-            window.setTimeout(() => setFocusEntryId(null), 2400);
+      .then(
+        async ([
+          timelineResult,
+          glanceResult,
+          contextResult,
+          collaboratorsResult,
+          tasksResult,
+        ]) => {
+          if (!active) return;
+          setTimeline(timelineResult);
+          setGlance(glanceResult);
+          setContext(contextResult);
+          setCollaborators(collaboratorsResult);
+          setTasks(tasksResult);
+          if (internal && requestedHighlightId) {
+            setSourceLoading(true);
+            const linkedSource = await api.source(requestedHighlightId);
+            if (
+              active &&
+              linkedSource.highlight.patient_id === patientId &&
+              timelineResult.some(
+                (entry) => entry.id === linkedSource.source_entry_id,
+              )
+            ) {
+              setSource(linkedSource);
+              setFocusEntryId(linkedSource.source_entry_id);
+              window.setTimeout(() => {
+                document
+                  .getElementById(
+                    "timeline-entry-" + linkedSource.source_entry_id,
+                  )
+                  ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+              }, 0);
+              window.setTimeout(() => setFocusEntryId(null), 2400);
+            }
+            if (active) setSourceLoading(false);
           }
-          if (active) setSourceLoading(false);
-        }
-      })
+        },
+      )
       .catch((error) => active && setLoadError(displayError(error, t)))
       .finally(() => active && setLoading(false));
     return () => {
@@ -1270,11 +1623,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setComments(await api.comments(commentsEntryId));
   }
 
-  async function submitComment(body: string) {
+  async function submitComment(body: string, mentionedUserIds: string[]) {
     if (!commentsEntryId) return;
     setCommentBusy(true);
     try {
-      await api.addComment(commentsEntryId, body, replyTo ?? undefined);
+      await api.addComment(
+        commentsEntryId,
+        body,
+        replyTo ?? undefined,
+        mentionedUserIds,
+      );
       setReplyTo(null);
       await refreshComments();
     } catch (error) {
@@ -1282,6 +1640,66 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     } finally {
       setCommentBusy(false);
     }
+  }
+
+  function openTaskComposer(entryId: string | null, commentId: string | null) {
+    const entry = entryId ? timeline.find((item) => item.id === entryId) : null;
+    setTaskSource({
+      entryId,
+      commentId,
+      label: entry
+        ? t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")
+        : null,
+    });
+    window.setTimeout(() => {
+      document
+        .getElementById("task-panel")
+        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, 0);
+  }
+
+  async function refreshTasksAndGlance() {
+    if (!patientId || !internal) return;
+    const [nextTasks, nextGlance] = await Promise.all([
+      api.tasks(patientId),
+      api.glance(patientId),
+    ]);
+    setTasks(nextTasks);
+    setGlance(nextGlance);
+  }
+
+  async function createTask(title: string, assigneeId: string) {
+    if (!patientId) return;
+    await api.createTask(patientId, {
+      title,
+      assigned_to_user_id: assigneeId,
+      ...(taskSource?.entryId ? { source_entry_id: taskSource.entryId } : {}),
+      ...(taskSource?.commentId
+        ? { source_comment_id: taskSource.commentId }
+        : {}),
+    });
+    await refreshTasksAndGlance();
+    setTaskSource(null);
+  }
+
+  async function updateTask(
+    task: Task,
+    patch: {
+      title?: string;
+      assigned_to_user_id?: string;
+      status?: TaskStatus;
+    },
+  ) {
+    await api.updateTask(task.id, { expected_version: task.version, ...patch });
+    await refreshTasksAndGlance();
+  }
+
+  function focusTask(taskId: string) {
+    window.setTimeout(() => {
+      document
+        .getElementById(`task-${taskId}`)
+        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }, 0);
   }
 
   async function resolveComment(comment: Comment) {
@@ -1722,14 +2140,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             "sourceKind.manual",
                         )}
                       </p>
+                      {item.resource_type === "task" &&
+                        item.assigned_to_display_name && (
+                          <p className="mt-2 text-xs text-slate-500">
+                            {t("task.assignedTo", {
+                              name: item.assigned_to_display_name,
+                            })}
+                          </p>
+                        )}
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          kind="secondary"
-                          onClick={() => void openSource(item)}
-                          disabled={sourceLoading}
-                        >
-                          {t("button.openSource")}
-                        </Button>
+                        {item.resource_type === "task" && item.task_id ? (
+                          <Button
+                            kind="secondary"
+                            onClick={() => focusTask(item.task_id ?? "")}
+                          >
+                            {t("button.openTask")}
+                          </Button>
+                        ) : (
+                          <Button
+                            kind="secondary"
+                            onClick={() => void openSource(item)}
+                            disabled={sourceLoading}
+                          >
+                            {t("button.openSource")}
+                          </Button>
+                        )}
                         {role !== "admin" && (
                           <Button
                             kind="quiet"
@@ -1895,7 +2330,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             </Button>
                             <Button
                               kind="quiet"
-                              onClick={() => setEditingEntryId(null)}
+                              onClick={() => {
+                                setEditingEntryId(null);
+                              }}
                             >
                               {t("button.cancel")}
                             </Button>
@@ -1927,6 +2364,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             {historyEntryId === entry.id
                               ? t("button.hideHistory")
                               : t("button.history")}
+                          </Button>
+                        )}
+                        {internal && role !== "admin" && (
+                          <Button
+                            kind="secondary"
+                            onClick={() => openTaskComposer(entry.id, null)}
+                          >
+                            {t("button.assignTask")}
                           </Button>
                         )}
                         {editable && !isEditing && (
@@ -1970,8 +2415,30 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               onReply={setReplyTo}
               onSubmit={submitComment}
               onResolve={resolveComment}
+              mentionableUsers={collaborators}
+              onAssignTask={(commentId) =>
+                openTaskComposer(selectedEntry.id, commentId)
+              }
               onClose={() => setCommentsEntryId(null)}
               busy={commentBusy}
+            />
+          )}
+          {internal && (
+            <TaskPanel
+              tasks={tasks}
+              collaborators={collaborators}
+              canEdit={role !== "admin"}
+              sourceLabel={taskSource?.label ?? null}
+              sourceComment={
+                taskSource?.commentId
+                  ? (comments.find(
+                      (comment) => comment.id === taskSource.commentId,
+                    )?.body ?? null)
+                  : null
+              }
+              onCreate={createTask}
+              onUpdate={updateTask}
+              onCloseComposer={() => setTaskSource(null)}
             />
           )}
           <section className="rounded-2xl border border-slate-200 bg-white p-5">

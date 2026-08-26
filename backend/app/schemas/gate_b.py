@@ -87,10 +87,12 @@ class HighlightOut(BaseModel):
 
 class GlanceItemOut(BaseModel):
     id: str
+    resource_type: str = "highlight"
+    task_id: str | None = None
     content_summary: str
     feature_signature: str
-    item_kind: HighlightItemKind
-    status: HighlightStatus
+    item_kind: str
+    status: str
     base_priority: float
     recency_contribution: float
     explicit_risk_contribution: float
@@ -102,15 +104,19 @@ class GlanceItemOut(BaseModel):
     risk_level: str | None
     risk_reason: str
     action_label: str | None
-    action_state: HighlightActionState
-    source_entry_id: str
-    source_version_id: str
-    version_number: int
-    current_entry_version: int
+    action_state: str
+    source_entry_id: str | None
+    source_version_id: str | None
+    version_number: int | None
+    current_entry_version: int | None
     source_label: str
     entry_type: str
     occurred_at: datetime
     quote: str
+    assigned_to_user_id: str | None = None
+    assigned_to_display_name: str | None = None
+    task_status: str | None = None
+    task_version: int | None = None
 
 
 class ImportanceProfileOut(BaseModel):

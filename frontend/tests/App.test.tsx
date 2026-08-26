@@ -175,6 +175,16 @@ function mockAuthenticatedApi(
       if (url.endsWith("/context")) return response(context);
       if (url.endsWith("/timeline")) return response(timeline);
       if (url.endsWith("/glance")) return response(glance);
+      if (url.endsWith("/mentionable-users"))
+        return response([
+          { user_id: "staff-user", display_name: "Staff A", role: "staff" },
+          {
+            user_id: "clinician-user",
+            display_name: "Clinician A",
+            role: "clinician",
+          },
+        ]);
+      if (url.endsWith("/tasks")) return response([]);
       if (url.includes("/highlights/") && url.endsWith("/source")) {
         return response({
           highlight: {
@@ -385,6 +395,21 @@ describe("Gate B shared care note", () => {
         screen.getAllByRole("button", { name: "Unpin" })[0],
       ).toBeInTheDocument(),
     );
+  });
+
+  it("supports keyboard mention autocomplete with stable collaborator choices", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: "Comments" }))[0],
+    );
+    const body = await screen.findByLabelText("Comment body");
+    fireEvent.change(body, { target: { value: "@Clinician" } });
+    expect(
+      within(screen.getByRole("listbox")).getByRole("option"),
+    ).toHaveTextContent("@Clinician A");
+    fireEvent.keyDown(body, { key: "Enter" });
+    expect(body).toHaveValue("@Clinician A ");
   });
 
   it("shows derived historical context and canonical source pointers", async () => {

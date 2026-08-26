@@ -20,6 +20,7 @@ from app.models.enums import (
     HighlightStatus,
     MembershipRole,
     SourceKind,
+    TaskStatus,
 )
 from app.models.entry import Entry
 from app.models.entry_version import EntryVersion
@@ -27,6 +28,10 @@ from app.models.highlight import Highlight
 from app.models.membership import ClinicMembership
 from app.models.patient import Patient, PatientUserLink
 from app.models.patient_glance_item import PatientGlanceItem
+from app.models.mention import Mention
+from app.models.task import Task
+from app.models.task_conflict import TaskConflict
+from app.models.task_glance_item import TaskGlanceItem
 from app.models.user import User
 
 __all__ = [
@@ -52,9 +57,14 @@ __all__ = [
     "HighlightStatus",
     "ImportanceProfile",
     "MembershipRole",
+    "Mention",
     "Patient",
     "PatientGlanceItem",
     "PatientUserLink",
     "SourceKind",
+    "Task",
+    "TaskConflict",
+    "TaskGlanceItem",
+    "TaskStatus",
     "User",
 ]

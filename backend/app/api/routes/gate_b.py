@@ -1,6 +1,7 @@
 """Timeline, Glance View, provenance, trust-state, and importance endpoints."""
 
 import json
+from typing import cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -14,10 +15,9 @@ from app.models import (
     EntryType,
     EntryVersion,
     FeedbackEventType,
-    HighlightActionState,
-    HighlightItemKind,
     HighlightStatus,
     PatientGlanceItem,
+    TaskGlanceItem,
     User,
 )
 from app.schemas.gate_b import (
@@ -134,52 +134,112 @@ def glance(
 ) -> list[GlanceItemOut]:
     context = get_patient_context(db, user, patient_id)
     require_internal(context)
-    rows = db.scalars(
-        select(PatientGlanceItem)
-        .where(
-            PatientGlanceItem.patient_id == patient_id,
-            PatientGlanceItem.clinic_id == context.clinic_id,
-            PatientGlanceItem.status.not_in(
-                [HighlightStatus.REJECTED.value, HighlightStatus.SUPERSEDED.value]
-            ),
+    highlight_rows = list(
+        db.scalars(
+            select(PatientGlanceItem)
+            .where(
+                PatientGlanceItem.patient_id == patient_id,
+                PatientGlanceItem.clinic_id == context.clinic_id,
+                PatientGlanceItem.status.not_in(
+                    [HighlightStatus.REJECTED.value, HighlightStatus.SUPERSEDED.value]
+                ),
+            )
+            .order_by(
+                PatientGlanceItem.display_priority.desc(),
+                PatientGlanceItem.occurred_at.desc(),
+                PatientGlanceItem.id.desc(),
+            )
+            .limit(limit)
         )
-        .order_by(
-            PatientGlanceItem.display_priority.desc(),
-            PatientGlanceItem.occurred_at.desc(),
-            PatientGlanceItem.id.desc(),
-        )
-        .limit(limit)
     )
-    return [
-        GlanceItemOut(
-            id=item.highlight_id,
-            content_summary=item.content_summary,
-            feature_signature=item.feature_signature,
-            item_kind=HighlightItemKind(item.item_kind),
-            status=HighlightStatus(item.status),
-            base_priority=item.base_priority,
-            recency_contribution=item.recency_contribution,
-            explicit_risk_contribution=item.explicit_risk_contribution,
-            unresolved_action_contribution=item.unresolved_action_contribution,
-            clinician_confirmation_contribution=item.clinician_confirmation_contribution,
-            adaptive_feedback_adjustment=item.adaptive_feedback_adjustment,
-            ranking_explanation=json.loads(item.ranking_explanation),
-            display_priority=item.display_priority,
-            risk_level=item.risk_level,
-            risk_reason=item.risk_reason,
-            action_label=item.action_label,
-            action_state=HighlightActionState(item.action_state),
-            source_entry_id=item.source_entry_id,
-            source_version_id=item.source_version_id,
-            version_number=item.version_number,
-            current_entry_version=item.current_entry_version,
-            source_label=item.source_label,
-            entry_type=item.entry_type,
-            occurred_at=item.occurred_at,
-            quote=item.quote,
+    task_rows = list(
+        db.scalars(
+            select(TaskGlanceItem)
+            .where(
+                TaskGlanceItem.patient_id == patient_id,
+                TaskGlanceItem.clinic_id == context.clinic_id,
+            )
+            .order_by(TaskGlanceItem.display_priority.desc(), TaskGlanceItem.updated_at.desc())
+            .limit(limit)
         )
-        for item in rows
-    ]
+    )
+    combined = [
+        (item.display_priority, item.occurred_at, item.id, "highlight", item)
+        for item in highlight_rows
+    ] + [(item.display_priority, item.occurred_at, item.id, "task", item) for item in task_rows]
+    combined.sort(key=lambda row: (row[0], row[1], row[2]), reverse=True)
+    result: list[GlanceItemOut] = []
+    for _, _, _, resource_type, item in combined[:limit]:
+        if resource_type == "highlight":
+            highlight_item = cast(PatientGlanceItem, item)
+            result.append(
+                GlanceItemOut(
+                    id=highlight_item.highlight_id,
+                    resource_type="highlight",
+                    content_summary=highlight_item.content_summary,
+                    feature_signature=highlight_item.feature_signature,
+                    item_kind=highlight_item.item_kind,
+                    status=highlight_item.status,
+                    base_priority=highlight_item.base_priority,
+                    recency_contribution=highlight_item.recency_contribution,
+                    explicit_risk_contribution=highlight_item.explicit_risk_contribution,
+                    unresolved_action_contribution=highlight_item.unresolved_action_contribution,
+                    clinician_confirmation_contribution=highlight_item.clinician_confirmation_contribution,
+                    adaptive_feedback_adjustment=highlight_item.adaptive_feedback_adjustment,
+                    ranking_explanation=json.loads(highlight_item.ranking_explanation),
+                    display_priority=highlight_item.display_priority,
+                    risk_level=highlight_item.risk_level,
+                    risk_reason=highlight_item.risk_reason,
+                    action_label=highlight_item.action_label,
+                    action_state=highlight_item.action_state,
+                    source_entry_id=highlight_item.source_entry_id,
+                    source_version_id=highlight_item.source_version_id,
+                    version_number=highlight_item.version_number,
+                    current_entry_version=highlight_item.current_entry_version,
+                    source_label=highlight_item.source_label,
+                    entry_type=highlight_item.entry_type,
+                    occurred_at=highlight_item.occurred_at,
+                    quote=highlight_item.quote,
+                )
+            )
+        else:
+            task_item = cast(TaskGlanceItem, item)
+            result.append(
+                GlanceItemOut(
+                    id=task_item.task_id,
+                    resource_type="task",
+                    task_id=task_item.task_id,
+                    content_summary=task_item.content_summary,
+                    feature_signature="task",
+                    item_kind="action",
+                    status="accepted",
+                    base_priority=float(task_item.display_priority),
+                    recency_contribution=0.0,
+                    explicit_risk_contribution=0.0,
+                    unresolved_action_contribution=0.0,
+                    clinician_confirmation_contribution=0.0,
+                    adaptive_feedback_adjustment=0.0,
+                    ranking_explanation={"task": 1.0},
+                    display_priority=float(task_item.display_priority),
+                    risk_level=None,
+                    risk_reason="Assigned internal task",
+                    action_label=task_item.action_label,
+                    action_state=task_item.action_state,
+                    source_entry_id=task_item.source_entry_id,
+                    source_version_id=None,
+                    version_number=None,
+                    current_entry_version=None,
+                    source_label="Assigned task",
+                    entry_type="task",
+                    occurred_at=task_item.occurred_at,
+                    quote=task_item.content_summary,
+                    assigned_to_user_id=task_item.assigned_to_user_id,
+                    assigned_to_display_name=task_item.assigned_to_display_name,
+                    task_status=task_item.task_status,
+                    task_version=task_item.task_version,
+                )
+            )
+    return result
 
 
 @router.get("/highlights/{highlight_id}/source", response_model=ProvenanceSourceOut)

@@ -258,13 +258,39 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   const comments = page.getByRole("region", { name: "Comments" });
   await expect(comments).toBeVisible();
   const rootBody = "Root thread " + testInfo.project.name + " " + Date.now();
-  await comments.getByLabel("Comment body").fill(rootBody);
+  await comments.getByLabel("Comment body").fill("@");
+  const mentionOption = comments.getByRole("option").first();
+  await expect(mentionOption).toBeVisible();
+  const mentionText =
+    (await mentionOption.textContent())?.split(" · ")[0] ?? "@clinician";
+  await mentionOption.click();
+  await comments.getByLabel("Comment body").fill(`${mentionText} ${rootBody}`);
   await comments.getByRole("button", { name: "Add comment" }).click();
   const root = comments
     .locator('[data-testid^="comment-"]')
     .filter({ hasText: rootBody })
     .first();
   await expect(root).toBeVisible();
+  await expect(root).toContainText("Mentions");
+
+  await root.getByRole("button", { name: "Assign task" }).click();
+  const taskTitle =
+    "Follow up assigned " + testInfo.project.name + " " + Date.now();
+  const taskPanel = page.getByTestId("task-panel");
+  await expect(taskPanel).toBeVisible();
+  await taskPanel.getByLabel("Task title").fill(taskTitle);
+  await taskPanel.getByLabel("Assign to").selectOption({ index: 1 });
+  await taskPanel.getByRole("button", { name: "Create task" }).click();
+  await expect(
+    taskPanel.getByTestId(/task-/).filter({ hasText: taskTitle }),
+  ).toBeVisible();
+  await expect(
+    page.getByTestId("glance-item").filter({ hasText: taskTitle }),
+  ).toBeVisible();
+  await taskPanel.getByLabel(`Status: ${taskTitle}`).selectOption("done");
+  await expect(
+    taskPanel.getByTestId(/task-/).filter({ hasText: taskTitle }),
+  ).toContainText("Done");
 
   const replyBody = "Nested reply " + testInfo.project.name + " " + Date.now();
   await root.getByRole("button", { name: "Reply" }).click();
