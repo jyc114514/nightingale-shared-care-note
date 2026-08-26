@@ -70,6 +70,26 @@ modify demo state: Accept, Reject, Edit, Revert, Comment, and Task creation/upda
 4. If the live provider fails, show the safe error code and continue with the fixture path. Do not
    claim a successful model result or model quality from the bounded smoke.
 
+## Optional Phase 9 - Ambient Voice Level C (20-30 seconds)
+
+1. Open **Ambient Voice Prototype** as a staff/clinician or patient synthetic user. The panel is
+   hidden when `VOICE_PROVIDER=disabled`.
+2. Play one prerecorded synthetic WAV fixture. Do not use a microphone or upload audio.
+3. Say: “Architecture/demo only: prerecorded synthetic audio with mock transcript fixture; ASR
+   inference unavailable in this environment.”
+4. Show the timestamped transcript segments, confidence-unavailable label, and segment-to-audio
+   seeking. Internal users may open the generated source; patients see only the allowed patient
+   sample and no internal source identifiers.
+5. Do not claim local Whisper success, word accuracy, diarization, continuous ambient capture,
+   production PHI audio, or clinical validation.
+
+## Production readiness boundary
+
+The repository contains a Docker multi-stage build and a Render Blueprint for one Free Web Service
+and one Free Postgres database. If deployed, use `LLM_PROVIDER=fixture` and
+`VOICE_PROVIDER=disabled`; never deploy the local DeepSeek key, Voice dependencies, model weights,
+or local SQLite database. Free-tier spin-down and database expiration remain explicit limitations.
+
 ## If a live action fails
 
 Use the seeded state and reviewed synthetic screenshots. Do not invent a successful provider call,

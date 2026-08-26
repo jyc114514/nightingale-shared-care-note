@@ -43,6 +43,8 @@ class SourceKind(str, Enum):
     NURSE_CONSULT = "nurse_consult"
     PATIENT_AI_SESSION = "patient_ai_session"
     SYSTEM_EVENT = "system_event"
+    VOICE_PATIENT = "voice_patient"
+    VOICE_CLINICAL = "voice_clinical"
 
 
 class HighlightItemKind(str, Enum):

@@ -174,6 +174,9 @@ function mockAuthenticatedApi(
     commentsStatus?: number;
     aiProviderResponse?: unknown;
     aiJobResponse?: unknown;
+    voiceProviderResponse?: unknown;
+    voiceSamplesResponse?: unknown;
+    voiceSessionResponse?: unknown;
   } = {},
 ) {
   vi.stubGlobal(
@@ -195,6 +198,12 @@ function mockAuthenticatedApi(
           },
         ]);
       if (url.endsWith("/tasks")) return response([]);
+      if (url.endsWith("/voice/provider"))
+        return response(sourceOptions.voiceProviderResponse ?? {});
+      if (url.endsWith("/voice/samples"))
+        return response(sourceOptions.voiceSamplesResponse ?? []);
+      if (url.endsWith("/voice/sessions") && init?.method === "POST")
+        return response(sourceOptions.voiceSessionResponse ?? {});
       if (url.endsWith("/ai-processing/provider"))
         return response(
           sourceOptions.aiProviderResponse ?? {
@@ -488,6 +497,145 @@ describe("Gate B shared care note", () => {
     );
     expect(failedResult).not.toHaveTextContent(".nightingale-local.json");
     expect(failedResult).not.toHaveTextContent("api.txt");
+  });
+
+  it("shows Level-C Voice fixture segments and generated source navigation", async () => {
+    mockAuthenticatedApi(staffUser, {
+      voiceProviderResponse: {
+        provider_name: "mock-transcript-fixture",
+        model: "precomputed-v1",
+        mode: "fixture",
+        enabled: true,
+        disclosure:
+          "Mock transcript fixture - local ASR unavailable in this environment.",
+      },
+      voiceSamplesResponse: [
+        {
+          sample_id: "nurse-follow-up",
+          label: "Synthetic nurse follow-up",
+          scope: "clinical",
+          interaction_type: "ai_nurse_consult_summary",
+          duration_ms: 24000,
+          audio_url: "/patients/patient-a/voice/samples/nurse-follow-up/audio",
+          provider_disclosure:
+            "Mock transcript fixture - local ASR unavailable in this environment.",
+        },
+      ],
+      voiceSessionResponse: {
+        id: "voice-session-1",
+        clinic_id: "clinic-a",
+        patient_id: "patient-a",
+        actor_role: "staff",
+        interaction_type: "ai_nurse_consult_summary",
+        sample_id: "nurse-follow-up",
+        audio_sha256: "a".repeat(64),
+        audio_duration_ms: 24000,
+        asr_provider: "mock-transcript-fixture",
+        asr_model: "precomputed-v1",
+        language: "en",
+        language_probability: null,
+        status: "completed",
+        error_code: null,
+        entry_id: "entry-voice",
+        highlight_id: "highlight-0",
+        source_segment_id: "voice-segment-0",
+        created_at: "2026-08-27T00:00:00Z",
+        completed_at: "2026-08-27T00:00:00Z",
+        patient_safe: false,
+        segments: [
+          {
+            id: "voice-segment-0",
+            segment_index: 0,
+            start_ms: 0,
+            end_ms: 8000,
+            text: "This is a synthetic nurse follow-up.",
+            confidence: null,
+          },
+        ],
+      },
+    });
+    renderApp();
+    const panel = await screen.findByTestId("voice-panel");
+    expect(panel).toHaveTextContent("Review prerecorded synthetic audio");
+    expect(panel).toHaveTextContent("Mock transcript fixture");
+    fireEvent.click(
+      within(panel).getByRole("button", { name: "Process sample" }),
+    );
+    const result = await screen.findByTestId("voice-session-result");
+    expect(result).toHaveTextContent("Voice session status: completed");
+    expect(result).toHaveTextContent("This is a synthetic nurse follow-up.");
+    expect(result).toHaveTextContent("ASR confidence unavailable for fixture");
+    fireEvent.click(
+      within(result).getByRole("button", { name: "Open generated source" }),
+    );
+    expect(
+      await screen.findByTestId("immutable-timeline-source"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps patient Voice UI limited to the patient fixture and no internal source", async () => {
+    mockAuthenticatedApi(patientUser, {
+      voiceProviderResponse: {
+        provider_name: "mock-transcript-fixture",
+        model: "precomputed-v1",
+        mode: "fixture",
+        enabled: true,
+        disclosure:
+          "Mock transcript fixture - local ASR unavailable in this environment.",
+      },
+      voiceSamplesResponse: [
+        {
+          sample_id: "patient-follow-up",
+          label: "Synthetic patient follow-up",
+          scope: "patient",
+          interaction_type: "ai_patient_session_summary",
+          duration_ms: 24000,
+          audio_url:
+            "/patients/patient-a/voice/samples/patient-follow-up/audio",
+          provider_disclosure:
+            "Mock transcript fixture - local ASR unavailable in this environment.",
+        },
+      ],
+      voiceSessionResponse: {
+        id: "voice-session-patient",
+        clinic_id: "clinic-a",
+        patient_id: "patient-a",
+        actor_role: "patient",
+        interaction_type: "ai_patient_session_summary",
+        sample_id: "patient-follow-up",
+        audio_sha256: "b".repeat(64),
+        audio_duration_ms: 24000,
+        asr_provider: "mock-transcript-fixture",
+        asr_model: "precomputed-v1",
+        language: "en",
+        language_probability: null,
+        status: "completed",
+        error_code: null,
+        entry_id: null,
+        highlight_id: null,
+        source_segment_id: "voice-segment-patient",
+        created_at: "2026-08-27T00:00:00Z",
+        completed_at: "2026-08-27T00:00:00Z",
+        patient_safe: true,
+        segments: [],
+      },
+    });
+    renderApp();
+    const panel = await screen.findByTestId("voice-panel");
+    expect(panel).toHaveTextContent("Synthetic patient follow-up");
+    expect(panel).not.toHaveTextContent("Synthetic nurse follow-up");
+    expect(
+      panel.querySelector("button[aria-label*='microphone' i]"),
+    ).toBeNull();
+    fireEvent.click(
+      within(panel).getByRole("button", { name: "Process sample" }),
+    );
+    expect(await screen.findByTestId("voice-session-result")).toHaveTextContent(
+      "Voice session status: completed",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Open generated source" }),
+    ).toBeNull();
   });
 
   it("restores saved locale while URL locale takes precedence", async () => {

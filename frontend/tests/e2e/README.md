@@ -1,8 +1,10 @@
 # Gate B browser workflows
 
 `pnpm e2e` starts a real temporary Alembic-migrated SQLite database, runs the synthetic seed,
-starts Uvicorn and Vite on clean local ports, and runs the real API scenarios plus the interactive
-preview check at desktop and mobile viewports:
+starts Uvicorn and Vite on clean local ports, and runs the 12 core API scenarios plus the
+interactive preview check at desktop and mobile viewports. The separate `pnpm e2e:voice` command
+uses the same isolated setup for the four Voice fixture checks, so Voice-created entries cannot
+change the serial state assumptions of the core scenarios:
 
 - Scenario A: clinician Glance item action/risk/status, collapsed “Why ranked?” contributions,
   pin/unpin feedback, exact immutable source, `<mark>` quote, source entry/version, URL deep-link
@@ -19,8 +21,9 @@ The Demo preview check verifies same-origin embedded Desktop 1440x900 and Mobile
 internal viewports, query/auth preservation, no recursive toolbar, no host overflow, and Escape
 close.
 
-The current run completed 12 passed tests: six scenarios in each of the 1440x900 and 390x844
-projects. Scenario B includes keyboard mention autocomplete, assignment/task creation and
+The current core run completed 12 passed tests: six scenarios in each of the 1440x900 and 390x844
+projects. The current Voice run completed four passed tests: clinical and patient fixture flows at
+both viewports. Scenario B includes keyboard mention autocomplete, assignment/task creation and
 completion, and a second browser receiving metadata-only SSE invalidation. The global setup
 records only the PIDs it started; teardown stops those exact process trees before removing
 temporary files.

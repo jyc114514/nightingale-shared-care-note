@@ -258,6 +258,65 @@ export type Version = {
   created_at: string;
 };
 
+export type VoiceSample = {
+  sample_id: string;
+  label: string;
+  scope: "patient" | "clinical";
+  interaction_type: string;
+  duration_ms: number;
+  audio_url: string;
+  provider_disclosure: string;
+};
+
+export type VoiceProviderInfo = {
+  provider_name: string;
+  model: string;
+  mode: "disabled" | "fixture" | "local_whisper";
+  enabled: boolean;
+  disclosure: string;
+};
+
+export type VoiceSessionStatus =
+  | "processing"
+  | "completed"
+  | "failed_asr"
+  | "failed_redaction"
+  | "failed_provider"
+  | "failed_provenance";
+
+export type TranscriptSegment = {
+  id: string;
+  segment_index: number;
+  start_ms: number;
+  end_ms: number;
+  text: string;
+  confidence: number | null;
+};
+
+export type VoiceSession = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  actor_role: string;
+  interaction_type: string;
+  sample_id: string;
+  audio_sha256: string;
+  audio_duration_ms: number;
+  asr_provider: string;
+  asr_model: string;
+  language: string;
+  language_probability: number | null;
+  status: VoiceSessionStatus;
+  error_code: string | null;
+  entry_id: string | null;
+  highlight_id: string | null;
+  source_segment_id: string | null;
+  created_at: string;
+  completed_at: string | null;
+  segments: TranscriptSegment[];
+  patient_safe: boolean;
+};
+
 export type Diff = {
   entry_id: string;
   from_version: number;

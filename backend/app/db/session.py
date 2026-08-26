@@ -10,12 +10,13 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
-pool_kwargs = {"poolclass": NullPool} if settings.database_url.startswith("sqlite") else {}
-engine = create_engine(settings.database_url, connect_args=connect_args, future=True, **pool_kwargs)
+database_url = settings.sqlalchemy_database_url
+connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
+pool_kwargs = {"poolclass": NullPool} if database_url.startswith("sqlite") else {}
+engine = create_engine(database_url, connect_args=connect_args, future=True, **pool_kwargs)
 
 
-if settings.database_url.startswith("sqlite"):
+if database_url.startswith("sqlite"):
 
     @event.listens_for(engine, "connect")
     def enable_sqlite_foreign_keys(dbapi_connection: Any, connection_record: object) -> None:

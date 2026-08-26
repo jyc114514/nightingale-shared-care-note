@@ -39,13 +39,19 @@ $envNames = @(
   "COOKIE_SECURE",
   "ALLOWED_ORIGINS",
   "DEMO_SEED_PASSWORD",
+  "DEMO_SEED_ENABLED",
   "VITE_API_BASE_URL",
   "LLM_PROVIDER",
   "DEEPSEEK_API_KEY",
   "DEEPSEEK_BASE_URL",
   "DEEPSEEK_MODEL",
   "DEEPSEEK_TIMEOUT_SECONDS",
-  "DEEPSEEK_MAX_TOKENS"
+  "DEEPSEEK_MAX_TOKENS",
+  "VOICE_PROVIDER",
+  "VOICE_MODEL",
+  "VOICE_DEVICE",
+  "VOICE_COMPUTE_TYPE",
+  "VOICE_MODEL_CACHE_DIR"
 )
 $oldEnvironment = @{}
 
@@ -165,12 +171,18 @@ try {
   $env:SESSION_SECRET = Get-DemoSessionSecret
   $env:COOKIE_SECURE = "false"
   $env:ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+  $env:DEMO_SEED_ENABLED = "false"
   $env:VITE_API_BASE_URL = "http://127.0.0.1:8000"
   $env:LLM_PROVIDER = $localProviderConfig.Provider
   $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com"
   $env:DEEPSEEK_MODEL = $localProviderConfig.Model
   $env:DEEPSEEK_TIMEOUT_SECONDS = "20"
   $env:DEEPSEEK_MAX_TOKENS = "600"
+  $env:VOICE_PROVIDER = "fixture"
+  $env:VOICE_MODEL = "turbo"
+  $env:VOICE_DEVICE = "cuda"
+  $env:VOICE_COMPUTE_TYPE = "float16"
+  $env:VOICE_MODEL_CACHE_DIR = Join-Path $runtimeRoot "voice-model-cache"
   Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
   if ($localProviderConfig.Provider -eq "deepseek") {
     $deepseekKey = Read-DemoDeepSeekKey -KeyFilePath $localProviderConfig.KeyFilePath
@@ -263,6 +275,8 @@ try {
     database_path = $databasePath
     llm_provider = $localProviderConfig.Provider
     llm_model = $localProviderConfig.Model
+    voice_provider = $env:VOICE_PROVIDER
+    voice_model = $env:VOICE_MODEL
     browser_url = $browserUrl
     started_at = [DateTime]::UtcNow.ToString("o")
     backend_log = $backendLog

@@ -17,6 +17,9 @@
 | 13 | Mobile workspace | Chinese chrome, source/task controls, no horizontal overflow at 390x844 | `mobile-scenario-a.png` |
 | 14 | Contextual drawers | Comments loading/error focus path and task source context at desktop/mobile | `comments-open.png`, `task-open.png` |
 | 15 | Demo viewport preview | Same-origin interactive Desktop 1440x900 and Mobile 390x844 frames without recursive toolbar | `preview-desktop.png`, `preview-mobile.png` |
+| 16 | Ambient Voice Level C | Prerecorded synthetic audio, mock transcript disclosure, timestamps, confidence unavailable, no microphone | `voice-clinical.png` |
+| 17 | Voice patient privacy | Patient sample only, internal clinical sample absent, no generated-source control | `voice-patient.png` |
+| 18 | Production boundary | Render/README shows Fixture AI, disabled Voice, synthetic-only seed, and free-tier limitations | `render-boundary.png` |
 
 The Playwright runner emits synthetic Scenario A/B/C screenshots under ignored `artifacts/gate-b/`.
 Delivery copies should be selected after visual review; no database, password file, runtime log, or

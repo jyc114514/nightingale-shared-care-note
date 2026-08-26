@@ -1,0 +1,48 @@
+{
+  "provider": "mock-transcript-fixture",
+  "status": "Architecture/demo only: prerecorded synthetic audio with mock transcript fixture; ASR inference unavailable in this environment.",
+  "samples": {
+    "patient-follow-up": {
+      "scope": "patient",
+      "duration_ms": 24000,
+      "segments": [
+        {
+          "start_ms": 0,
+          "end_ms": 8000,
+          "text": "This is a synthetic patient voice sample. I have a follow-up appointment next week,"
+        },
+        {
+          "start_ms": 8000,
+          "end_ms": 16000,
+          "text": "and I still have a question about the pending laboratory review."
+        },
+        {
+          "start_ms": 16000,
+          "end_ms": 24000,
+          "text": "This recording contains no real patient information."
+        }
+      ]
+    },
+    "nurse-follow-up": {
+      "scope": "clinical",
+      "duration_ms": 24000,
+      "segments": [
+        {
+          "start_ms": 0,
+          "end_ms": 8000,
+          "text": "This is a synthetic nurse follow-up. The scheduled laboratory review"
+        },
+        {
+          "start_ms": 8000,
+          "end_ms": 16000,
+          "text": "remains pending and requires clinician review."
+        },
+        {
+          "start_ms": 16000,
+          "end_ms": 24000,
+          "text": "No diagnosis or treatment recommendation was made in this recording."
+        }
+      ]
+    }
+  }
+}

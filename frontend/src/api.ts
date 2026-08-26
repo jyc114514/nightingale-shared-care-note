@@ -17,11 +17,15 @@ import type {
   Task,
   TaskStatus,
   TimelineEntry,
+  VoiceProviderInfo,
+  VoiceSample,
+  VoiceSession,
   Version,
 } from "./types";
 
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+  configuredApiBaseUrl ?? (import.meta.env.DEV ? "http://localhost:8000" : "")
 ).replace(/\/$/, "");
 
 export class ApiError extends Error {
@@ -181,4 +185,19 @@ export const api = {
   aiProvider: () => request<AIProviderInfo>("/ai-processing/provider"),
   eventsUrl: (patientId: string) =>
     `${apiBaseUrl}/patients/${patientId}/events`,
+  voiceProvider: () => request<VoiceProviderInfo>("/voice/provider"),
+  voiceSamples: (patientId: string) =>
+    request<VoiceSample[]>(`/patients/${patientId}/voice/samples`),
+  voiceAudioUrl: (patientId: string, sampleId: string) =>
+    `${apiBaseUrl}/patients/${patientId}/voice/samples/${sampleId}/audio`,
+  createVoiceSession: (
+    patientId: string,
+    payload: { sample_id: string; idempotency_key: string },
+  ) =>
+    request<VoiceSession>(`/patients/${patientId}/voice/sessions`, {
+      method: "POST",
+      ...json(payload),
+    }),
+  voiceSession: (patientId: string, sessionId: string) =>
+    request<VoiceSession>(`/patients/${patientId}/voice/sessions/${sessionId}`),
 };

@@ -1,16 +1,19 @@
 # Nightingale
 
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
-collaboration product. The repository is at **Phase 7 / local feature freeze**: Gate A-C
+collaboration product. The repository is at **Phase 9 / local release candidate**: Gate A-C
 authentication, clinic-scoped RBAC, immutable revisions, audit metadata, optimistic concurrency,
 Glance/timeline/provenance, bilingual UI chrome, safe one-click demo startup, mentions, internal
 assignments, and metadata-only near-real-time invalidation are implemented locally.
 
 The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance and
-hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. This is
-not a hosted production deployment: external-provider integration, PostgreSQL execution,
-TLS/encryption-at-rest evidence, production retention/deletion policy, voice capture, final video,
-and external submission remain deferred. The
+hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. The
+optional DeepSeek V4 Flash adapter is implemented behind the redaction boundary, while the
+deterministic fixture remains the default. This is not yet a hosted production deployment:
+PostgreSQL execution, TLS/encryption-at-rest evidence, production retention/deletion policy,
+final video, and external submission remain pending. Ambient Voice is limited to a clearly
+labelled Level-C architecture/demo path with prerecorded synthetic audio and mock transcript
+fixtures; local ASR inference was not achieved in this environment. The
 repository-root `requirements.txt` is the candidate brief, **not** a
 pip requirements file; never run `pip install -r requirements.txt`.
 
@@ -128,7 +131,7 @@ note content, comments, quotes, revisions and user-entered source data remain in
 language; the UI never calls a translation API.
 There is no UI-only role switch.
 
-## Phase 7/8 local demo
+## Phase 9 local demo and production boundary
 
 Double-click `Start Nightingale Demo.cmd` for English or `启动 Nightingale 中文演示.cmd` for
 Chinese UI chrome. The launcher discovers the existing local Python/pnpm/Node tools, runs
@@ -149,10 +152,17 @@ never silently becomes fixture output. The bounded live smoke is recorded in
 [`deepseek_live_smoke.md`](docs/evidence/deepseek_live_smoke.md); it is not a model-quality
 evaluation or production compliance claim.
 
-The Phase 7.1 delivery set includes the editable and rendered Technical Brief, attribution audit,
+The Phase 7.1/8 delivery set includes the editable and rendered Technical Brief, attribution audit,
 demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
-synthetic browser screenshots.
+synthetic browser screenshots. Phase 9 adds a Docker/Render production-readiness path and a
+Level-C Ambient Voice prototype. The Render image keeps `VOICE_PROVIDER=disabled` and
+`LLM_PROVIDER=fixture`; it does not install Voice dependencies or model weights.
 There is no final video claim while a reliable local recorder/codec is unavailable.
+
+The Ambient Voice section is intentionally not continuous ambient capture. It plays two small,
+pre-recorded synthetic WAV fixtures, displays precomputed timestamped transcripts, and labels
+confidence as unavailable. The current achieved status is: “Architecture/demo only: prerecorded
+synthetic audio with mock transcript fixture; ASR inference unavailable in this environment.”
 
 ## Bonus importance logic
 
@@ -187,14 +197,15 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 8 application checkpoint `7b1b05e`, this suite reports **71 passed**. Reproducible coverage is **88%**
+At the Phase 9 local application checkpoint, this suite reports **81 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
 `test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
-`test_materialized_glance.py`, `test_self_learning_importance.py`, and `test_data_decay.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
+`test_materialized_glance.py`, `test_self_learning_importance.py`, `test_data_decay.py`, and
+`test_voice.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
 `TestClient/httpx` warning is hidden. Migration tests use Alembic to create the database and
 prove that seed does not call `Base.metadata.create_all()`.
 
@@ -216,17 +227,19 @@ Real browser checks:
 ```powershell
 Push-Location frontend
 & $pnpmCmd e2e
+& $pnpmCmd e2e:voice
 Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs 12 checks at 1440x900 and
-390x844. Scenario B covers revisions, nested comments, keyboard mention selection, contextual
-assignment drawer creation/completion, and a second browser receiving the metadata-only SSE
-invalidation. The dedicated preview check verifies real internal 1440x900/390x844 iframe
-viewports, query preservation, no recursive toolbar, and Escape close. The
-custom setup records only its own server PIDs and teardown removes those processes, the temporary
-database, generated password, and ignored `artifacts/gate-b/` screenshots.
+real Uvicorn and Vite processes on clean local ports, and runs 12 core checks at 1440x900 and
+390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks at the same viewports. Scenario B
+covers revisions, nested comments, keyboard mention selection, contextual assignment drawer
+creation/completion, and a second browser receiving the metadata-only SSE invalidation. The
+dedicated preview check verifies real internal 1440x900/390x844 iframe viewports, query
+preservation, no recursive toolbar, and Escape close. The custom setup records only its own server
+PIDs and teardown removes those processes, the temporary database, generated password, and
+ignored `artifacts/gate-b/` screenshots.
 
 Gate C warm-path benchmark:
 
@@ -252,11 +265,12 @@ hosted PostgreSQL production benchmark.
 - AI output is a suggestion. It cannot silently overwrite a human source or present an
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
-- No external LLM key is committed or required. Docker, deployment, account creation, and email are
-  not configured. The optional DeepSeek path is explicitly selected, redaction-gated, and cost/network
-  dependent; both Bonus paths and collaboration events remain local and deterministic by default.
-  Hosted PostgreSQL, TLS/encryption-at-rest,
-  final video, and external submission remain explicit delivery gates. The local Technical Brief
-  PDF is local evidence, not hosted compliance evidence.
+- No external LLM key is committed or required. The optional DeepSeek path is explicitly selected,
+  redaction-gated, and cost/network dependent; the fixture path remains local and deterministic by
+  default. Docker/Render production readiness is prepared, but hosted PostgreSQL,
+  TLS/encryption-at-rest, final video, and external submission remain explicit delivery gates. The
+  local Technical Brief PDF is local evidence, not hosted compliance evidence.
+- Ambient Voice is Level C only: pre-recorded synthetic audio and mock transcript fixtures. There
+  is no microphone capture, local Whisper success claim, diarization, or production PHI audio path.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

@@ -294,7 +294,11 @@ def test_production_security_validation_fails_closed() -> None:
         insecure.validate_runtime_security()
     secure = Settings(
         app_env="production",
+        database_url="postgresql://user:password@db.internal/nightingale",
         session_secret="a" * 40,
         cookie_secure=True,
+        allowed_origins="https://nightingale-shared-care-note.onrender.com",
+        llm_provider="fixture",
+        voice_provider="disabled",
     )
     secure.validate_runtime_security()

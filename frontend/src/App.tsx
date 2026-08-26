@@ -29,6 +29,10 @@ import type {
   Task,
   TaskStatus,
   TimelineEntry,
+  TranscriptSegment,
+  VoiceProviderInfo,
+  VoiceSample,
+  VoiceSession,
   Version,
 } from "./types";
 
@@ -38,6 +42,8 @@ const sourceKindKeys: Record<string, TranslationKey> = {
   patient_ai_session: "sourceKind.patient",
   system_event: "sourceKind.system",
   manual: "sourceKind.manual",
+  voice_patient: "sourceKind.voicePatient",
+  voice_clinical: "sourceKind.voiceClinical",
 };
 
 const sourceLabelKeys: Record<string, TranslationKey> = {
@@ -50,6 +56,8 @@ const sourceLabelKeys: Record<string, TranslationKey> = {
   "System event": "sourceKind.system",
   "Manual note": "sourceKind.manual",
   "Assigned task": "sourceKind.task",
+  "Synthetic patient audio": "sourceKind.voicePatient",
+  "Synthetic clinical audio": "sourceKind.voiceClinical",
 };
 
 const entryTypeKeys: Record<string, TranslationKey> = {
@@ -2054,6 +2062,198 @@ function AIScribePanel({
   );
 }
 
+function formatVoiceTime(milliseconds: number) {
+  return `${(milliseconds / 1000).toFixed(1)}s`;
+}
+
+function VoicePanel({
+  providerInfo,
+  samples,
+  session,
+  busy,
+  error,
+  onProcess,
+  onOpenSource,
+}: {
+  providerInfo: VoiceProviderInfo;
+  samples: VoiceSample[];
+  session: VoiceSession | null;
+  busy: boolean;
+  error: string | null;
+  onProcess: (sampleId: string) => Promise<void>;
+  onOpenSource: (highlightId: string) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [selectedSampleId, setSelectedSampleId] = useState(
+    samples[0]?.sample_id ?? "",
+  );
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const selectedSample =
+    samples.find((sample) => sample.sample_id === selectedSampleId) ??
+    samples[0] ??
+    null;
+
+  useEffect(() => {
+    if (!samples.some((sample) => sample.sample_id === selectedSampleId)) {
+      setSelectedSampleId(samples[0]?.sample_id ?? "");
+    }
+  }, [samples, selectedSampleId]);
+
+  function seekTo(segment: TranscriptSegment) {
+    if (audioRef.current)
+      audioRef.current.currentTime = segment.start_ms / 1000;
+  }
+
+  return (
+    <section
+      className="rounded-3xl border border-violet-200 bg-violet-50/70 p-5 shadow-sm sm:p-7"
+      aria-label={t("voice.panel")}
+      data-testid="voice-panel"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-800">
+            {t("voice.panel")}
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900">
+            {t("voice.title")}
+          </h2>
+        </div>
+        <Pill tone="blue">{providerInfo.provider_name}</Pill>
+      </div>
+      <p className="mt-3 rounded-xl border border-violet-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-violet-950">
+        {t("voice.warning")}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
+          {t("voice.provider")}: {providerInfo.model}
+        </span>
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
+          {providerInfo.disclosure}
+        </span>
+      </div>
+      {error && (
+        <p
+          className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid="voice-error"
+        >
+          {error}
+        </p>
+      )}
+      {selectedSample && (
+        <div className="mt-5 space-y-4">
+          <label className="block text-sm font-semibold text-slate-700">
+            {t("voice.selectSample")}
+            <select
+              value={selectedSample.sample_id}
+              onChange={(event) => setSelectedSampleId(event.target.value)}
+              aria-label={t("voice.selectSample")}
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            >
+              {samples.map((sample) => (
+                <option key={sample.sample_id} value={sample.sample_id}>
+                  {sample.label} · {sample.scope}
+                </option>
+              ))}
+            </select>
+          </label>
+          <audio
+            ref={audioRef}
+            controls
+            preload="metadata"
+            src={selectedSample.audio_url}
+            aria-label={t("voice.audioLabel", { label: selectedSample.label })}
+            className="w-full"
+            data-testid="voice-audio"
+          />
+          <p className="text-xs text-slate-600">
+            {t("voice.duration", {
+              duration: formatVoiceTime(selectedSample.duration_ms),
+            })}
+          </p>
+          <Button
+            kind="primary"
+            disabled={busy}
+            onClick={() => void onProcess(selectedSample.sample_id)}
+          >
+            {busy ? t("voice.processing") : t("voice.process")}
+          </Button>
+        </div>
+      )}
+      {session && (
+        <div
+          className="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm"
+          data-testid="voice-session-result"
+        >
+          <p className="font-semibold text-slate-900">
+            {t("voice.status")}: {session.status}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {t("voice.provider")}: {session.asr_provider} · {session.asr_model}
+          </p>
+          {session.status.startsWith("failed") ? (
+            <p className="mt-3 text-rose-700" role="alert">
+              {t("voice.failed", {
+                code: session.error_code ?? "voice_failed",
+              })}
+            </p>
+          ) : session.status !== "completed" ? (
+            <p className="mt-3 text-slate-600" role="status">
+              {t("voice.processing")}
+            </p>
+          ) : (
+            <>
+              <p className="mt-3 font-semibold text-amber-800">
+                {t("voice.requiresReview")}
+              </p>
+              <div
+                className="mt-3 space-y-2"
+                aria-label={t("voice.transcript")}
+              >
+                {session.segments.map((segment) => (
+                  <button
+                    key={segment.id}
+                    type="button"
+                    className="block w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-left transition hover:border-violet-300 hover:bg-violet-50 focus:outline-none focus-visible:ring-4 focus-visible:ring-violet-200"
+                    data-testid={`voice-segment-${segment.segment_index}`}
+                    onClick={() => seekTo(segment)}
+                  >
+                    <span className="font-semibold text-violet-800">
+                      {formatVoiceTime(segment.start_ms)} -{" "}
+                      {formatVoiceTime(segment.end_ms)}
+                    </span>
+                    <span className="mt-1 block leading-6 text-slate-700">
+                      {segment.text}
+                    </span>
+                    <span className="mt-1 block text-xs text-slate-500">
+                      {segment.confidence === null
+                        ? t("voice.confidenceUnavailable")
+                        : t("voice.confidence", {
+                            confidence: segment.confidence.toFixed(2),
+                          })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              {session.highlight_id && !session.patient_safe && (
+                <Button
+                  kind="secondary"
+                  onClick={() =>
+                    void onOpenSource(session.highlight_id as string)
+                  }
+                >
+                  {t("voice.openSource")}
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const { locale, t } = useI18n();
   const internal = isInternalUser(user);
@@ -2110,6 +2310,12 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [aiJob, setAIJob] = useState<AIJob | null>(null);
   const [aiBusy, setAIBusy] = useState(false);
   const [pendingAIEntryId, setPendingAIEntryId] = useState<string | null>(null);
+  const [voiceProviderInfo, setVoiceProviderInfo] =
+    useState<VoiceProviderInfo | null>(null);
+  const [voiceSamples, setVoiceSamples] = useState<VoiceSample[]>([]);
+  const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
+  const [voiceBusy, setVoiceBusy] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const commentsInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
   const commentsRequestRef = useRef(0);
@@ -2241,6 +2447,37 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   }, [canUseAIScribe, t, user.id]);
 
   useEffect(() => {
+    let active = true;
+    api
+      .voiceProvider()
+      .then((result) => active && setVoiceProviderInfo(result))
+      .catch((error) => active && setVoiceError(displayError(error, t)));
+    return () => {
+      active = false;
+    };
+  }, [t, user.id]);
+
+  useEffect(() => {
+    if (!patientId || !voiceProviderInfo?.enabled) {
+      setVoiceSamples([]);
+      setVoiceSession(null);
+      return;
+    }
+    let active = true;
+    setVoiceError(null);
+    api
+      .voiceSamples(patientId)
+      .then(
+        (result) =>
+          active && setVoiceSamples(Array.isArray(result) ? result : []),
+      )
+      .catch((error) => active && setVoiceError(displayError(error, t)));
+    return () => {
+      active = false;
+    };
+  }, [patientId, t, voiceProviderInfo?.enabled]);
+
+  useEffect(() => {
     if (
       !pendingAIEntryId ||
       !timeline.some((entry) => entry.id === pendingAIEntryId)
@@ -2329,6 +2566,36 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     }
   }
 
+  async function openHighlightSource(highlightId: string) {
+    if (!patientId) return;
+    setSourceLoading(true);
+    setMutationError(null);
+    try {
+      const result = await api.source(highlightId);
+      setSource(result);
+      setPendingAIEntryId(result.source_entry_id);
+      setFocusEntryId(result.source_entry_id);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("patient", patientId);
+      nextUrl.searchParams.set("highlight", highlightId);
+      window.history.replaceState(
+        {},
+        "",
+        `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+      );
+      window.setTimeout(() => {
+        scrollToElement(
+          document.getElementById(`timeline-entry-${result.source_entry_id}`),
+        );
+      }, 0);
+      window.setTimeout(() => setFocusEntryId(null), 2400);
+    } catch (error) {
+      setMutationError(displayError(error, t));
+    } finally {
+      setSourceLoading(false);
+    }
+  }
+
   async function openAIJobSource(job: AIJob) {
     if (!patientId || !job.highlight_id) return;
     setSourceLoading(true);
@@ -2384,6 +2651,29 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setAIProviderError(displayError(error, t));
     } finally {
       setAIBusy(false);
+    }
+  }
+
+  async function processVoice(sampleId: string) {
+    if (!patientId) return;
+    setVoiceBusy(true);
+    setVoiceError(null);
+    try {
+      const session = await api.createVoiceSession(patientId, {
+        sample_id: sampleId,
+        idempotency_key: `ui-voice-${Date.now()}-${sampleId}`,
+      });
+      setVoiceSession(session);
+      if (session.status === "completed" && session.highlight_id) {
+        setPendingAIEntryId(session.entry_id);
+        setRefreshToken((value) => value + 1);
+        if (!session.patient_safe)
+          await openHighlightSource(session.highlight_id);
+      }
+    } catch (error) {
+      setVoiceError(displayError(error, t));
+    } finally {
+      setVoiceBusy(false);
     }
   }
 
@@ -2881,6 +3171,20 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               </Button>
             </p>
           )}
+
+          {voiceProviderInfo?.enabled &&
+            patientId &&
+            voiceSamples.length > 0 && (
+              <VoicePanel
+                providerInfo={voiceProviderInfo}
+                samples={voiceSamples}
+                session={voiceSession}
+                busy={voiceBusy}
+                error={voiceError}
+                onProcess={processVoice}
+                onOpenSource={openHighlightSource}
+              />
+            )}
 
           {canUseAIScribe && patientId && (
             <AIScribePanel

@@ -66,6 +66,10 @@ export default async function globalSetup() {
     SESSION_SECRET: "gate-b-e2e-session-secret-local-only-32-chars",
     COOKIE_SECURE: "false",
     ALLOWED_ORIGINS: "http://localhost:5173,http://127.0.0.1:5173",
+    VOICE_PROVIDER: "fixture",
+    VOICE_MODEL: "turbo",
+    VOICE_DEVICE: "cuda",
+    VOICE_COMPUTE_TYPE: "float16",
   };
   mkdirSync(path.dirname(databasePath), { recursive: true });
   rmSync(databasePath, { force: true });

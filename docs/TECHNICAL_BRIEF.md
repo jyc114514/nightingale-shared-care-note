@@ -2,8 +2,8 @@
 
 ## A trust-centered longitudinal shared-care note
 
-Status: Phase 8 local prototype with an optional DeepSeek adapter, measured on 2026-08-26 at
-application checkpoint `7b1b05e`.
+Status: Phase 9 local release candidate with an optional DeepSeek adapter, Render readiness, and a
+Level-C Voice prototype, measured on 2026-08-27.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic
@@ -14,9 +14,9 @@ clinician review; explicit risk, display ranking, provenance, and human confirma
 
 The browser uses a real FastAPI application through credentialed cookie requests. Authorization is
 resolved server-side from clinic membership or a patient link on every protected route. The local
-database is SQLite; PostgreSQL is the target through `DATABASE_URL`, but was not provisioned. The
-shared `ai_env` remains at Python 3.10.20 by PM decision; production migration to Python 3.12+
-remains follow-up work.
+database is SQLite; the Render readiness path normalizes PostgreSQL URLs to the installed psycopg
+driver, but hosted PostgreSQL is not yet claimed as deployed. The shared `ai_env` remains at Python
+3.10.20 by PM decision; the production Docker image targets Python 3.12.
 
 ```text
 Browser: React + TypeScript + Vite + Tailwind
@@ -95,17 +95,34 @@ starting Vite, and writes no key or key-file path to logs, runtime metadata, bro
 artifacts. The bounded synthetic live smoke is recorded in
 [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md); it is not a quality evaluation.
 
-## 4. Evidence, trade-offs, and remaining boundary
+## 4. Level-C Voice and Render boundary
 
-Implemented and independently checked at the Phase 8 application checkpoint:
+The local Voice path is intentionally fixture-first. It contains two small, prerecorded synthetic
+WAV signal fixtures, immutable precomputed transcript segments, timestamp links, audio hashes,
+safe role/patient scope, and the existing redaction-gated fixture/DeepSeek summary path. The UI
+labels the achieved state as: “Architecture/demo only: prerecorded synthetic audio with mock
+transcript fixture; ASR inference unavailable in this environment.” The optional faster-whisper
+adapter is lazy and injection-testable, but the Turbo model download did not complete and no model
+weights are committed or packaged. There is no microphone, diarization, continuous ambient capture,
+production PHI audio, or ASR accuracy claim.
 
-- Backend: **71 passed**, **88%** reproducible coverage, Ruff, mypy, pip check; Alembic head
-  `0008_collaboration_events`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.
-- Frontend: **19 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
-- Browser: **12 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
+The production readiness path uses a multi-stage Docker build, same-origin FastAPI static serving,
+Alembic-before-seed startup, secure production settings, one Free Render Web Service, and one Free
+Render Postgres database. Render is configured for `LLM_PROVIDER=fixture` and
+`VOICE_PROVIDER=disabled`. Actual hosted URL, migration/seed smoke, TLS, and encryption-at-rest
+evidence remain dependent on the external deployment attempt.
+
+## 5. Evidence, trade-offs, and remaining boundary
+
+Implemented and independently checked at the Phase 9 local checkpoint:
+
+- Backend: **81 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
+  Alembic head `0009_voice_capture`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.
+- Frontend: **21 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
+- Browser: **16 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
   provenance persistence, distinguishable original-record rows, contextual comments/tasks,
   Desktop/Mobile preview, mentions, assignments, two-browser SSE invalidation, conflict handling,
-  and patient privacy.
+  patient privacy, Voice sample scope, timestamp seeking, and source navigation.
 - Clean clone: the prior clean-clone rehearsal from `3129da3` passed the Phase 7 baseline; no
   Phase 8 clean-clone rehearsal or hosted-provider guarantee is claimed in this local run.
 - Warm path: real Uvicorn TCP, file-backed SQLite approximation, 26 patients, 208 entries/highlights,
@@ -117,7 +134,8 @@ make the default prototype reproducible; the optional adapter adds network, bala
 processing, and latency dependencies. SSE is invalidation only, not simultaneous character editing;
 CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience, not
 deployment. Hosted PostgreSQL, TLS/encryption-at-rest, model quality, production retention/deletion
-policy, final video, and human UX-01 sign-off remain unclaimed.
+policy, final video, and human UX-01 sign-off remain unclaimed; the current Render track is an
+attempt/readiness path until external smoke evidence exists.
 
 ## Demo scenarios
 
@@ -136,10 +154,15 @@ Optional Phase 8: staff or clinician opens **AI Scribe Demo**, confirms the synt
 checks the active fixture/DeepSeek provider badge, and generates a suggestion. The resulting entry
 is system-authored, suggested, source-linked, and requires clinician review.
 
+Optional Phase 9: staff or clinician opens **Ambient Voice Prototype**, plays a prerecorded
+synthetic fixture, selects a timestamped mock transcript segment, and opens its generated source.
+Patients receive only the patient sample and no internal source identifiers. The current Voice
+status is Level C architecture/demo only; ASR inference is unavailable in this environment.
+
 ## Delivery limitation
 
 The PDF, screenshots, source ZIP, and local rehearsal package are delivery artifacts, not hosted
-compliance evidence. No GitHub push, deployment, or email submission is implied by this brief. The
-DeepSeek adapter is integrated as an optional live path, but one smoke does not establish model
-quality, provider compliance, or production reliability. Voice capture remains explicitly out of
-scope.
+compliance evidence. The GitHub repository is private and pushed, but no email submission or public
+visibility change is implied by this brief. The DeepSeek adapter is integrated as an optional live
+path, but one smoke does not establish model quality, provider compliance, or production
+reliability. Full Voice capture remains out of scope beyond the Level-C architecture/demo path.

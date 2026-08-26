@@ -1,0 +1,4 @@
+# Optional local-only Ambient Voice prototype dependencies.
+# This manifest is intentionally separate from backend/requirements.in so Render
+# and the ordinary fixture test path never install ASR packages or model weights.
+faster-whisper==1.2.1

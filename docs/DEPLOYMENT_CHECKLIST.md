@@ -1,8 +1,7 @@
 # Deployment checklist
 
-Status: **not deployed**. This checklist records the evidence required before making production
-claims; Phase 7/8 adds only a local Windows launcher, metadata-only local SSE, and an optional
-redaction-gated DeepSeek adapter. No deployment, account, or hosting action was taken.
+Status: **Render deployment attempt pending**. The repository now contains a Docker production
+image and a Render Blueprint; no hosted resource has been created yet in this checkpoint.
 
 ## Required before a hosted demo
 
@@ -20,6 +19,24 @@ redaction-gated DeepSeek adapter. No deployment, account, or hosting action was 
 - [ ] Verify logs contain request/job metadata only and no raw note, credentials, or tokens.
 - [ ] Re-run the warm-path benchmark against the actual database/service topology.
 - [ ] Verify backups, retention, deletion, incident response, and access review with the provider.
+
+## Render blueprint boundary
+
+- [x] One Docker web service named `nightingale-shared-care-note`, Free plan, Singapore region,
+      `/health` HTTP health check.
+- [x] One Free Render Postgres database, connected through the Blueprint `connectionString`.
+- [x] Production image builds the frontend and serves it from FastAPI on the Render `$PORT`.
+- [x] Production startup validates secure settings, runs `alembic upgrade head`, and runs the
+      synthetic seed only when `DEMO_SEED_ENABLED=true`.
+- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice model is
+      part of the production image.
+- [ ] Confirm actual Render service URL, deploy commit, migration/seed logs, HTTPS smoke, and
+      database encryption evidence in `docs/evidence/deployment_security.md` or
+      `docs/evidence/deployment_attempt.md`.
+
+Render Free limitations must remain visible: free web services spin down after inactivity, the
+filesystem is ephemeral, and Free Postgres is limited to 1 GB and expires after 30 days. This is
+an evaluation deployment, not a clinical production guarantee.
 
 ## Optional external provider boundary
 

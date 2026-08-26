@@ -33,7 +33,9 @@ from app.models.mention import Mention
 from app.models.task import Task
 from app.models.task_conflict import TaskConflict
 from app.models.task_glance_item import TaskGlanceItem
+from app.models.transcript_segment import TranscriptSegment
 from app.models.user import User
+from app.models.voice_session import VoiceSession
 
 __all__ = [
     "AuditLog",
@@ -68,5 +70,7 @@ __all__ = [
     "TaskConflict",
     "TaskGlanceItem",
     "TaskStatus",
+    "TranscriptSegment",
     "User",
+    "VoiceSession",
 ]
