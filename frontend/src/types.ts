@@ -296,6 +296,13 @@ export type AIJob = {
   completed_at: string | null;
 };
 
+export type AIProviderInfo = {
+  provider_name: string;
+  model: string;
+  configured: boolean;
+  mode: "fixture" | "deepseek";
+};
+
 export type ApiErrorShape = {
   detail?:
     | string

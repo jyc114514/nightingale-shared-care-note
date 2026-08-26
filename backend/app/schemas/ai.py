@@ -37,6 +37,15 @@ class AIJobOut(BaseModel):
     completed_at: datetime | None
 
 
+class AIProviderOut(BaseModel):
+    """Safe provider metadata for the internal demo panel."""
+
+    provider_name: str
+    model: str
+    configured: bool
+    mode: Literal["fixture", "deepseek"]
+
+
 AIJobStatus = Literal[
     "processing",
     "completed",

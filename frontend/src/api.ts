@@ -1,5 +1,6 @@
 import type {
   AIJob,
+  AIProviderInfo,
   ApiErrorShape,
   Comment,
   ContextRefresh,
@@ -177,6 +178,7 @@ export const api = {
       ...json(payload),
     }),
   aiJob: (jobId: string) => request<AIJob>(`/ai-processing/${jobId}`),
+  aiProvider: () => request<AIProviderInfo>("/ai-processing/provider"),
   eventsUrl: (patientId: string) =>
     `${apiBaseUrl}/patients/${patientId}/events`,
 };

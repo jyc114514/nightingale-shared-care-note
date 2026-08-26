@@ -6,6 +6,83 @@ function Get-DemoRoot {
   return $script:DemoRoot
 }
 
+function Get-DemoLocalConfigPath {
+  return Join-Path $script:DemoRoot ".nightingale-local.json"
+}
+
+function Get-DemoLocalConfig {
+  $configPath = Get-DemoLocalConfigPath
+  if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) {
+    return [pscustomobject]@{
+      Provider = "fixture"
+      KeyFilePath = ""
+      Model = "deepseek-v4-flash"
+    }
+  }
+  try {
+    $config = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
+  }
+  catch {
+    throw "The local Nightingale provider configuration is invalid."
+  }
+  if ($null -eq $config) {
+    throw "The local Nightingale provider configuration is invalid."
+  }
+  $allowedProperties = @("llm_provider", "deepseek_key_file", "deepseek_model")
+  $unknownProperties = @($config.PSObject.Properties.Name | Where-Object { $_ -notin $allowedProperties })
+  if ($unknownProperties.Count -gt 0) {
+    throw "The local Nightingale provider configuration contains unsupported settings."
+  }
+  $provider = ([string]$config.llm_provider).Trim().ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($provider)) {
+    $provider = "fixture"
+  }
+  if ($provider -eq "fixture") {
+    return [pscustomobject]@{
+      Provider = "fixture"
+      KeyFilePath = ""
+      Model = "deepseek-v4-flash"
+    }
+  }
+  if ($provider -ne "deepseek") {
+    throw "The local Nightingale provider must be fixture or deepseek."
+  }
+  $keyFilePath = ([string]$config.deepseek_key_file).Trim()
+  if ([string]::IsNullOrWhiteSpace($keyFilePath)) {
+    throw "DeepSeek is selected but no local key file is configured."
+  }
+  $model = ([string]$config.deepseek_model).Trim()
+  if ([string]::IsNullOrWhiteSpace($model)) {
+    $model = "deepseek-v4-flash"
+  }
+  if ($model -ne "deepseek-v4-flash") {
+    throw "The local Nightingale DeepSeek model must be deepseek-v4-flash."
+  }
+  return [pscustomobject]@{
+    Provider = "deepseek"
+    KeyFilePath = $keyFilePath
+    Model = $model
+  }
+}
+
+function Read-DemoDeepSeekKey {
+  param([string]$KeyFilePath)
+
+  if ([string]::IsNullOrWhiteSpace($KeyFilePath) -or -not (Test-Path -LiteralPath $KeyFilePath -PathType Leaf)) {
+    throw "The configured DeepSeek key file is unavailable."
+  }
+  try {
+    $key = [IO.File]::ReadAllText($KeyFilePath)
+  }
+  catch {
+    throw "The configured DeepSeek key file cannot be read."
+  }
+  if ([string]::IsNullOrWhiteSpace($key)) {
+    throw "The configured DeepSeek key file is empty."
+  }
+  return $key.Trim()
+}
+
 function Get-DemoRuntimeDirectory {
   param([string]$RuntimeDirectory)
 

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -171,6 +172,8 @@ function mockAuthenticatedApi(
     endOffset?: number;
     commentsDelayMs?: number;
     commentsStatus?: number;
+    aiProviderResponse?: unknown;
+    aiJobResponse?: unknown;
   } = {},
 ) {
   vi.stubGlobal(
@@ -192,6 +195,36 @@ function mockAuthenticatedApi(
           },
         ]);
       if (url.endsWith("/tasks")) return response([]);
+      if (url.endsWith("/ai-processing/provider"))
+        return response(
+          sourceOptions.aiProviderResponse ?? {
+            provider_name: "fixture-redacted-v1",
+            model: "deterministic-local",
+            configured: true,
+            mode: "fixture",
+          },
+        );
+      if (url.endsWith("/ai-processing") && init?.method === "POST") {
+        return response(
+          sourceOptions.aiJobResponse ?? {
+            id: "job-fixture",
+            clinic_id: "clinic-a",
+            patient_id: "patient-a",
+            interaction_type: "ai_doctor_consult_summary",
+            provider_name: "fixture-redacted-v1",
+            status: "completed",
+            idempotency_key: "job-fixture-key",
+            input_hash: "hash",
+            source_reference: "synthetic-source",
+            error_code: null,
+            entry_id: "entry-ai-new",
+            highlight_id: null,
+            created_at: "2026-08-26T00:00:00Z",
+            updated_at: "2026-08-26T00:00:00Z",
+            completed_at: "2026-08-26T00:00:00Z",
+          },
+        );
+      }
       if (url.includes("/highlights/") && url.endsWith("/source")) {
         return response({
           highlight: {
@@ -295,6 +328,9 @@ describe("Gate B shared care note", () => {
     expect(await screen.findByText("Shared Care Note")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "简体中文" }));
     expect(screen.getByText("共享照护记录")).toBeInTheDocument();
+    expect(screen.getByTestId("ai-scribe-panel")).toHaveTextContent(
+      "AI 记录演示",
+    );
     const localizedSourceButtons = await screen.findAllByRole("button", {
       name: "打开来源",
     });
@@ -347,6 +383,111 @@ describe("Gate B shared care note", () => {
       "width",
       "1440",
     );
+  });
+
+  it("shows the internal AI Scribe panel, provider badge, and safe completed job", async () => {
+    mockAuthenticatedApi(staffUser, {
+      aiProviderResponse: {
+        provider_name: "deepseek-v4-flash",
+        model: "deepseek-v4-flash",
+        configured: true,
+        mode: "deepseek",
+      },
+      aiJobResponse: {
+        id: "job-deepseek",
+        clinic_id: "clinic-a",
+        patient_id: "patient-a",
+        interaction_type: "ai_doctor_consult_summary",
+        provider_name: "deepseek-v4-flash",
+        status: "completed",
+        idempotency_key: "job-deepseek-key",
+        input_hash: "hash",
+        source_reference: "synthetic-source",
+        error_code: null,
+        entry_id: "entry-ai-new",
+        highlight_id: null,
+        created_at: "2026-08-26T00:00:00Z",
+        updated_at: "2026-08-26T00:00:00Z",
+        completed_at: "2026-08-26T00:00:00Z",
+      },
+    });
+    renderApp();
+    const panel = await screen.findByTestId("ai-scribe-panel");
+    expect(panel).toHaveTextContent("AI Scribe Demo");
+    await waitFor(() => expect(panel).toHaveTextContent("DeepSeek V4 Flash"));
+    expect(panel).toHaveTextContent(
+      "Synthetic demo text only. Never enter real patient information.",
+    );
+    fireEvent.click(
+      within(panel).getByRole("button", { name: "Generate suggestion" }),
+    );
+    const result = await screen.findByTestId("ai-job-result");
+    expect(result).toHaveTextContent("deepseek-v4-flash");
+    expect(result).toHaveTextContent("Requires clinician review");
+    expect(result).not.toHaveTextContent("api-key");
+    expect(result).not.toHaveTextContent(".txt");
+  });
+
+  it("shows processing and failed provider states without exposing configuration", async () => {
+    mockAuthenticatedApi(staffUser, {
+      aiJobResponse: {
+        id: "job-processing",
+        clinic_id: "clinic-a",
+        patient_id: "patient-a",
+        interaction_type: "ai_doctor_consult_summary",
+        provider_name: "fixture-redacted-v1",
+        status: "processing",
+        idempotency_key: "job-processing-key",
+        input_hash: "hash",
+        source_reference: "synthetic-source",
+        error_code: null,
+        entry_id: null,
+        highlight_id: null,
+        created_at: "2026-08-26T00:00:00Z",
+        updated_at: "2026-08-26T00:00:00Z",
+        completed_at: null,
+      },
+    });
+    renderApp();
+    const panel = await screen.findByTestId("ai-scribe-panel");
+    fireEvent.click(
+      within(panel).getByRole("button", { name: "Generate suggestion" }),
+    );
+    expect(await screen.findByTestId("ai-job-result")).toHaveTextContent(
+      "Provider job is processing...",
+    );
+
+    cleanup();
+    mockAuthenticatedApi(staffUser, {
+      aiJobResponse: {
+        id: "job-failed",
+        clinic_id: "clinic-a",
+        patient_id: "patient-a",
+        interaction_type: "ai_doctor_consult_summary",
+        provider_name: "deepseek-v4-flash",
+        status: "failed_provider",
+        idempotency_key: "job-failed-key",
+        input_hash: "hash",
+        source_reference: "synthetic-source",
+        error_code: "provider_auth_failed",
+        entry_id: null,
+        highlight_id: null,
+        created_at: "2026-08-26T00:00:00Z",
+        updated_at: "2026-08-26T00:00:00Z",
+        completed_at: "2026-08-26T00:00:00Z",
+      },
+    });
+    renderApp();
+    const failedPanel = await screen.findByTestId("ai-scribe-panel");
+    fireEvent.click(
+      within(failedPanel).getByRole("button", { name: "Generate suggestion" }),
+    );
+    const failedResult = await screen.findByTestId("ai-job-result");
+    expect(failedResult).toHaveTextContent(
+      "Provider failed safely: provider_auth_failed",
+    );
+    expect(failedResult).not.toHaveTextContent(".nightingale-local.json");
+    expect(failedResult).not.toHaveTextContent("api.txt");
   });
 
   it("restores saved locale while URL locale takes precedence", async () => {
@@ -651,5 +792,6 @@ describe("Gate B shared care note", () => {
     expect(
       screen.queryByRole("button", { name: "Comments" }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("ai-scribe-panel")).not.toBeInTheDocument();
   });
 });

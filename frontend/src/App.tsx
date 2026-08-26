@@ -20,6 +20,8 @@ import type {
   Diff,
   FeedbackEventType,
   GlanceItem,
+  AIJob,
+  AIProviderInfo,
   Me,
   MentionUser,
   Patient,
@@ -1846,6 +1848,212 @@ function TaskPanel({
   );
 }
 
+type AIScribeInteraction =
+  | "ai_doctor_consult_summary"
+  | "ai_nurse_consult_summary"
+  | "ai_patient_session_summary";
+
+const aiScribeExamples: Record<
+  AIScribeInteraction,
+  { text: string; reference: string }
+> = {
+  ai_doctor_consult_summary: {
+    text: "During this synthetic doctor follow-up, the patient reported that the scheduled laboratory review remains pending. No diagnosis or treatment recommendation was made.",
+    reference: "synthetic-doctor-demo",
+  },
+  ai_nurse_consult_summary: {
+    text: "During this synthetic nurse follow-up, the patient reported that the scheduled laboratory review remains pending. No diagnosis or treatment recommendation was made.",
+    reference: "synthetic-nurse-demo",
+  },
+  ai_patient_session_summary: {
+    text: "During this synthetic AI-patient session, the patient asked what preparation is needed for the next visit. No diagnosis or treatment recommendation was made.",
+    reference: "synthetic-patient-session-demo",
+  },
+};
+
+function AIScribePanel({
+  providerInfo,
+  providerError,
+  job,
+  busy,
+  onSubmit,
+  onOpenSource,
+}: {
+  providerInfo: AIProviderInfo | null;
+  providerError: string | null;
+  job: AIJob | null;
+  busy: boolean;
+  onSubmit: (payload: {
+    interaction_type: AIScribeInteraction;
+    text: string;
+    source_reference: string;
+    idempotency_key: string;
+  }) => Promise<void>;
+  onOpenSource: (job: AIJob) => void;
+}) {
+  const { t } = useI18n();
+  const [interactionType, setInteractionType] = useState<AIScribeInteraction>(
+    "ai_doctor_consult_summary",
+  );
+  const [text, setText] = useState(
+    aiScribeExamples.ai_doctor_consult_summary.text,
+  );
+  const [sourceReference, setSourceReference] = useState(
+    aiScribeExamples.ai_doctor_consult_summary.reference,
+  );
+  const providerLabel =
+    providerInfo?.mode === "deepseek" ? t("ai.deepseek") : t("ai.fixture");
+
+  function changeInteraction(next: AIScribeInteraction) {
+    setInteractionType(next);
+    const example = aiScribeExamples[next];
+    setText(example.text);
+    setSourceReference(example.reference);
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await onSubmit({
+      interaction_type: interactionType,
+      text: text.trim(),
+      source_reference: sourceReference.trim(),
+      idempotency_key: `ui-ai-${Date.now()}-${interactionType}`,
+    });
+  }
+
+  return (
+    <section
+      className="rounded-3xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm sm:p-7"
+      aria-label={t("ai.panel")}
+      data-testid="ai-scribe-panel"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-800">
+            {t("ai.panel")}
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900">
+            {t("ai.title")}
+          </h2>
+        </div>
+        <Pill tone="amber">{providerLabel}</Pill>
+      </div>
+      <p className="mt-3 rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-amber-950">
+        {t("ai.warning")}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
+          {t("ai.provider")}: {providerLabel}
+        </span>
+        {providerInfo?.model && (
+          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
+            {providerInfo.model}
+          </span>
+        )}
+        {providerInfo?.mode === "deepseek" && !providerInfo.configured && (
+          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 font-semibold text-rose-700">
+            {t("ai.notConfigured")}
+          </span>
+        )}
+      </div>
+      {providerError && (
+        <p
+          className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+        >
+          {providerError}
+        </p>
+      )}
+      <form className="mt-5 space-y-4" onSubmit={submit}>
+        <label className="block text-sm font-semibold text-slate-700">
+          {t("ai.interactionType")}
+          <select
+            value={interactionType}
+            onChange={(event) =>
+              changeInteraction(event.target.value as AIScribeInteraction)
+            }
+            aria-label={t("ai.interactionType")}
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+          >
+            <option value="ai_doctor_consult_summary">{t("ai.doctor")}</option>
+            <option value="ai_nurse_consult_summary">{t("ai.nurse")}</option>
+            <option value="ai_patient_session_summary">
+              {t("ai.patientSession")}
+            </option>
+          </select>
+        </label>
+        <label className="block text-sm font-semibold text-slate-700">
+          {t("ai.text")}
+          <textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            aria-label={t("ai.text")}
+            placeholder={t("ai.textPlaceholder")}
+            className="mt-2 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            required
+          />
+        </label>
+        <label className="block text-sm font-semibold text-slate-700">
+          {t("ai.reference")}
+          <input
+            value={sourceReference}
+            onChange={(event) => setSourceReference(event.target.value)}
+            aria-label={t("ai.reference")}
+            placeholder={t("ai.referencePlaceholder")}
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            required
+          />
+        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" kind="primary" disabled={busy || !text.trim()}>
+            {busy ? t("ai.generating") : t("ai.generate")}
+          </Button>
+          {busy && (
+            <span
+              className="text-sm text-slate-600"
+              role="status"
+              aria-live="polite"
+            >
+              {t("ai.processing")}
+            </span>
+          )}
+        </div>
+      </form>
+      {job && (
+        <div
+          className="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm"
+          data-testid="ai-job-result"
+        >
+          <p className="font-semibold text-slate-900">
+            {t("ai.status")}: {job.status}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {t("ai.provider")}: {job.provider_name}
+          </p>
+          {job.status === "completed" ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <p className="font-semibold text-amber-800">
+                {t("ai.requiresReview")}
+              </p>
+              {job.highlight_id && (
+                <Button kind="secondary" onClick={() => onOpenSource(job)}>
+                  {t("ai.openSource")}
+                </Button>
+              )}
+            </div>
+          ) : job.status.startsWith("failed") ? (
+            <p className="mt-3 text-rose-700" role="alert">
+              {t("ai.safeError", { code: job.error_code ?? "provider_failed" })}
+            </p>
+          ) : (
+            <p className="mt-3 text-slate-600">{t("ai.processing")}</p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const { locale, t } = useI18n();
   const internal = isInternalUser(user);
@@ -1895,6 +2103,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [feedbackBusyId, setFeedbackBusyId] = useState<string | null>(null);
   const [pinnedItems, setPinnedItems] = useState<Set<string>>(new Set());
   const [guideOpen, setGuideOpen] = useState(false);
+  const [aiProviderInfo, setAIProviderInfo] = useState<AIProviderInfo | null>(
+    null,
+  );
+  const [aiProviderError, setAIProviderError] = useState<string | null>(null);
+  const [aiJob, setAIJob] = useState<AIJob | null>(null);
+  const [aiBusy, setAIBusy] = useState(false);
+  const [pendingAIEntryId, setPendingAIEntryId] = useState<string | null>(null);
   const commentsInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
   const commentsRequestRef = useRef(0);
@@ -1934,6 +2149,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setTaskDrawerOpen(false);
     setTaskFocusId(null);
     setTaskError(null);
+    setAIJob(null);
+    setPendingAIEntryId(null);
     setSourceLoading(false);
     setFocusEntryId(null);
     setCommentsEntryId(null);
@@ -2007,6 +2224,38 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setPinnedItems(new Set());
   }, [patientId]);
 
+  const canUseAIScribe = role === "staff" || role === "clinician";
+
+  useEffect(() => {
+    if (!canUseAIScribe) {
+      setAIProviderInfo(null);
+      setAIProviderError(null);
+      return;
+    }
+    setAIProviderInfo(null);
+    setAIProviderError(null);
+    void api
+      .aiProvider()
+      .then(setAIProviderInfo)
+      .catch((error) => setAIProviderError(displayError(error, t)));
+  }, [canUseAIScribe, t, user.id]);
+
+  useEffect(() => {
+    if (
+      !pendingAIEntryId ||
+      !timeline.some((entry) => entry.id === pendingAIEntryId)
+    )
+      return;
+    setFocusEntryId(pendingAIEntryId);
+    window.setTimeout(() => {
+      scrollToElement(
+        document.getElementById(`timeline-entry-${pendingAIEntryId}`),
+      );
+    }, 0);
+    window.setTimeout(() => setFocusEntryId(null), 2400);
+    setPendingAIEntryId(null);
+  }, [pendingAIEntryId, timeline]);
+
   useEffect(() => {
     if (!patientId || !internal || typeof EventSource === "undefined") {
       setRealtimeStatus("unavailable");
@@ -2077,6 +2326,64 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setMutationError(displayError(error, t));
     } finally {
       setSourceLoading(false);
+    }
+  }
+
+  async function openAIJobSource(job: AIJob) {
+    if (!patientId || !job.highlight_id) return;
+    setSourceLoading(true);
+    setMutationError(null);
+    try {
+      const result = await api.source(job.highlight_id);
+      setSource(result);
+      setPendingAIEntryId(result.source_entry_id);
+      setFocusEntryId(result.source_entry_id);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("patient", patientId);
+      nextUrl.searchParams.set("highlight", job.highlight_id);
+      window.history.replaceState(
+        {},
+        "",
+        `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+      );
+      window.setTimeout(() => {
+        scrollToElement(
+          document.getElementById(`timeline-entry-${result.source_entry_id}`),
+        );
+      }, 0);
+      window.setTimeout(() => setFocusEntryId(null), 2400);
+    } catch (error) {
+      setMutationError(displayError(error, t));
+    } finally {
+      setSourceLoading(false);
+    }
+  }
+
+  async function submitAIScribe(payload: {
+    interaction_type:
+      | "ai_doctor_consult_summary"
+      | "ai_nurse_consult_summary"
+      | "ai_patient_session_summary";
+    text: string;
+    source_reference: string;
+    idempotency_key: string;
+  }) {
+    if (!patientId) return;
+    setAIBusy(true);
+    setAIProviderError(null);
+    setMutationError(null);
+    try {
+      const job = await api.submitAIProcessing(patientId, payload);
+      setAIJob(job);
+      if (job.status === "completed") {
+        setPendingAIEntryId(job.entry_id);
+        setRefreshToken((value) => value + 1);
+        if (job.highlight_id) await openAIJobSource(job);
+      }
+    } catch (error) {
+      setAIProviderError(displayError(error, t));
+    } finally {
+      setAIBusy(false);
     }
   }
 
@@ -2573,6 +2880,17 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                 {t("realtime.refresh")}
               </Button>
             </p>
+          )}
+
+          {canUseAIScribe && (
+            <AIScribePanel
+              providerInfo={aiProviderInfo}
+              providerError={aiProviderError}
+              job={aiJob}
+              busy={aiBusy}
+              onSubmit={submitAIScribe}
+              onOpenSource={openAIJobSource}
+            />
           )}
 
           {internal ? (

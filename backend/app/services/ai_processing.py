@@ -7,9 +7,10 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ai.provider import AIProvider, get_provider
+from app.ai.provider import AIProvider, ProviderError, get_provider
 from app.ai.redaction import RedactionFailure, redact_text
 from app.ai.schemas import AIInteractionType, ProviderOutput, RedactedPayload
+from app.config import Settings
 from app.db.base import utcnow
 from app.models import (
     AIProcessingJob,
@@ -23,6 +24,7 @@ from app.models import (
     User,
 )
 from app.services.entries import create_entry_record
+from app.services.events import append_event
 from app.services.highlights import create_highlight_record
 
 
@@ -40,8 +42,20 @@ def _input_hash(
 
 
 def _safe_error_code(error: Exception, fallback: str) -> str:
-    del error
+    if isinstance(error, ProviderError):
+        return error.error_code
     return fallback
+
+
+def _close_provider(provider: AIProvider) -> None:
+    close = getattr(provider, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception:
+        # A client cleanup failure must not change the persisted job result.
+        return
 
 
 def _set_failed(
@@ -115,6 +129,7 @@ def process_ai_job(
     idempotency_key: str,
     request_id: str,
     provider: AIProvider | None = None,
+    app_settings: Settings | None = None,
 ) -> AIProcessingJob:
     """Process one redacted request and create only a new suggested source."""
 
@@ -130,6 +145,9 @@ def process_ai_job(
             raise AIIdempotencyConflict("idempotency_key_reused_for_different_input")
         return existing
 
+    provider_instance = provider or get_provider(app_settings)
+    provider_name = provider_instance.name
+
     safe_source_reference = "redaction-failed"
     try:
         known_names = _known_names(db, patient)
@@ -137,11 +155,12 @@ def process_ai_job(
         redacted_reference = redact_text(source_reference, known_names)
         safe_source_reference = redacted_reference.redacted_text[:200]
     except RedactionFailure as exc:
+        _close_provider(provider_instance)
         job = AIProcessingJob(
             clinic_id=patient.clinic_id,
             patient_id=patient.id,
             interaction_type=interaction_type,
-            provider_name="fixture-redacted-v1",
+            provider_name=provider_name,
             status="failed_redaction",
             idempotency_key=idempotency_key,
             input_hash=input_hash,
@@ -161,7 +180,7 @@ def process_ai_job(
         clinic_id=patient.clinic_id,
         patient_id=patient.id,
         interaction_type=interaction_type,
-        provider_name="fixture-redacted-v1",
+        provider_name=provider_name,
         status="processing",
         idempotency_key=idempotency_key,
         input_hash=input_hash,
@@ -177,7 +196,6 @@ def process_ai_job(
     db.commit()
     db.refresh(job)
 
-    provider_instance = provider or get_provider()
     try:
         payload = RedactedPayload(
             interaction_type=interaction_type,
@@ -188,6 +206,7 @@ def process_ai_job(
         output = ProviderOutput.model_validate(raw_output)
         _validate_span(output)
     except ValidationError:
+        _close_provider(provider_instance)
         return _set_failed(
             db,
             job,
@@ -195,6 +214,7 @@ def process_ai_job(
             error_code="provider_output_invalid",
         )
     except Exception as exc:
+        _close_provider(provider_instance)
         return _set_failed(
             db,
             job,
@@ -244,6 +264,7 @@ def process_ai_job(
             request_id=request_id,
         )
     except Exception:
+        _close_provider(provider_instance)
         return _set_failed(
             db,
             job,
@@ -253,6 +274,16 @@ def process_ai_job(
 
     job.entry_id = entry.id
     job.highlight_id = highlight.id
+    append_event(
+        db,
+        clinic_id=patient.clinic_id,
+        patient_id=patient.id,
+        resource_type="ai_processing",
+        resource_id=job.id,
+        event_kind="ai_processing_completed",
+        actor_user_id=None,
+        actor_role="system",
+    )
     job.status = "completed"
     job.error_code = None
     now = utcnow()
@@ -260,4 +291,5 @@ def process_ai_job(
     job.completed_at = now
     db.commit()
     db.refresh(job)
+    _close_provider(provider_instance)
     return job

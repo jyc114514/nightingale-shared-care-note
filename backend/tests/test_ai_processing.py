@@ -1,13 +1,17 @@
-"""Gate C processing, idempotency, provenance, and privacy tests."""
+"""Gate C/Phase 8 processing, idempotency, provenance, and privacy tests."""
 
+import json
 from typing import Any
 
 import httpx
 import pytest
+from pydantic import SecretStr
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import AIProcessingJob, Entry, EntryType, Highlight
+from app.ai.deepseek import DeepSeekProvider
+from app.models import AIProcessingJob, CollaborationEvent, Entry, EntryType, Highlight
+from app.config import Settings
 from conftest import DemoData, TEST_PASSWORD
 
 
@@ -99,7 +103,9 @@ async def test_ai_processing_is_idempotent_and_redaction_failure_never_calls_pro
 
             return FixtureProvider().process(payload)
 
-    monkeypatch.setattr("app.services.ai_processing.get_provider", lambda: SpyProvider())
+    monkeypatch.setattr(
+        "app.services.ai_processing.get_provider", lambda *args, **kwargs: SpyProvider()
+    )
     await login(client, "clinician@clinic-a.test")
     payload = {
         "interaction_type": "ai_nurse_consult_summary",
@@ -160,7 +166,9 @@ async def test_malformed_provider_output_does_not_create_entry_or_highlight(
             del payload
             return {"summary": "not a complete provider output"}
 
-    monkeypatch.setattr("app.services.ai_processing.get_provider", lambda: MalformedProvider())
+    monkeypatch.setattr(
+        "app.services.ai_processing.get_provider", lambda *args, **kwargs: MalformedProvider()
+    )
     await login(client, "staff@clinic-a.test")
     before_ai_entries = (
         db_session.query(Entry).filter(Entry.entry_type == "ai_doctor_consult_summary").count()
@@ -199,7 +207,9 @@ async def test_provider_unavailable_returns_safe_error_without_raw_logs(
             del payload
             raise RuntimeError("raw sentinel Sarah Tan S1234567D +65 9123 4567")
 
-    monkeypatch.setattr("app.services.ai_processing.get_provider", lambda: UnavailableProvider())
+    monkeypatch.setattr(
+        "app.services.ai_processing.get_provider", lambda *args, **kwargs: UnavailableProvider()
+    )
     await login(client, "staff@clinic-a.test")
     response = await client.post(
         f"/patients/{demo_data.patient_a.id}/ai-processing",
@@ -234,4 +244,165 @@ async def test_patient_cannot_submit_or_read_ai_job(
             "idempotency_key": "patient-denied",
         },
     )
+    assert denied.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_deepseek_mock_success_uses_redacted_boundary_and_emits_safe_event(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests: list[httpx.Request] = []
+    suggestion = {
+        "summary": "The synthetic follow-up remains pending.",
+        "highlight_quote": "remains pending",
+        "item_kind": "action",
+        "priority_reason": "The follow-up needs clinician review.",
+        "action_label": "Review synthetic follow-up",
+        "action_state": "open",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {"content": json.dumps(suggestion)},
+                    }
+                ]
+            },
+        )
+
+    provider = DeepSeekProvider(
+        SecretStr("test-deepseek-key"),
+        transport=httpx.MockTransport(handler),
+    )
+    monkeypatch.setattr(
+        "app.services.ai_processing.get_provider",
+        lambda *args, **kwargs: provider,
+    )
+    await login(client, "staff@clinic-a.test")
+    response = await client.post(
+        f"/patients/{demo_data.patient_a.id}/ai-processing",
+        json={
+            "interaction_type": "ai_nurse_consult_summary",
+            "text": "Sarah Tan reported pain; NRIC S1234567D; +65 9123 4567.",
+            "source_reference": "synthetic-phase-8-success",
+            "idempotency_key": "phase-8-success",
+        },
+    )
+    assert response.status_code == 200, response.text
+    job = response.json()
+    assert job["provider_name"] == "deepseek-v4-flash"
+    assert job["status"] == "completed"
+    assert job["entry_id"] and job["highlight_id"]
+    assert requests
+    request_body = json.loads(requests[0].content)
+    serialized = json.dumps(request_body)
+    assert "Sarah Tan" not in serialized
+    assert "S1234567D" not in serialized
+    assert "9123" not in serialized
+    assert "synthetic-phase-8-success" not in serialized
+    assert "source_reference" not in request_body
+
+    source = await client.get(f"/highlights/{job['highlight_id']}/source")
+    assert source.status_code == 200, source.text
+    source_body = source.json()
+    assert source_body["quote"] == "remains pending"
+    assert (
+        source_body["version_content"][source_body["start_offset"] : source_body["end_offset"]]
+        == source_body["quote"]
+    )
+    event = db_session.scalar(
+        select(CollaborationEvent).where(
+            CollaborationEvent.resource_id == job["id"],
+            CollaborationEvent.resource_type == "ai_processing",
+        )
+    )
+    assert event is not None
+    assert event.event_kind == "ai_processing_completed"
+    assert event.actor_user_id is None
+
+    await login(client, "patient@clinic-a.test")
+    patient_timeline = await client.get(f"/patients/{demo_data.patient_a.id}/timeline")
+    assert patient_timeline.status_code == 200
+    assert job["entry_id"] not in {row["id"] for row in patient_timeline.json()}
+
+
+@pytest.mark.asyncio
+async def test_deepseek_mock_failure_keeps_provider_identity_and_creates_no_source(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    provider = DeepSeekProvider(
+        SecretStr("test-deepseek-key"),
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(401, content=b"secret response must not be exposed")
+        ),
+    )
+    monkeypatch.setattr(
+        "app.services.ai_processing.get_provider",
+        lambda *args, **kwargs: provider,
+    )
+    await login(client, "staff@clinic-a.test")
+    before_entries = db_session.query(Entry).count()
+    before_highlights = db_session.query(Highlight).count()
+    response = await client.post(
+        f"/patients/{demo_data.patient_a.id}/ai-processing",
+        json={
+            "interaction_type": "ai_doctor_consult_summary",
+            "text": "Synthetic provider failure input.",
+            "source_reference": "synthetic-phase-8-failure",
+            "idempotency_key": "phase-8-failure",
+        },
+    )
+    assert response.status_code == 200, response.text
+    job = response.json()
+    assert job["provider_name"] == "deepseek-v4-flash"
+    assert job["status"] == "failed_provider"
+    assert job["error_code"] == "provider_auth_failed"
+    assert job["entry_id"] is None
+    assert job["highlight_id"] is None
+    assert db_session.query(Entry).count() == before_entries
+    assert db_session.query(Highlight).count() == before_highlights
+
+
+@pytest.mark.asyncio
+async def test_provider_info_is_safe_and_restricted_to_staff_or_clinicians(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    test_settings: Settings,
+) -> None:
+    await login(client, "staff@clinic-a.test")
+    fixture_info = await client.get("/ai-processing/provider")
+    assert fixture_info.status_code == 200, fixture_info.text
+    assert fixture_info.json() == {
+        "provider_name": "fixture-redacted-v1",
+        "model": "deterministic-local",
+        "configured": True,
+        "mode": "fixture",
+    }
+    assert "api_key" not in fixture_info.text.lower()
+    assert "base_url" not in fixture_info.text.lower()
+
+    test_settings.llm_provider = "deepseek"
+    test_settings.deepseek_api_key = SecretStr("test-deepseek-key")
+    deepseek_info = await client.get("/ai-processing/provider")
+    assert deepseek_info.status_code == 200, deepseek_info.text
+    assert deepseek_info.json() == {
+        "provider_name": "deepseek-v4-flash",
+        "model": "deepseek-v4-flash",
+        "configured": True,
+        "mode": "deepseek",
+    }
+    assert "test-deepseek-key" not in deepseek_info.text
+    await login(client, "patient@clinic-a.test")
+    denied = await client.get("/ai-processing/provider")
     assert denied.status_code == 403

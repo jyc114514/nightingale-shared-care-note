@@ -7,7 +7,9 @@ param(
   [switch]$NoBrowser,
   [switch]$Setup,
   [int]$TimeoutSeconds = 45,
-  [string]$RuntimeDirectory = ""
+  [string]$RuntimeDirectory = "",
+  [ValidateSet("auto", "fixture")]
+  [string]$ProviderOverride = "auto"
 )
 
 $ErrorActionPreference = "Stop"
@@ -28,6 +30,8 @@ $browserUrl = "http://127.0.0.1:5173/?lang=$Language"
 $backendProcess = $null
 $frontendProcess = $null
 $startedHere = @()
+$localProviderConfig = $null
+$deepseekKey = $null
 $envNames = @(
   "APP_ENV",
   "DATABASE_URL",
@@ -35,7 +39,13 @@ $envNames = @(
   "COOKIE_SECURE",
   "ALLOWED_ORIGINS",
   "DEMO_SEED_PASSWORD",
-  "VITE_API_BASE_URL"
+  "VITE_API_BASE_URL",
+  "LLM_PROVIDER",
+  "DEEPSEEK_API_KEY",
+  "DEEPSEEK_BASE_URL",
+  "DEEPSEEK_MODEL",
+  "DEEPSEEK_TIMEOUT_SECONDS",
+  "DEEPSEEK_MAX_TOKENS"
 )
 $oldEnvironment = @{}
 
@@ -89,6 +99,14 @@ try {
   $pythonExecutable = Resolve-DemoPython -ProjectRoot $projectRoot
   $pnpmExecutable = Resolve-DemoPnpm -ProjectRoot $projectRoot
   $nodeExecutable = Resolve-DemoNode
+  $localProviderConfig = Get-DemoLocalConfig
+  if ($ProviderOverride -eq "fixture") {
+    $localProviderConfig = [pscustomobject]@{
+      Provider = "fixture"
+      KeyFilePath = ""
+      Model = "deepseek-v4-flash"
+    }
+  }
 
   if (Test-Path -LiteralPath $runtimePath -PathType Leaf) {
     try {
@@ -148,6 +166,16 @@ try {
   $env:COOKIE_SECURE = "false"
   $env:ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
   $env:VITE_API_BASE_URL = "http://127.0.0.1:8000"
+  $env:LLM_PROVIDER = $localProviderConfig.Provider
+  $env:DEEPSEEK_BASE_URL = "https://api.deepseek.com"
+  $env:DEEPSEEK_MODEL = $localProviderConfig.Model
+  $env:DEEPSEEK_TIMEOUT_SECONDS = "20"
+  $env:DEEPSEEK_MAX_TOKENS = "600"
+  Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
+  if ($localProviderConfig.Provider -eq "deepseek") {
+    $deepseekKey = Read-DemoDeepSeekKey -KeyFilePath $localProviderConfig.KeyFilePath
+    $env:DEEPSEEK_API_KEY = $deepseekKey
+  }
 
   $pipCheckOutput = & $pythonExecutable -m pip check 2>&1
   if ($LASTEXITCODE -ne 0) {
@@ -216,6 +244,8 @@ try {
     "-m", "uvicorn", "app.main:app", "--app-dir", $backendRoot, "--host", "127.0.0.1", "--port", "8000"
   ) -WorkingDirectory $backendRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $backendLog -RedirectStandardError $backendErrorLog
   $startedHere += [pscustomobject]@{ ProcessId = $backendProcess.Id; Kind = "backend" }
+  Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
+  $deepseekKey = $null
 
   $viteExecutable = Join-Path $frontendRoot "node_modules\vite\bin\vite.js"
   $frontendProcess = Start-Process -FilePath $nodeExecutable -ArgumentList @(
@@ -231,6 +261,8 @@ try {
     backend_port = 8000
     frontend_port = 5173
     database_path = $databasePath
+    llm_provider = $localProviderConfig.Provider
+    llm_model = $localProviderConfig.Model
     browser_url = $browserUrl
     started_at = [DateTime]::UtcNow.ToString("o")
     backend_log = $backendLog
@@ -261,9 +293,12 @@ try {
   }
 }
 catch {
+  Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
   Fail-DemoStart $_.Exception.Message
 }
 finally {
+  Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
+  $deepseekKey = $null
   if ($DemoPassword) {
     $DemoPassword = ""
   }
