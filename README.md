@@ -187,7 +187,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 8 application checkpoint `d0caff7`, this suite reports **71 passed**. Reproducible coverage is **88%**
+At the Phase 8 application checkpoint `7b1b05e`, this suite reports **71 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 

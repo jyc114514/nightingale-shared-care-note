@@ -3,7 +3,7 @@
 ## A trust-centered longitudinal shared-care note
 
 Status: Phase 8 local prototype with an optional DeepSeek adapter, measured on 2026-08-26 at
-application checkpoint `d0caff7`.
+application checkpoint `7b1b05e`.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic

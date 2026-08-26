@@ -285,7 +285,7 @@ low-risk accessibility pass, and an opt-in DeepSeek V4 Flash adapter. These addi
 translate clinical source text, make live LLM calls the default, change RBAC/provenance, or
 implement CRDT/OT.
 
-The Phase 8 application checkpoint is `d0caff7`. Final local evidence is 71 backend tests,
+The Phase 8 application checkpoint is `7b1b05e`. Final local evidence is 71 backend tests,
 88% reproducible coverage, 19 Vitest tests, 12 Playwright tests, and a real-TCP warm-path P95 of
 67.823 ms on the SQLite approximation. The optional DeepSeek V4 Flash adapter has a bounded
 synthetic live smoke record. Hosted PostgreSQL, TLS/encryption-at-rest, production
