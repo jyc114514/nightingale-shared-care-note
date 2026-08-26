@@ -9,6 +9,7 @@ from app.api.routes.comments import router as comments_router
 from app.api.routes.context import router as context_router
 from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
+from app.api.routes.events import router as events_router
 from app.api.routes.gate_b import router as gate_b_router
 from app.api.routes.patients import router as patients_router
 from app.api.routes.tasks import router as tasks_router
@@ -29,6 +30,7 @@ app.include_router(auth_router)
 app.include_router(ai_processing_router)
 app.include_router(patients_router)
 app.include_router(entries_router)
+app.include_router(events_router)
 app.include_router(gate_b_router)
 app.include_router(comments_router)
 app.include_router(conflicts_router)

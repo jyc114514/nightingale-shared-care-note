@@ -12,6 +12,7 @@ from app.schemas.entry import CommentCreate, CommentOut, CommentResolution
 from app.services.authorization import get_entry_context, get_patient_context, require_internal
 from app.services.collaboration import comment_mentions, validate_collaborator_ids
 from app.services.entries import record_audit
+from app.services.events import append_event
 
 
 router = APIRouter(tags=["comments"])
@@ -136,6 +137,16 @@ def create_comment(
         entity_id=comment.id,
         request_id=request_id,
     )
+    append_event(
+        db,
+        clinic_id=context.clinic_id,
+        patient_id=entry.patient_id,
+        resource_type="comment",
+        resource_id=comment.id,
+        event_kind="comment_created",
+        actor_user_id=user.id,
+        actor_role=context.actor_role,
+    )
     db.commit()
     db.refresh(comment)
     return comment_out(db, comment)
@@ -173,6 +184,16 @@ def update_comment_resolution(
         entity_type="comment",
         entity_id=comment.id,
         request_id=request_id,
+    )
+    append_event(
+        db,
+        clinic_id=context.clinic_id,
+        patient_id=comment.patient_id,
+        resource_type="comment",
+        resource_id=comment.id,
+        event_kind="comment_updated",
+        actor_user_id=user.id,
+        actor_role=context.actor_role,
     )
     db.commit()
     db.refresh(comment)

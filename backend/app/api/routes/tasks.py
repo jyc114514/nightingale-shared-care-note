@@ -13,6 +13,7 @@ from app.schemas.collaboration import MentionUserOut, TaskCreate, TaskOut, TaskU
 from app.services.authorization import get_entry_context, get_patient_context, require_internal
 from app.services.collaboration import active_collaborators, task_out, validate_collaborator_ids
 from app.services.entries import record_audit
+from app.services.events import append_event
 from app.services.tasks import sync_task_projection
 
 
@@ -144,6 +145,16 @@ def create_task(
         entity_id=task.id,
         request_id=request_id,
     )
+    append_event(
+        db,
+        clinic_id=context.clinic_id,
+        patient_id=patient_id,
+        resource_type="task",
+        resource_id=task.id,
+        event_kind="task_created",
+        actor_user_id=user.id,
+        actor_role=context.actor_role,
+    )
     db.commit()
     db.refresh(task)
     return task_out(db, task)
@@ -211,6 +222,16 @@ def update_task(
             from_version=payload.expected_version,
             to_version=task.version,
         )
+        append_event(
+            db,
+            clinic_id=context.clinic_id,
+            patient_id=task.patient_id,
+            resource_type="task",
+            resource_id=task.id,
+            event_kind="task_conflict",
+            actor_user_id=user.id,
+            actor_role=context.actor_role,
+        )
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -241,6 +262,16 @@ def update_task(
         request_id=request_id,
         from_version=payload.expected_version,
         to_version=task.version,
+    )
+    append_event(
+        db,
+        clinic_id=context.clinic_id,
+        patient_id=task.patient_id,
+        resource_type="task",
+        resource_id=task.id,
+        event_kind="task_completed" if next_status is TaskStatus.DONE else "task_updated",
+        actor_user_id=user.id,
+        actor_role=context.actor_role,
     )
     db.commit()
     db.refresh(task)

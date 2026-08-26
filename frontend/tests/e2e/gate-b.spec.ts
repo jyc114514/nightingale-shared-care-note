@@ -215,6 +215,7 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
 
 test("Scenario B - staff creates revisions, diff, revert, and a comment thread", async ({
   page,
+  browser,
 }, testInfo) => {
   await login(page, "staff.a@clinic-a.test");
   const entry = await staffEntry(page);
@@ -257,6 +258,22 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await staffCard.getByRole("button", { name: "Comments" }).click();
   const comments = page.getByRole("region", { name: "Comments" });
   await expect(comments).toBeVisible();
+  const secondContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const secondPage = await secondContext.newPage();
+  await login(secondPage, "clinician.a@clinic-a.test");
+  const secondEntry = await staffEntry(secondPage);
+  await secondPage
+    .getByTestId("timeline-entry-" + secondEntry.id)
+    .getByRole("button", { name: "Comments" })
+    .click();
+  await expect(
+    secondPage.getByRole("region", { name: "Comments" }),
+  ).toBeVisible();
+  await expect(secondPage.getByTestId("realtime-status")).toContainText(
+    "Connected",
+  );
   const rootBody = "Root thread " + testInfo.project.name + " " + Date.now();
   await comments.getByLabel("Comment body").fill("@");
   const mentionOption = comments.getByRole("option").first();
@@ -287,6 +304,10 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await expect(
     page.getByTestId("glance-item").filter({ hasText: taskTitle }),
   ).toBeVisible();
+  await expect(
+    secondPage.getByRole("region", { name: "Comments" }),
+  ).toContainText(rootBody);
+  await expect(secondPage.getByTestId("task-panel")).toContainText(taskTitle);
   await taskPanel.getByLabel(`Status: ${taskTitle}`).selectOption("done");
   await expect(
     taskPanel.getByTestId(/task-/).filter({ hasText: taskTitle }),
@@ -306,6 +327,7 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await expect(root).toContainText("Resolved");
   await root.getByRole("button", { name: "Unresolve" }).first().click();
   await expect(root).toContainText("Open");
+  await secondContext.close();
   await page.screenshot({
     path: screenshotPath(testInfo.project.name, "scenario-b.png"),
     fullPage: true,

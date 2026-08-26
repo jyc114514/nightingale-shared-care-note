@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import AuditLog, Mention, Task, TaskConflict
+from app.models import AuditLog, CollaborationEvent, Mention, Task, TaskConflict
 from conftest import DemoData, TEST_PASSWORD
 
 
@@ -170,6 +170,21 @@ async def test_tasks_support_assignment_sources_cas_and_materialized_glance(
         "task_conflict",
     }
     assert all("Confirm the next appointment" not in str(row.__dict__) for row in audit_rows)
+    events = list(
+        db_session.scalars(
+            select(CollaborationEvent).where(
+                CollaborationEvent.patient_id == demo_data.patient_a.id
+            )
+        )
+    )
+    assert {event.event_kind for event in events} >= {
+        "task_created",
+        "task_updated",
+        "task_completed",
+        "task_conflict",
+    }
+    assert [event.event_id for event in events] == sorted(event.event_id for event in events)
+    assert all("Confirm the next appointment" not in str(event.__dict__) for event in events)
 
 
 @pytest.mark.asyncio

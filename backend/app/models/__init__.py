@@ -6,6 +6,7 @@ from app.models.archival_summary import ArchivalSummary
 from app.models.archival_summary_source import ArchivalSummarySource
 from app.models.clinic import Clinic
 from app.models.comment import Comment
+from app.models.collaboration_event import CollaborationEvent
 from app.models.conflict import Conflict
 from app.models.highlight_feedback_event import HighlightFeedbackEvent
 from app.models.importance_profile import ImportanceProfile
@@ -42,6 +43,7 @@ __all__ = [
     "Clinic",
     "ClinicMembership",
     "Comment",
+    "CollaborationEvent",
     "Conflict",
     "ConflictStatus",
     "Entry",

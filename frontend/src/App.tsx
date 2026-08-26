@@ -93,6 +93,16 @@ const taskStatusKeys: Record<TaskStatus, TranslationKey> = {
   done: "task.status.done",
 };
 
+const realtimeStatusKeys: Record<
+  "connecting" | "connected" | "reconnecting" | "unavailable",
+  TranslationKey
+> = {
+  connecting: "realtime.connecting",
+  connected: "realtime.connected",
+  reconnecting: "realtime.reconnecting",
+  unavailable: "realtime.unavailable",
+};
+
 function formatDate(value: string, locale: Locale = "en") {
   return new Intl.DateTimeFormat(locale === "zh-CN" ? "zh-CN" : "en-SG", {
     dateStyle: "medium",
@@ -1415,6 +1425,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [context, setContext] = useState<PatientContext | null>(null);
   const [collaborators, setCollaborators] = useState<MentionUser[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [realtimeStatus, setRealtimeStatus] = useState<
+    "connecting" | "connected" | "reconnecting" | "unavailable"
+  >("connecting");
+  const [remoteUpdatePending, setRemoteUpdatePending] = useState(false);
   const [taskSource, setTaskSource] = useState<{
     entryId: string | null;
     commentId: string | null;
@@ -1543,6 +1557,44 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   useEffect(() => {
     setPinnedItems(new Set());
   }, [patientId]);
+
+  useEffect(() => {
+    if (!patientId || !internal || typeof EventSource === "undefined") {
+      setRealtimeStatus("unavailable");
+      return;
+    }
+    setRealtimeStatus("connecting");
+    const stream = new EventSource(api.eventsUrl(patientId), {
+      withCredentials: true,
+    });
+    stream.onopen = () => setRealtimeStatus("connected");
+    stream.onerror = () => setRealtimeStatus("reconnecting");
+    stream.addEventListener("collaboration", (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as {
+          resource_type?: string;
+        };
+        if (payload.resource_type === "comment" && commentsEntryId) {
+          void api.comments(commentsEntryId).then(setComments);
+          return;
+        }
+        if (payload.resource_type === "task") {
+          void refreshTasksAndGlance().catch((error) =>
+            setLoadError(displayError(error, t)),
+          );
+          return;
+        }
+        if (editingEntryId) {
+          setRemoteUpdatePending(true);
+        } else {
+          setRefreshToken((value) => value + 1);
+        }
+      } catch {
+        // Event payloads are metadata-only invalidations; malformed events are ignored.
+      }
+    });
+    return () => stream.close();
+  }, [patientId, internal, commentsEntryId, editingEntryId]);
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === patientId),
@@ -1771,6 +1823,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         editingText.trim(),
       );
       setEditingEntryId(null);
+      setRemoteUpdatePending(false);
       setRefreshToken((value) => value + 1);
       if (historyEntryId === entry.id) await loadHistory(entry.id);
     } catch (error) {
@@ -1889,6 +1942,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                   role: t(roleKeys[role] ?? "role.patient"),
                 })}
               </p>
+              {internal && (
+                <p
+                  className="text-[11px] text-slate-400"
+                  data-testid="realtime-status"
+                >
+                  {t("realtime.label")}: {t(realtimeStatusKeys[realtimeStatus])}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <LanguageToggle />
@@ -2001,6 +2062,25 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               role="alert"
             >
               {mutationError}
+            </p>
+          )}
+          {remoteUpdatePending && (
+            <p
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900"
+              role="status"
+              aria-live="polite"
+            >
+              <span>{t("realtime.pending")}</span>
+              <Button
+                kind="secondary"
+                disabled={editingEntryId !== null}
+                onClick={() => {
+                  setRemoteUpdatePending(false);
+                  setRefreshToken((value) => value + 1);
+                }}
+              >
+                {t("realtime.refresh")}
+              </Button>
             </p>
           )}
 
@@ -2332,6 +2412,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                               kind="quiet"
                               onClick={() => {
                                 setEditingEntryId(null);
+                                setRemoteUpdatePending(false);
                               }}
                             >
                               {t("button.cancel")}

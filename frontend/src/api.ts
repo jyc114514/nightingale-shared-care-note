@@ -177,4 +177,6 @@ export const api = {
       ...json(payload),
     }),
   aiJob: (jobId: string) => request<AIJob>(`/ai-processing/${jobId}`),
+  eventsUrl: (patientId: string) =>
+    `${apiBaseUrl}/patients/${patientId}/events`,
 };
