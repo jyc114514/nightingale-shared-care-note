@@ -134,6 +134,8 @@ const context = {
         {
           source_entry_id: "entry-staff",
           source_version_id: "version-1",
+          entry_type: "staff_note",
+          version_number: 1,
           occurred_at: "2025-04-15T09:00:00Z",
           source_order: 0,
         },
@@ -164,7 +166,12 @@ function renderApp() {
 
 function mockAuthenticatedApi(
   user = staffUser,
-  sourceOptions: { startOffset?: number; endOffset?: number } = {},
+  sourceOptions: {
+    startOffset?: number;
+    endOffset?: number;
+    commentsDelayMs?: number;
+    commentsStatus?: number;
+  } = {},
 ) {
   vi.stubGlobal(
     "fetch",
@@ -226,7 +233,19 @@ function mockAuthenticatedApi(
           end_offset: sourceOptions.endOffset ?? 18,
         });
       }
-      if (url.includes("/comments")) return response([]);
+      if (url.includes("/comments")) {
+        if (sourceOptions.commentsDelayMs) {
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, sourceOptions.commentsDelayMs),
+          );
+        }
+        if (sourceOptions.commentsStatus)
+          return response(
+            { detail: "Comments request failed" },
+            sourceOptions.commentsStatus,
+          );
+        return response([]);
+      }
       if (url.includes("/versions")) return response([]);
       if (url.includes("/conflicts")) return response([]);
       if (url.endsWith("/auth/logout")) return response(undefined, 204);
@@ -295,6 +314,39 @@ describe("Gate B shared care note", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "关闭指南" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens fixed desktop/mobile preview frames without recursive controls", async () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/?patient=patient-a&highlight=highlight-0&lang=en",
+    );
+    mockAuthenticatedApi(staffUser, { endOffset: 19 });
+    renderApp();
+    await screen.findByText("Shared Care Note");
+    const preview = screen.getByTestId("demo-preview-select");
+    fireEvent.change(preview, { target: { value: "mobile" } });
+    expect(screen.getByTestId("preview-dimensions")).toHaveTextContent(
+      "390×844",
+    );
+    const mobileFrame = screen.getByTestId("demo-preview-iframe");
+    expect(mobileFrame).toHaveAttribute("width", "390");
+    expect(mobileFrame).toHaveAttribute("height", "844");
+    expect(mobileFrame.getAttribute("src")).toContain("patient=patient-a");
+    expect(mobileFrame.getAttribute("src")).toContain("highlight=highlight-0");
+    expect(mobileFrame.getAttribute("src")).toContain("embedded=1");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByTestId("demo-preview")).not.toBeInTheDocument();
+
+    fireEvent.change(preview, { target: { value: "desktop" } });
+    expect(screen.getByTestId("preview-dimensions")).toHaveTextContent(
+      "1440×900",
+    );
+    expect(screen.getByTestId("demo-preview-iframe")).toHaveAttribute(
+      "width",
+      "1440",
+    );
   });
 
   it("restores saved locale while URL locale takes precedence", async () => {
@@ -438,15 +490,62 @@ describe("Gate B shared care note", () => {
     expect(body).toHaveValue("@Clinician A ");
   });
 
-  it("shows derived historical context and canonical source pointers", async () => {
+  it("opens Comments immediately, exposes loading/error state, and returns focus", async () => {
+    mockAuthenticatedApi(staffUser, { commentsDelayMs: 40 });
+    renderApp();
+    const commentsButton = (
+      await screen.findAllByRole("button", {
+        name: "Comments",
+      })
+    )[0];
+    commentsButton.focus();
+    fireEvent.click(commentsButton);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
+    expect(screen.getByTestId("comments-loading")).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByText("No comments yet.")).toBeVisible(),
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(document.activeElement).toBe(commentsButton));
+
+    mockAuthenticatedApi(staffUser, { commentsStatus: 500 });
+    fireEvent.click(commentsButton);
+    expect(await screen.findByTestId("comments-error")).toHaveTextContent(
+      "Comments request failed",
+    );
+  });
+
+  it("opens the task composer in a drawer and returns focus on close", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    const assignButton = (
+      await screen.findAllByRole("button", {
+        name: "Assign task",
+      })
+    )[0];
+    assignButton.focus();
+    fireEvent.click(assignButton);
+    expect(screen.getByTestId("task-drawer")).toBeVisible();
+    const title = await screen.findByLabelText("Task title");
+    expect(title).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Close tasks" }));
+    await waitFor(() => expect(document.activeElement).toBe(assignButton));
+  });
+
+  it("shows derived historical context and distinguishable original source metadata", async () => {
     mockAuthenticatedApi();
     renderApp();
     const historical = await screen.findByTestId("historical-context");
     expect(historical).toContainElement(
-      screen.getByText("Derived summary · not canonical source"),
+      within(historical).getByTestId("derived-summary-label"),
     );
+    expect(historical).toHaveTextContent(
+      "Derived summary · not the original record",
+    );
+    expect(historical).toHaveTextContent("Staff note");
+    expect(historical).toHaveTextContent("v1");
     fireEvent.click(
-      within(historical).getByRole("button", { name: "Open canonical source" }),
+      within(historical).getByRole("button", { name: "View original record" }),
     );
     await waitFor(() =>
       expect(screen.getByTestId("timeline-entry-entry-staff")).toHaveClass(
@@ -471,6 +570,15 @@ describe("Gate B shared care note", () => {
     expect(
       screen.getByRole("region", { name: "Immutable source" }),
     ).toBeInTheDocument();
+    const renderedSource = screen.getByTestId("source-rendered-text");
+    expect(renderedSource.textContent).toBe(
+      "Pending renal panel requires coordination.",
+    );
+    expect(
+      within(screen.getByTestId("immutable-timeline-source")).getByTestId(
+        "source-quote",
+      ).className,
+    ).not.toContain("px-1");
     await act(async () => {
       vi.advanceTimersByTime(3001);
     });

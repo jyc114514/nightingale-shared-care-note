@@ -38,6 +38,8 @@ class ArchivalSummarySourceOut(BaseModel):
 
     source_entry_id: str
     source_version_id: str
+    entry_type: str
+    version_number: int
     occurred_at: datetime
     source_order: int
 

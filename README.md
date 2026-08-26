@@ -99,7 +99,8 @@ clinic-scoped collaboration APIs so the seed remains deterministic and read-only
   derivative summaries for staff/clinicians; canonical entries and immutable versions are never
   deleted or rewritten.
 - Cold summaries carry a policy version, manifest hash, source entry/version pointers, and an
-  explicit “Derived summary · not canonical source” disclosure. Open actions, explicit risk,
+  explicit “Derived summary · not the original record” disclosure. Each source row also shows
+  authorized entry type, occurred time, and immutable version. Open actions, explicit risk,
   active conflicts, unresolved discussion, pinned/accepted highlights, and clinician-confirmed
   care-plan entries remain protected from compression.
 - `GET /patients/{patient_id}/mentionable-users` returns only active staff/clinician collaborators
@@ -117,7 +118,8 @@ clinical workspace, Top Card, timeline, source click-to-focus/scroll, immutable 
 codepoint highlighting, comments, version history, diff/revert, conflict comparison, AI review
 badges, role-aware controls, a collapsed **Why ranked?** explanation with pin/unpin feedback,
 English/简体中文 application-chrome localization, a read-only bilingual Learning Guide, keyboard
-mention autocomplete, assignment/task panels, and a reconnecting live-update indicator. Clinical
+  mention autocomplete, contextual assignment/task drawers, fixed-viewport Desktop/Mobile demo
+  preview, and a reconnecting live-update indicator. Clinical
 note content, comments, quotes, revisions and user-entered source data remain in their original
 language; the UI never calls a translation API.
 There is no UI-only role switch.
@@ -171,7 +173,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 7 feature freeze this suite reports **51 passed**. Reproducible coverage is **88%**
+At the Phase 7.1 application checkpoint this suite reports **51 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 
@@ -204,9 +206,11 @@ Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs 10 checks at 1440x900 and
-390x844. Scenario B covers revisions, nested comments, keyboard mention selection, assignment
-creation/completion, and a second browser receiving the metadata-only SSE invalidation. The
+real Uvicorn and Vite processes on clean local ports, and runs 12 checks at 1440x900 and
+390x844. Scenario B covers revisions, nested comments, keyboard mention selection, contextual
+assignment drawer creation/completion, and a second browser receiving the metadata-only SSE
+invalidation. The dedicated preview check verifies real internal 1440x900/390x844 iframe
+viewports, query preservation, no recursive toolbar, and Escape close. The
 custom setup records only its own server PIDs and teardown removes those processes, the temporary
 database, generated password, and ignored `artifacts/gate-b/` screenshots.
 

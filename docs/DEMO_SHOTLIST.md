@@ -15,6 +15,8 @@
 | 11 | Historical context | Hot/warm/cold and derived-summary disclosure | `scenario-c-context.png` |
 | 12 | Patient projection | Patient-facing entries only; internal tasks/comments absent | `patient-privacy.png` |
 | 13 | Mobile workspace | Chinese chrome, source/task controls, no horizontal overflow at 390x844 | `mobile-scenario-a.png` |
+| 14 | Contextual drawers | Comments loading/error focus path and task source context at desktop/mobile | `comments-open.png`, `task-open.png` |
+| 15 | Demo viewport preview | Same-origin interactive Desktop 1440x900 and Mobile 390x844 frames without recursive toolbar | `preview-desktop.png`, `preview-mobile.png` |
 
 The Playwright runner emits synthetic Scenario A/B/C screenshots under ignored `artifacts/gate-b/`.
 Delivery copies should be selected after visual review; no database, password file, runtime log, or

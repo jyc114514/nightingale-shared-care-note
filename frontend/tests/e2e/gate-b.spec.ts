@@ -128,6 +128,10 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   await expect(timelineSource.getByTestId("source-quote")).toHaveText(
     quote ?? "",
   );
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "source-open.png"),
+    fullPage: false,
+  });
 
   const highlightId = new URL(page.url()).searchParams.get("highlight");
   expect(highlightId).toBeTruthy();
@@ -255,9 +259,29 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await expect(history).toContainText("v" + (entry.currentVersion + 2));
   await expect(history).toContainText("v1");
 
+  const staffSourceCard = page
+    .getByTestId("glance-item")
+    .filter({ hasText: "Pending renal panel" })
+    .first();
+  if (await staffSourceCard.count()) {
+    await staffSourceCard.getByRole("button", { name: "Open source" }).click();
+    await expect(page.getByTestId("immutable-timeline-source")).toBeVisible();
+    await page.waitForTimeout(800);
+    await page.screenshot({
+      path: screenshotPath(testInfo.project.name, "source-v1-current-v3.png"),
+      fullPage: false,
+    });
+    await page.getByRole("button", { name: "Close source" }).click();
+  }
+
   await staffCard.getByRole("button", { name: "Comments" }).click();
+  await expect(page.getByTestId("comments-drawer")).toBeVisible();
   const comments = page.getByRole("region", { name: "Comments" });
   await expect(comments).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "comments-open.png"),
+    fullPage: false,
+  });
   const secondContext = await browser.newContext({
     baseURL: "http://127.0.0.1:5173",
   });
@@ -293,10 +317,20 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await root.getByRole("button", { name: "Assign task" }).click();
   const taskTitle =
     "Follow up assigned " + testInfo.project.name + " " + Date.now();
+  const taskDrawer = page.getByTestId("task-drawer");
+  await expect(taskDrawer).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "task-open.png"),
+    fullPage: false,
+  });
   const taskPanel = page.getByTestId("task-panel");
+  await expect(taskPanel.getByLabel("Task title")).toBeFocused();
   await expect(taskPanel).toBeVisible();
   await taskPanel.getByLabel("Task title").fill(taskTitle);
-  await taskPanel.getByLabel("Assign to").selectOption({ index: 1 });
+  await taskPanel
+    .locator("form")
+    .getByLabel("Assign to", { exact: true })
+    .selectOption({ index: 1 });
   await taskPanel.getByRole("button", { name: "Create task" }).click();
   await expect(
     taskPanel.getByTestId(/task-/).filter({ hasText: taskTitle }),
@@ -307,11 +341,19 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await expect(
     secondPage.getByRole("region", { name: "Comments" }),
   ).toContainText(rootBody);
+  const secondTaskCard = secondPage
+    .getByTestId("glance-item")
+    .filter({ hasText: taskTitle })
+    .first();
+  await expect(secondTaskCard).toBeVisible();
+  await secondPage.getByRole("button", { name: "Close" }).click();
+  await secondTaskCard.getByRole("button", { name: "Open task" }).click();
   await expect(secondPage.getByTestId("task-panel")).toContainText(taskTitle);
   await taskPanel.getByLabel(`Status: ${taskTitle}`).selectOption("done");
   await expect(
     taskPanel.getByTestId(/task-/).filter({ hasText: taskTitle }),
   ).toContainText("Done");
+  await page.getByRole("button", { name: "Close tasks" }).click();
 
   const replyBody = "Nested reply " + testInfo.project.name + " " + Date.now();
   await root.getByRole("button", { name: "Reply" }).click();
@@ -370,11 +412,14 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
   const historical = page.getByTestId("historical-context");
   await expect(historical).toBeVisible();
   await expect(historical).toContainText(
-    "Derived summary · not canonical source",
+    "Derived summary · not the original record",
   );
   await expect(
-    historical.getByRole("button", { name: "Open canonical source" }).first(),
+    historical.getByRole("button", { name: "View original record" }).first(),
   ).toBeVisible();
+  await expect(
+    historical.getByTestId(/historical-source-/).first(),
+  ).toContainText("v1");
   const staffCard = page.getByTestId("timeline-entry-" + entry.id);
   await expect(staffCard).toContainText(winnerContent);
   await staffCard.getByRole("button", { name: "History" }).click();
@@ -397,8 +442,12 @@ test("Patient privacy - cookie patient sees only patient-facing entries and inte
 }) => {
   await login(page, "sarah.patient@clinic-a.test");
   await expect(page.getByText("Internal Glance View is hidden")).toBeVisible();
-  await expect(page.getByText("Patient summary")).toBeVisible();
-  await expect(page.getByText("Patient instruction")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Patient summary", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Patient instruction", exact: true }),
+  ).toBeVisible();
   await expect(page.getByTestId("historical-context")).toBeVisible();
   await expect(
     page.getByText("Documented symptom after dose change"),
@@ -455,4 +504,68 @@ test("Chinese chrome keeps source data and provenance controls usable", async ({
   await expect(page.getByRole("region", { name: "不可变来源" })).toHaveCount(0);
   await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
   expect(new URL(page.url()).searchParams.has("highlight")).toBe(false);
+});
+
+test("Demo preview uses real internal viewports without recursive controls", async ({
+  page,
+}, testInfo) => {
+  await login(page, "staff.a@clinic-a.test");
+  const previewSelect = page.getByTestId("demo-preview-select");
+  await previewSelect.selectOption("mobile");
+  await expect(page.getByTestId("preview-dimensions")).toContainText("390×844");
+  const previewFrame = page.locator(
+    'iframe[data-testid="demo-preview-iframe"]',
+  );
+  await expect(previewFrame).toBeVisible();
+  const embedded = page.frameLocator(
+    'iframe[data-testid="demo-preview-iframe"]',
+  );
+  await expect(embedded.getByText("Longitudinal timeline")).toBeVisible();
+  await expect(embedded.getByTestId("top-card")).toBeVisible();
+  await expect(embedded.getByTestId("glance-item").first()).toBeVisible();
+  await expect
+    .poll(async () =>
+      previewFrame.evaluate((element) => {
+        const frame = element as HTMLIFrameElement;
+        return frame.contentWindow
+          ? [frame.contentWindow.innerWidth, frame.contentWindow.innerHeight]
+          : null;
+      }),
+    )
+    .toEqual([390, 844]);
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "preview-mobile.png"),
+    fullPage: false,
+  });
+  expect(await embedded.getByTestId("demo-preview-select").count()).toBe(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+
+  await previewSelect.selectOption("desktop");
+  await expect(page.getByTestId("preview-dimensions")).toContainText(
+    "1440×900",
+  );
+  await expect(embedded.getByText("Longitudinal timeline")).toBeVisible();
+  await expect(embedded.getByTestId("top-card")).toBeVisible();
+  await expect(embedded.getByTestId("glance-item").first()).toBeVisible();
+  await expect
+    .poll(async () =>
+      previewFrame.evaluate((element) => {
+        const frame = element as HTMLIFrameElement;
+        return frame.contentWindow
+          ? [frame.contentWindow.innerWidth, frame.contentWindow.innerHeight]
+          : null;
+      }),
+    )
+    .toEqual([1440, 900]);
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "preview-desktop.png"),
+    fullPage: false,
+  });
+
+  await page.getByRole("button", { name: "Close preview" }).click();
+  await expect(page.getByTestId("demo-preview")).toHaveCount(0);
 });

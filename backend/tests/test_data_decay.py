@@ -153,6 +153,14 @@ async def test_archival_refresh_preserves_sources_and_protection_overrides(
         for source in summary["sources"]
     }
     assert eligible.id in source_ids
+    eligible_source = next(
+        source
+        for summary in context["archival_summaries"]
+        for source in summary["sources"]
+        if source["source_entry_id"] == eligible.id
+    )
+    assert eligible_source["entry_type"] == "staff_note"
+    assert eligible_source["version_number"] == 1
     assert open_action_entry.id not in source_ids
     assert high_risk_entry.id not in source_ids
     assert pinned_entry.id not in source_ids
@@ -185,6 +193,15 @@ async def test_archival_refresh_preserves_sources_and_protection_overrides(
     assert update.status_code == 200, update.text
     repeat = await client.post(f"/patients/{demo_data.patient_a.id}/context/refresh")
     assert repeat.status_code == 200, repeat.text
+    repeat_context = await client.get(f"/patients/{demo_data.patient_a.id}/context")
+    assert repeat_context.status_code == 200, repeat_context.text
+    repeat_source = next(
+        source
+        for summary in repeat_context.json()["archival_summaries"]
+        for source in summary["sources"]
+        if source["source_entry_id"] == eligible.id
+    )
+    assert repeat_source["version_number"] == 1
     assert db_session.scalar(select(func.count(ArchivalSummary.id))) == summary_count
     assert (
         db_session.scalar(select(func.count(ArchivalSummarySource.source_entry_id))) == source_count

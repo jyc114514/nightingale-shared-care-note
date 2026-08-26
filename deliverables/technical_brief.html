@@ -32,7 +32,7 @@
       .lede { max-width: 164mm; color: var(--muted); font-size: 12pt; line-height: 1.42; }
       .meta { margin-top: 5mm; color: var(--muted); font-size: 8.5pt; }
       .rule { height: 1px; margin: 5mm 0; background: var(--line); }
-      .band { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin: 5mm 0; }
+      .band { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 5mm 0; }
       .metric { min-height: 25mm; padding: 3.2mm; border: 1px solid var(--line); border-radius: 4mm; background: #f8fbff; }
       .metric strong { display: block; color: var(--blue); font-size: 17pt; line-height: 1; }
       .metric span { display: block; margin-top: 1.6mm; color: var(--muted); font-size: 8.5pt; }
@@ -63,6 +63,9 @@
       .muted-box { padding: 3.5mm; border: 1px dashed #b8c7d8; border-radius: 4mm; background: #f8fafc; color: var(--muted); font-size: 8.6pt; }
       .page:last-child .evidence .card { min-height: 25mm; padding: 3mm; }
       .page:last-child .scenario { padding: 2.2mm 0; }
+      .page:last-child .small { font-size: 8.1pt; line-height: 1.28; }
+      .page:last-child .muted-box { padding: 2.8mm; font-size: 8.1pt; line-height: 1.25; }
+      .page:last-child .rule { margin: 3mm 0; }
       .final-safety { padding: 2.5mm 4mm; }
       .final-safety p { margin-bottom: 0; }
     </style>
@@ -72,9 +75,10 @@
       <div class="eyebrow">Nightingale / technical brief / 26 Aug 2026</div>
       <h1>Shared care notes that make trust visible.</h1>
       <p class="lede">A clinic-scoped longitudinal collaboration layer for the moment when a care team needs to understand what changed and what needs action in under ten seconds.</p>
-      <p class="meta">Phase 7 feature-freeze local prototype · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
+      <p class="meta">Phase 7.1 observed-UX local prototype · FastAPI + React/TypeScript · SQLite local target · PostgreSQL path retained but not provisioned</p>
       <div class="band">
         <div class="metric"><strong>51</strong><span>real backend tests</span></div>
+        <div class="metric"><strong>17</strong><span>Vitest checks</span></div>
         <div class="metric"><strong>88%</strong><span>backend coverage</span></div>
         <div class="metric"><strong>67.823 ms</strong><span>Gate C warm-path P95</span></div>
       </div>
@@ -168,15 +172,15 @@
       <div class="section-label">Quality gates</div>
       <div class="evidence">
         <div class="card blue"><h3>Backend</h3><p class="small"><strong>51 passed</strong> · 88% coverage under the reproducible command · Ruff · mypy · pip check. Alembic `0008_collaboration_events` passes fresh, legacy repair, downgrade/re-upgrade, and `alembic check` paths.</p></div>
-        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>14 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Bilingual chrome, Guide focus, mention keyboard flow, and reduced motion are covered.</p></div>
-        <div class="card amber"><h3>Browser</h3><p class="small"><strong>10 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, Chinese chrome, mentions/tasks, two-browser SSE, revisions, 409 conflict, and patient privacy.</p></div>
+        <div class="card teal"><h3>Frontend</h3><p class="small"><strong>17 Vitest tests</strong> · ESLint · Prettier · TypeScript · Vite build. Bilingual chrome, Guide focus, contextual drawers, exact text flow, preview dimensions, mention keyboard flow, and reduced motion are covered.</p></div>
+        <div class="card amber"><h3>Browser</h3><p class="small"><strong>12 Playwright checks</strong> at 1440×900 and 390×844. Exact source/deep-link, original-record rows, contextual comments/tasks, Desktop/Mobile preview, Chinese chrome, mentions/tasks, two-browser SSE, revisions, 409 conflict, and patient privacy.</p></div>
         <div class="card rose"><h3>Warm path</h3><p class="small"><strong>P95 67.823 ms</strong> from 1,000 real TCP requests, concurrency 10, 26 patients, 208 materialized rows, zero errors. Local SQLite/Uvicorn approximation.</p></div>
       </div>
       <div class="section-label">Three-minute demonstration path</div>
       <div class="card">
         <div class="scenario"><div class="scenario-number">A</div><div><h3>Trace and trust</h3><p class="small">Clinician opens a Glance item, expands <strong>Why ranked?</strong>, pins/unpins it, follows the exact immutable source, and accepts or rejects a suggestion.</p></div></div>
         <div class="scenario"><div class="scenario-number">B</div><div><h3>Collaborate without erasure</h3><p class="small">Staff edits a role-owned note, compares versions, reverts as a new version, selects an @mention, creates/completes an assigned task, and observes a second browser refresh through metadata-only SSE.</p></div></div>
-        <div class="scenario"><div class="scenario-number">C</div><div><h3>Surface conflict and history</h3><p class="small">Two writes use one expected version; the stale write returns <strong>409</strong> and remains beside the winner. Historical context then discloses a derived summary and opens a canonical source pointer.</p></div></div>
+        <div class="scenario"><div class="scenario-number">C</div><div><h3>Surface conflict and history</h3><p class="small">Two writes use one expected version; the stale write returns <strong>409</strong> and remains beside the winner. Historical context discloses a derived summary that is not the original record and offers labelled immutable original-record rows.</p></div></div>
       </div>
       <div class="section-label">Trade-offs and deferred work</div>
       <div class="two-col">

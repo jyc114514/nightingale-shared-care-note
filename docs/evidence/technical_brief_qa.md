@@ -14,9 +14,11 @@ Artifact: [`Nightingale_Technical_Brief.pdf`](../../deliverables/Nightingale_Tec
   because Poppler command-line binaries were not available on PATH. Each page was visually
   inspected after the final regeneration.
 - Visual result: no clipped diagram, page overflow, unreadable table, or footer overlap remains.
-- Metrics in the brief match the feature-freeze evidence: backend 51 tests, 88% coverage,
-  frontend 14 Vitest tests, Playwright 10 tests, and warm-path P95 67.823 ms.
-- Final PDF SHA-256: `86CC98313ADFE06447406029401F45BEA4564A1374F106E96B14B6ED10A78E1C`.
+- Metrics in the brief match the Phase 7.1 evidence: backend 51 tests, 88% coverage,
+  frontend 17 Vitest tests, Playwright 12 tests, and warm-path P95 67.823 ms.
+- The brief also records contextual comments/tasks, fixed internal preview viewports, and
+  distinguishable original-record rows while retaining the human UX-01 limitation.
+- Final PDF SHA-256: `FD225FC9AAE3CF03D09B6F1CD089C63AE414893F24211C3D1A217DB5015A3FB3`.
 
 The PDF describes local synthetic evidence and explicitly separates measured behavior from
 unverified PostgreSQL, deployment TLS/encryption-at-rest, external-provider, final-video, and

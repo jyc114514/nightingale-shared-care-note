@@ -6,6 +6,7 @@ import {
   type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type Ref,
+  type RefObject,
   type ReactNode,
 } from "react";
 
@@ -223,7 +224,7 @@ function ExactSpanView({
     <>
       {result.before}
       <mark
-        className="rounded bg-amber-100 px-1 text-amber-950"
+        className="rounded bg-amber-100 text-amber-950 underline decoration-amber-500 decoration-2 underline-offset-2"
         data-testid="source-quote"
       >
         {result.quote}
@@ -263,6 +264,8 @@ function Button({
   kind = "secondary",
   type = "button",
   ariaLabel,
+  ariaExpanded,
+  ariaControls,
   buttonRef,
 }: {
   children: ReactNode;
@@ -271,6 +274,8 @@ function Button({
   kind?: "primary" | "secondary" | "quiet" | "danger";
   type?: "button" | "submit";
   ariaLabel?: string;
+  ariaExpanded?: boolean;
+  ariaControls?: string;
   buttonRef?: Ref<HTMLButtonElement>;
 }) {
   const styles = {
@@ -288,10 +293,279 @@ function Button({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
+      aria-expanded={ariaExpanded}
+      aria-controls={ariaControls}
       className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]}`}
     >
       {children}
     </button>
+  );
+}
+
+function ContextualDrawer({
+  open,
+  title,
+  closeLabel,
+  onClose,
+  initialFocusRef,
+  children,
+  testId,
+}: {
+  open: boolean;
+  title: string;
+  closeLabel: string;
+  onClose: () => void;
+  initialFocusRef?: Ref<HTMLElement>;
+  children: ReactNode;
+  testId: string;
+}) {
+  const panelRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(() => {
+      const focusTarget =
+        (initialFocusRef as RefObject<HTMLElement>)?.current ??
+        closeButtonRef.current;
+      focusTarget?.focus();
+    }, 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, [initialFocusRef, open]);
+
+  if (!open) return null;
+  const titleId = `${testId}-title`;
+  return (
+    <div
+      className="fixed inset-0 z-40 bg-slate-950/35"
+      data-testid={`${testId}-backdrop`}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        ref={panelRef}
+        id={testId}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        data-testid={testId}
+        className="ml-auto flex h-full w-full max-w-xl flex-col border-l border-slate-200 bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+          <h2 id={titleId} className="text-lg font-semibold text-slate-900">
+            {title}
+          </h2>
+          <Button
+            kind="quiet"
+            buttonRef={closeButtonRef}
+            onClick={onClose}
+            ariaLabel={closeLabel}
+          >
+            {closeLabel}
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+          {children}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type PreviewMode = "auto" | "desktop" | "mobile";
+
+const previewDimensions = {
+  desktop: { width: 1440, height: 900 },
+  mobile: { width: 390, height: 844 },
+} as const;
+
+function DemoPreview() {
+  const { t } = useI18n();
+  const [mode, setMode] = useState<PreviewMode>("auto");
+  const [scale, setScale] = useState(1);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  const dimensions = mode === "auto" ? null : previewDimensions[mode];
+  useEffect(() => {
+    if (!dimensions) return;
+    const updateScale = () => {
+      const availableWidth = Math.max(320, window.innerWidth - 48);
+      const availableHeight = Math.max(320, window.innerHeight - 220);
+      setScale(
+        Math.min(
+          1,
+          availableWidth / dimensions.width,
+          availableHeight / dimensions.height,
+        ),
+      );
+    };
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, [dimensions]);
+
+  useEffect(() => {
+    if (!dimensions) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusTimer = window.setTimeout(
+      () => closeButtonRef.current?.focus(),
+      0,
+    );
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMode("auto");
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
+    };
+  }, [dimensions]);
+
+  const previewUrl = useMemo(() => {
+    if (!dimensions || mode === "auto") return "";
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("preview", mode);
+    nextUrl.searchParams.set("embedded", "1");
+    return nextUrl.toString();
+  }, [dimensions, mode]);
+
+  return (
+    <>
+      <label className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-2 shadow-sm">
+        <span className="sr-only">{t("preview.label")}</span>
+        <select
+          aria-label={t("preview.label")}
+          data-testid="demo-preview-select"
+          value={mode}
+          onChange={(event) => setMode(event.target.value as PreviewMode)}
+          className="min-h-11 bg-transparent px-1 text-xs font-semibold text-slate-700 outline-none focus:ring-4 focus:ring-blue-200"
+        >
+          <option value="auto">{t("preview.auto")}</option>
+          <option value="desktop">{t("preview.desktop")}</option>
+          <option value="mobile">{t("preview.mobile")}</option>
+        </select>
+      </label>
+      {dimensions && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4"
+          data-testid="demo-preview"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setMode("auto");
+          }}
+        >
+          <section
+            className="flex max-h-[calc(100vh-2rem)] w-full max-w-[min(1500px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="demo-preview-title"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+                  {t("preview.label")}
+                </p>
+                <h2
+                  id="demo-preview-title"
+                  className="mt-1 text-lg font-semibold"
+                >
+                  {t("preview.title")}
+                </h2>
+                <p
+                  className="mt-1 text-sm font-semibold text-slate-600"
+                  data-testid="preview-dimensions"
+                >
+                  {t("preview.dimensions", dimensions)}
+                </p>
+              </div>
+              <Button
+                kind="quiet"
+                buttonRef={closeButtonRef}
+                onClick={() => setMode("auto")}
+                ariaLabel={t("preview.close")}
+              >
+                {t("preview.close")}
+              </Button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-4 sm:p-6">
+              <div
+                className="mx-auto shadow-xl"
+                data-testid="preview-frame-shell"
+                style={{
+                  width: dimensions.width * scale,
+                  height: dimensions.height * scale,
+                }}
+              >
+                <iframe
+                  title={
+                    mode === "mobile"
+                      ? t("preview.frameMobile")
+                      : t("preview.frameDesktop")
+                  }
+                  data-testid="demo-preview-iframe"
+                  src={previewUrl}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  style={{
+                    display: "block",
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                  }}
+                />
+              </div>
+            </div>
+            <p className="border-t border-slate-200 px-5 py-3 text-xs leading-5 text-slate-500 sm:px-7">
+              {t("preview.disclaimer")}
+            </p>
+          </section>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -711,13 +985,21 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
           current: source.current_entry_version,
         })}
       </p>
+      <p className="mt-2 text-xs leading-5 text-amber-900">
+        {t("source.anchoredExplanation", {
+          version: source.version_number,
+          current: source.current_entry_version,
+        })}
+      </p>
       <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">
-        <ExactSpanView
-          text={source.version_content}
-          quote={source.quote}
-          startOffset={source.start_offset}
-          endOffset={source.end_offset}
-        />
+        <span data-testid="source-rendered-text">
+          <ExactSpanView
+            text={source.version_content}
+            quote={source.quote}
+            startOffset={source.start_offset}
+            endOffset={source.end_offset}
+          />
+        </span>
       </div>
     </section>
   );
@@ -819,7 +1101,9 @@ function CommentsPanel({
   onResolve,
   mentionableUsers,
   onAssignTask,
-  onClose,
+  bodyRef,
+  loading,
+  error,
   busy,
 }: {
   entry: TimelineEntry;
@@ -830,7 +1114,9 @@ function CommentsPanel({
   onResolve: (comment: Comment) => Promise<void>;
   mentionableUsers: MentionUser[];
   onAssignTask: (commentId: string) => void;
-  onClose: () => void;
+  bodyRef: RefObject<HTMLTextAreaElement | null>;
+  loading: boolean;
+  error: string | null;
   busy: boolean;
 }) {
   const { t } = useI18n();
@@ -898,24 +1184,35 @@ function CommentsPanel({
 
   return (
     <section
-      className="rounded-2xl border border-slate-200 bg-white p-5"
+      className="space-y-4"
       aria-label={t("button.comments")}
+      data-entry-id={entry.id}
+      data-testid="comments-panel"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-            {t("comments.internal")}
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            {t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")}
-          </h2>
-        </div>
-        <Button kind="quiet" onClick={onClose} ariaLabel={t("comments.close")}>
-          {t("comments.close")}
-        </Button>
-      </div>
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+        {t("comments.internal")}
+      </p>
+      {loading && (
+        <p
+          className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800"
+          role="status"
+          aria-live="polite"
+          data-testid="comments-loading"
+        >
+          {t("comments.loading")}
+        </p>
+      )}
+      {error && (
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid="comments-error"
+        >
+          {error}
+        </p>
+      )}
       <div className="mt-4 space-y-3">
-        {comments.length === 0 && (
+        {!loading && comments.length === 0 && (
           <p className="rounded-xl bg-slate-50 p-3 text-sm text-slate-500">
             {t("comments.noComments")}
           </p>
@@ -951,6 +1248,7 @@ function CommentsPanel({
           </p>
         )}
         <textarea
+          ref={bodyRef}
           aria-label={t("comments.bodyLabel")}
           value={body}
           onChange={(event) => {
@@ -1124,12 +1422,14 @@ function HistoryPanel({
 function HistoricalContextPanel({
   context,
   internal,
+  timeline,
   onOpenSource,
   onRefresh,
   refreshBusy,
 }: {
   context: PatientContext | null;
   internal: boolean;
+  timeline: TimelineEntry[];
   onOpenSource: (entryId: string) => void;
   onRefresh: (() => Promise<void>) | null;
   refreshBusy: boolean;
@@ -1203,10 +1503,19 @@ function HistoricalContextPanel({
                     },
                   ).format(new Date(summary.period_start))}
                 </p>
-                <Pill tone="amber">{t("context.derived")}</Pill>
+                <Pill tone="amber">{t("context.derivedSummary")}</Pill>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 {summary.summary_text}
+              </p>
+              <p
+                className="mt-2 text-sm font-semibold leading-6 text-amber-950"
+                data-testid="derived-summary-label"
+              >
+                {t("context.derivedSummary")}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                {t("context.derivedExplanation")}
               </p>
               <p className="mt-2 text-xs text-slate-500">
                 {t("context.sourcePointer", {
@@ -1215,17 +1524,47 @@ function HistoricalContextPanel({
                   policy: summary.policy_version,
                 })}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {summary.sources.map((source) => (
-                  <Button
-                    key={`${summary.id}-${source.source_entry_id}-${source.source_version_id}`}
-                    kind="secondary"
-                    onClick={() => onOpenSource(source.source_entry_id)}
-                  >
-                    {t("context.openCanonical")}
-                  </Button>
-                ))}
+              <div className="mt-3 space-y-3">
+                {summary.sources.map((source, index) => {
+                  const entry = timeline.find(
+                    (timelineEntry) =>
+                      timelineEntry.id === source.source_entry_id,
+                  );
+                  const entryType = source.entry_type ?? entry?.entry_type;
+                  return (
+                    <div
+                      key={`${summary.id}-${source.source_entry_id}-${source.source_version_id}`}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-3"
+                      data-testid={`historical-source-${source.source_entry_id}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-800">
+                          {t("context.originalRecord", { number: index + 1 })}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {t("context.recordMetadata", {
+                            type: t(
+                              entryTypeKeys[entryType ?? ""] ??
+                                "entryType.systemEvent",
+                            ),
+                            date: formatDate(source.occurred_at, locale),
+                            version: source.version_number,
+                          })}
+                        </p>
+                      </div>
+                      <Button
+                        kind="secondary"
+                        onClick={() => onOpenSource(source.source_entry_id)}
+                      >
+                        {t("context.viewOriginalRecord")}
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
+              <p className="mt-3 text-xs font-semibold text-amber-900">
+                {t("context.originalTruth")}
+              </p>
               {!internal && (
                 <p className="mt-3 text-xs text-slate-500">
                   {t("context.patientPointers")}
@@ -1248,6 +1587,9 @@ function TaskPanel({
   onCreate,
   onUpdate,
   onCloseComposer,
+  titleInputRef,
+  error,
+  focusedTaskId,
 }: {
   tasks: Task[];
   collaborators: MentionUser[];
@@ -1264,6 +1606,9 @@ function TaskPanel({
     },
   ) => Promise<void>;
   onCloseComposer: () => void;
+  titleInputRef: RefObject<HTMLInputElement | null>;
+  error: string | null;
+  focusedTaskId: string | null;
 }) {
   const { t } = useI18n();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -1280,6 +1625,20 @@ function TaskPanel({
     if (sourceLabel || sourceComment) setComposerOpen(true);
   }, [sourceComment, sourceLabel]);
 
+  useEffect(() => {
+    if (composerOpen) titleInputRef.current?.focus();
+  }, [composerOpen, titleInputRef]);
+
+  useEffect(() => {
+    if (!focusedTaskId) return;
+    const timer = window.setTimeout(() => {
+      const taskElement = document.getElementById(`task-${focusedTaskId}`);
+      scrollToElement(taskElement);
+      taskElement?.focus();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [focusedTaskId]);
+
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim() || !assigneeId) return;
@@ -1288,6 +1647,8 @@ function TaskPanel({
       await onCreate(title.trim(), assigneeId);
       setTitle("");
       setComposerOpen(false);
+    } catch {
+      // The parent renders the safe API error inside this drawer.
     } finally {
       setBusy(false);
     }
@@ -1304,6 +1665,8 @@ function TaskPanel({
     setBusy(true);
     try {
       await onUpdate(task, patch);
+    } catch {
+      // The parent renders the safe API error inside this drawer.
     } finally {
       setBusy(false);
     }
@@ -1330,12 +1693,31 @@ function TaskPanel({
           </Button>
         )}
       </div>
-      {(sourceLabel || sourceComment) && (
-        <p className="mt-3 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-800">
-          {sourceLabel
-            ? t("task.sourceEntry", { label: sourceLabel })
-            : t("task.sourceComment")}
+      {error && (
+        <p
+          className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid="task-error"
+        >
+          {error}
         </p>
+      )}
+      {(sourceLabel || sourceComment) && (
+        <div className="mt-3 space-y-2 rounded-lg bg-blue-50 p-3 text-xs leading-5 text-blue-800">
+          <p>
+            {sourceComment
+              ? t("task.creatingForComment")
+              : t("task.creatingFor", { label: sourceLabel ?? "" })}
+          </p>
+          {sourceLabel && (
+            <p>{t("task.sourceEntry", { label: sourceLabel })}</p>
+          )}
+          {sourceComment && (
+            <p className="break-words">
+              {t("task.commentBody", { body: sourceComment })}
+            </p>
+          )}
+        </div>
       )}
       {composerOpen && canEdit && (
         <form
@@ -1345,6 +1727,7 @@ function TaskPanel({
           <label className="block text-sm font-semibold text-slate-700">
             {t("task.titleLabel")}
             <input
+              ref={titleInputRef}
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder={t("task.titlePlaceholder")}
@@ -1399,6 +1782,7 @@ function TaskPanel({
           tasks.map((task) => (
             <article
               key={task.id}
+              tabIndex={-1}
               className="rounded-xl border border-slate-200 bg-slate-50 p-3"
               data-testid={`task-${task.id}`}
             >
@@ -1468,6 +1852,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const role = primaryRole(user);
   const [patients, setPatients] = useState<Patient[]>([]);
   const queryParams = new URLSearchParams(window.location.search);
+  const isEmbeddedPreview = queryParams.get("embedded") === "1";
   const [patientId, setPatientId] = useState(
     queryParams.get("patient") ?? user.patient_ids[0] ?? "",
   );
@@ -1485,6 +1870,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     commentId: string | null;
     label: string | null;
   } | null>(null);
+  const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
+  const [taskFocusId, setTaskFocusId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
@@ -1495,6 +1882,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [commentBusy, setCommentBusy] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
   const [historyEntryId, setHistoryEntryId] = useState<string | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
   const [diff, setDiff] = useState<Diff | null>(null);
@@ -1502,10 +1890,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState<string | null>(null);
   const [mutationBusy, setMutationBusy] = useState(false);
   const [feedbackBusyId, setFeedbackBusyId] = useState<string | null>(null);
   const [pinnedItems, setPinnedItems] = useState<Set<string>>(new Set());
   const [guideOpen, setGuideOpen] = useState(false);
+  const commentsInputRef = useRef<HTMLTextAreaElement>(null);
+  const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
+  const commentsRequestRef = useRef(0);
+  const taskTitleInputRef = useRef<HTMLInputElement>(null);
+  const taskReturnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1537,9 +1931,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setCollaborators([]);
     setTasks([]);
     setTaskSource(null);
+    setTaskDrawerOpen(false);
+    setTaskFocusId(null);
+    setTaskError(null);
     setSourceLoading(false);
     setFocusEntryId(null);
     setCommentsEntryId(null);
+    setCommentsError(null);
     const requestedHighlightId = new URLSearchParams(
       window.location.search,
     ).get("highlight");
@@ -1626,7 +2024,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           resource_type?: string;
         };
         if (payload.resource_type === "comment" && commentsEntryId) {
-          void api.comments(commentsEntryId).then(setComments);
+          void api
+            .comments(commentsEntryId)
+            .then(setComments)
+            .catch((error) => setCommentsError(displayError(error, t)));
           return;
         }
         if (payload.resource_type === "task") {
@@ -1703,18 +2104,36 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setDiff(null);
   }
 
-  async function openComments(entryId: string) {
+  function openComments(entryId: string) {
+    commentsReturnFocusRef.current =
+      document.activeElement as HTMLElement | null;
+    const requestId = commentsRequestRef.current + 1;
+    commentsRequestRef.current = requestId;
     setMutationError(null);
+    setCommentsError(null);
+    setCommentsEntryId(entryId);
+    setComments([]);
+    setReplyTo(null);
     setCommentBusy(true);
-    try {
-      setComments(await api.comments(entryId));
-      setCommentsEntryId(entryId);
-      setReplyTo(null);
-    } catch (error) {
-      setMutationError(displayError(error, t));
-    } finally {
-      setCommentBusy(false);
-    }
+    void api
+      .comments(entryId)
+      .then((nextComments) => {
+        if (commentsRequestRef.current === requestId) setComments(nextComments);
+      })
+      .catch((error) => {
+        if (commentsRequestRef.current === requestId)
+          setCommentsError(displayError(error, t));
+      })
+      .finally(() => {
+        if (commentsRequestRef.current === requestId) setCommentBusy(false);
+      });
+  }
+
+  function closeComments() {
+    setCommentsEntryId(null);
+    setCommentsError(null);
+    setReplyTo(null);
+    window.setTimeout(() => commentsReturnFocusRef.current?.focus(), 0);
   }
 
   async function refreshComments() {
@@ -1735,24 +2154,41 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setReplyTo(null);
       await refreshComments();
     } catch (error) {
-      setMutationError(displayError(error, t));
+      setCommentsError(displayError(error, t));
     } finally {
       setCommentBusy(false);
     }
   }
 
   function openTaskComposer(entryId: string | null, commentId: string | null) {
+    taskReturnFocusRef.current = document.activeElement as HTMLElement | null;
     const entry = entryId ? timeline.find((item) => item.id === entryId) : null;
+    setTaskError(null);
+    setTaskFocusId(null);
+    setTaskDrawerOpen(true);
     setTaskSource({
       entryId,
       commentId,
       label: entry
-        ? t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")
+        ? `${t(entryTypeKeys[entry.entry_type] ?? "entryType.systemEvent")} v${entry.current_version}`
         : null,
     });
-    window.setTimeout(() => {
-      scrollToElement(document.getElementById("task-panel"));
-    }, 0);
+  }
+
+  function openTaskDrawer(taskId: string | null = null) {
+    taskReturnFocusRef.current = document.activeElement as HTMLElement | null;
+    setTaskError(null);
+    setTaskSource(null);
+    setTaskFocusId(taskId);
+    setTaskDrawerOpen(true);
+  }
+
+  function closeTaskDrawer() {
+    setTaskDrawerOpen(false);
+    setTaskSource(null);
+    setTaskFocusId(null);
+    setTaskError(null);
+    window.setTimeout(() => taskReturnFocusRef.current?.focus(), 0);
   }
 
   async function refreshTasksAndGlance() {
@@ -1767,16 +2203,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
 
   async function createTask(title: string, assigneeId: string) {
     if (!patientId) return;
-    await api.createTask(patientId, {
-      title,
-      assigned_to_user_id: assigneeId,
-      ...(taskSource?.entryId ? { source_entry_id: taskSource.entryId } : {}),
-      ...(taskSource?.commentId
-        ? { source_comment_id: taskSource.commentId }
-        : {}),
-    });
-    await refreshTasksAndGlance();
-    setTaskSource(null);
+    setTaskError(null);
+    try {
+      await api.createTask(patientId, {
+        title,
+        assigned_to_user_id: assigneeId,
+        ...(taskSource?.entryId ? { source_entry_id: taskSource.entryId } : {}),
+        ...(taskSource?.commentId
+          ? { source_comment_id: taskSource.commentId }
+          : {}),
+      });
+      await refreshTasksAndGlance();
+      setTaskSource(null);
+    } catch (error) {
+      setTaskError(displayError(error, t));
+      throw error;
+    }
   }
 
   async function updateTask(
@@ -1787,14 +2229,21 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       status?: TaskStatus;
     },
   ) {
-    await api.updateTask(task.id, { expected_version: task.version, ...patch });
-    await refreshTasksAndGlance();
+    setTaskError(null);
+    try {
+      await api.updateTask(task.id, {
+        expected_version: task.version,
+        ...patch,
+      });
+      await refreshTasksAndGlance();
+    } catch (error) {
+      setTaskError(displayError(error, t));
+      throw error;
+    }
   }
 
   function focusTask(taskId: string) {
-    window.setTimeout(() => {
-      scrollToElement(document.getElementById(`task-${taskId}`));
-    }, 0);
+    openTaskDrawer(taskId);
   }
 
   async function resolveComment(comment: Comment) {
@@ -1803,7 +2252,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       await api.resolveComment(comment.id, !comment.is_resolved);
       await refreshComments();
     } catch (error) {
-      setMutationError(displayError(error, t));
+      setCommentsError(displayError(error, t));
     } finally {
       setCommentBusy(false);
     }
@@ -1994,6 +2443,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <LanguageToggle />
+              {!isEmbeddedPreview && <DemoPreview />}
               <Button kind="quiet" onClick={() => setGuideOpen(true)}>
                 {t("header.guide")}
               </Button>
@@ -2347,6 +2797,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           <HistoricalContextPanel
             context={context}
             internal={internal}
+            timeline={timeline}
             onOpenSource={openContextSource}
             onRefresh={internal && role !== "admin" ? refreshContext : null}
             refreshBusy={mutationBusy}
@@ -2475,7 +2926,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           <Button
                             kind="secondary"
                             onClick={() => void openComments(entry.id)}
-                            disabled={commentBusy}
+                            ariaExpanded={commentsEntryId === entry.id}
+                            ariaControls="comments-drawer"
                           >
                             {t("button.comments")}
                           </Button>
@@ -2531,40 +2983,6 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
 
         <aside className="space-y-5">
           <SourcePanel source={source} onClose={closeSource} />
-          {selectedEntry && internal && (
-            <CommentsPanel
-              entry={selectedEntry}
-              comments={comments}
-              replyTo={replyTo}
-              onReply={setReplyTo}
-              onSubmit={submitComment}
-              onResolve={resolveComment}
-              mentionableUsers={collaborators}
-              onAssignTask={(commentId) =>
-                openTaskComposer(selectedEntry.id, commentId)
-              }
-              onClose={() => setCommentsEntryId(null)}
-              busy={commentBusy}
-            />
-          )}
-          {internal && (
-            <TaskPanel
-              tasks={tasks}
-              collaborators={collaborators}
-              canEdit={role !== "admin"}
-              sourceLabel={taskSource?.label ?? null}
-              sourceComment={
-                taskSource?.commentId
-                  ? (comments.find(
-                      (comment) => comment.id === taskSource.commentId,
-                    )?.body ?? null)
-                  : null
-              }
-              onCreate={createTask}
-              onUpdate={updateTask}
-              onCloseComposer={() => setTaskSource(null)}
-            />
-          )}
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
               {t("workspace.noteTitle")}
@@ -2575,6 +2993,63 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           </section>
         </aside>
       </main>
+      {selectedEntry && internal && (
+        <ContextualDrawer
+          open={commentsEntryId !== null}
+          title={`${t(entryTypeKeys[selectedEntry.entry_type] ?? "entryType.systemEvent")} · ${t("comments.internal")}`}
+          closeLabel={t("comments.close")}
+          onClose={closeComments}
+          initialFocusRef={commentsInputRef}
+          testId="comments-drawer"
+        >
+          <CommentsPanel
+            entry={selectedEntry}
+            comments={comments}
+            replyTo={replyTo}
+            onReply={setReplyTo}
+            onSubmit={submitComment}
+            onResolve={resolveComment}
+            mentionableUsers={collaborators}
+            onAssignTask={(commentId) =>
+              openTaskComposer(selectedEntry.id, commentId)
+            }
+            bodyRef={commentsInputRef}
+            loading={commentBusy}
+            error={commentsError}
+            busy={commentBusy}
+          />
+        </ContextualDrawer>
+      )}
+      {internal && (
+        <ContextualDrawer
+          open={taskDrawerOpen}
+          title={t("task.panel")}
+          closeLabel={t("task.close")}
+          onClose={closeTaskDrawer}
+          initialFocusRef={taskTitleInputRef}
+          testId="task-drawer"
+        >
+          <TaskPanel
+            tasks={tasks}
+            collaborators={collaborators}
+            canEdit={role !== "admin"}
+            sourceLabel={taskSource?.label ?? null}
+            sourceComment={
+              taskSource?.commentId
+                ? (comments.find(
+                    (comment) => comment.id === taskSource.commentId,
+                  )?.body ?? null)
+                : null
+            }
+            onCreate={createTask}
+            onUpdate={updateTask}
+            onCloseComposer={() => setTaskSource(null)}
+            titleInputRef={taskTitleInputRef}
+            error={taskError}
+            focusedTaskId={taskFocusId}
+          />
+        </ContextualDrawer>
+      )}
       <LearningGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );

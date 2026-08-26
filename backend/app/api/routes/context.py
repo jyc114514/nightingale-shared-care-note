@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user, require_allowed_origin
 from app.db.session import get_db
-from app.models import Entry, User
+from app.models import Entry, EntryVersion, User
 from app.schemas.context import (
     ArchivalSummaryOut,
     ArchivalSummarySourceOut,
@@ -89,7 +89,19 @@ def _context_response(
             entry = db.get(Entry, source.source_entry_id)
             if entry is None or (not internal and not patient_visible_entry(entry)):
                 continue
-            visible_sources.append(ArchivalSummarySourceOut.model_validate(source))
+            version = db.get(EntryVersion, source.source_version_id)
+            if version is None or version.entry_id != entry.id:
+                continue
+            visible_sources.append(
+                ArchivalSummarySourceOut(
+                    source_entry_id=source.source_entry_id,
+                    source_version_id=source.source_version_id,
+                    entry_type=enum_value(entry.entry_type),
+                    version_number=version.version_number,
+                    occurred_at=source.occurred_at,
+                    source_order=source.source_order,
+                )
+            )
         if not visible_sources:
             continue
         summaries.append(

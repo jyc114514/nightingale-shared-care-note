@@ -2,8 +2,8 @@
 
 ## A trust-centered longitudinal shared-care note
 
-Status: Phase 7 local feature-freeze prototype, measured on 2026-08-26 at application checkpoint
-`3129da3`.
+Status: Phase 7.1 local observed-UX prototype, measured on 2026-08-26 after the Phase 7.1
+application fixes.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic
@@ -68,7 +68,9 @@ and event kind. The browser refetches canonical comments/tasks/Glance APIs; it n
 source of truth and does not overwrite a dirty editor.
 
 The UI supports English and Simplified Chinese for application chrome, Help, labels, statuses,
-ARIA names, and safety explanations. It deliberately does not translate clinical notes, comments,
+ARIA names, safety explanations, and the Desktop/Mobile demo-preview selector. Comments and task
+actions open in a fixed contextual drawer rather than a distant responsive aside. It deliberately
+does not translate clinical notes, comments,
 quotes, revisions, conflict content, source references, or other user-entered source data.
 
 ## 3. Evidence, trade-offs, and remaining boundary
@@ -77,12 +79,14 @@ Implemented and independently checked at the feature-freeze checkpoint:
 
 - Backend: **51 passed**, **88%** reproducible coverage, Ruff, mypy, pip check; Alembic head
   `0008_collaboration_events`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.
-- Frontend: **14 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
-- Browser: **10 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
-  provenance persistence, mentions, assignments, two-browser SSE invalidation, conflict handling,
+- Frontend: **17 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
+- Browser: **12 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
+  provenance persistence, distinguishable original-record rows, contextual comments/tasks,
+  Desktop/Mobile preview, mentions, assignments, two-browser SSE invalidation, conflict handling,
   and patient privacy.
 - Clean clone: fresh clone from `3129da3` passed backend/frontend checks, 51 backend tests,
-  14 Vitest tests, 10 Playwright tests, and one-click launcher smoke.
+  14 Phase 7 baseline Vitest tests, 10 Phase 7 baseline Playwright tests, and one-click launcher
+  smoke; the Phase 7.1 changes are verified in the current working checkpoint above.
 - Warm path: real Uvicorn TCP, file-backed SQLite approximation, 26 patients, 208 entries/highlights,
   50 warm-up, 1,000 measured requests, concurrency 10, zero errors; P50 **49.774 ms**, P95
   **67.823 ms**, P99 **80.593 ms**, max **86.835 ms**.
@@ -98,12 +102,13 @@ retention/deletion policy, final video, and human UX-01 sign-off remain unclaime
 Scenario A: switch English/中文 chrome, open a Glance source, inspect the exact immutable span,
 wait beyond the focus animation, and close the source without changing the clinical text.
 
-Scenario B: staff edits/reverts a note, types `@` and selects a clinic collaborator, creates and
-completes an assigned task linked to the comment, while a second browser receives the metadata-only
-SSE invalidation.
+Scenario B: staff edits/reverts a note, opens the contextual Comments drawer, types `@` and selects
+a clinic collaborator, opens the contextual task drawer, creates/completes an assigned task linked
+to the comment, while a second browser receives the metadata-only SSE invalidation.
 
 Scenario C: two writes use one expected version; the stale write returns `409` and remains beside
-the winner. Historical context discloses a derived summary and opens a canonical source pointer.
+the winner. Historical context discloses a derived summary that is not the original record and
+offers labelled immutable original-record rows.
 
 ## Delivery limitation
 

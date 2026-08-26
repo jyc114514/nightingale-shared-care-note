@@ -2,6 +2,17 @@ export const en = {
   "language.label": "Language",
   "language.english": "English",
   "language.chinese": "简体中文",
+  "preview.label": "Preview",
+  "preview.auto": "Auto",
+  "preview.desktop": "Desktop 1440\u00d7900",
+  "preview.mobile": "Mobile 390\u00d7844",
+  "preview.title": "Demo viewport preview",
+  "preview.dimensions": "Internal viewport: {{width}}\u00d7{{height}}",
+  "preview.close": "Close preview",
+  "preview.frameDesktop": "Desktop preview 1440 by 900",
+  "preview.frameMobile": "Mobile preview 390 by 844",
+  "preview.disclaimer":
+    "Preview is for learning and screenshots only; use a real DevTools viewport or phone for the formal UX-01 test.",
   "brand.gate": "Nightingale · Phase 7",
   "brand.name": "Shared Care Note",
   "header.signOut": "Sign out",
@@ -42,6 +53,8 @@ export const en = {
   "source.timelineAria": "Immutable timeline source",
   "source.anchored":
     "Anchored to immutable version v{{version}}; current entry is v{{current}}.",
+  "source.anchoredExplanation":
+    "This highlight comes from saved v{{version}}; the current entry is now v{{current}}. The original reference stays unchanged.",
   "source.integrity": "Integrity warning: {{reason}}",
   "source.noApprox": "No approximate text match was highlighted.",
   "source.versionWarning":
@@ -82,6 +95,7 @@ export const en = {
   "actionState.notApplicable": "No action state",
   "comments.internal": "Internal discussion",
   "comments.close": "Close",
+  "comments.loading": "Loading comments...",
   "comments.noComments": "No comments yet.",
   "comments.reply": "Reply",
   "comments.resolve": "Resolve",
@@ -126,6 +140,13 @@ export const en = {
   "context.sourcePointer":
     "{{count}} source pointer{{plural}} · policy {{policy}}",
   "context.openCanonical": "Open canonical source",
+  "context.derivedSummary": "Derived summary · not the original record",
+  "context.derivedExplanation":
+    "This is a condensed historical summary. The original records below remain the source of truth.",
+  "context.originalRecord": "Original record {{number}}",
+  "context.recordMetadata": "{{type}} · {{date}} · v{{version}}",
+  "context.viewOriginalRecord": "View original record",
+  "context.originalTruth": "Original records remain the source of truth",
   "context.patientPointers":
     "Only patient-facing source pointers are included in this view.",
   "top.eyebrow": "Top Card · Glance View",
@@ -183,6 +204,10 @@ export const en = {
   "task.composerHint": "Choose an entry or comment before creating a task.",
   "task.sourceEntry": "Source entry: {{label}}",
   "task.sourceComment": "Source comment selected",
+  "task.commentBody": "Source comment: {{body}}",
+  "task.creatingFor": "Creating a task for: {{label}}",
+  "task.creatingForComment": "Creating a task for this comment",
+  "task.close": "Close tasks",
   "realtime.label": "Live updates",
   "realtime.connecting": "Connecting",
   "realtime.connected": "Connected",

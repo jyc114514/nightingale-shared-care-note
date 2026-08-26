@@ -154,6 +154,8 @@ export type WarmContextEntry = Omit<
 export type ArchivalSummarySource = {
   source_entry_id: string;
   source_version_id: string;
+  entry_type: string;
+  version_number: number;
   occurred_at: string;
   source_order: number;
 };

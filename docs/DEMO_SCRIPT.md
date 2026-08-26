@@ -28,8 +28,10 @@ review state.”
 1. Sign in as `staff.a@clinic-a.test`.
 2. Open the staff note, edit it, compare history, and revert it. Say: “Revert creates a new
    snapshot; it does not delete history.”
-3. Open Comments, type `@`, use the keyboard suggestion, and choose a clinic collaborator.
-4. Add a root comment and reply. Click **Assign task**, create a task linked to the comment,
+3. Open Comments; the contextual drawer appears immediately. Type `@`, use the keyboard
+   suggestion, and choose a clinic collaborator.
+4. Add a root comment and reply. Click **Assign task**; the task drawer states the selected
+   entry/comment context and focuses the title. Create a task linked to the comment,
    choose an assignee, move it to **In progress**, then **Done**. The open task appears as a
    Glance action and leaves the active action list after completion.
 5. Keep a second clinician browser open on the same patient. The second browser receives the
@@ -41,8 +43,9 @@ review state.”
 1. Submit one current write and one stale write with the same `expected_version`.
 2. Show the `409` conflict panel with current and preserved attempted content. Say: “There is no
    silent last-write-wins.”
-3. Open Historical context. Point out Hot, Warm index, and the derived cold period, then open a
-   canonical source pointer.
+3. Open Historical context. Point out Hot, Warm index, and the derived cold period, then choose
+   one of the labelled **View original record** rows. Explain that the derived summary is not the
+   original record; the immutable source remains the source of truth.
 
 ## Privacy close (20 seconds)
 

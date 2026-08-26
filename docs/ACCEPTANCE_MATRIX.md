@@ -156,6 +156,21 @@ The feature-freeze regression reports backend **51 passed / 88% coverage**, fron
 tests**, and **10 Playwright tests**. Warm-path evidence is the real-TCP SQLite approximation on
 `3129da3`: P50 49.774 ms, P95 67.823 ms, P99 80.593 ms, max 86.835 ms, zero errors.
 
+## Phase 7.1 / observed UX fixes and demo preview evidence - 2026-08-26
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-7.1-SOURCE | Exact-span rendering keeps Unicode codepoint slicing, immutable v1/current v3 distinction, and full rendered text equality; horizontal padding was removed without changing provenance fields | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx), [`gate-b.spec.ts`](../frontend/tests/e2e/gate-b.spec.ts) |
+| PHASE-7.1-CONTEXT | Derived summaries now disclose that they are not original records and show localized entry type, occurred time, immutable version, source order, and distinct View original record controls | passed | [`context.py`](../backend/app/api/routes/context.py), [`App.tsx`](../frontend/src/App.tsx), [`test_data_decay.py`](../backend/tests/test_data_decay.py) |
+| PHASE-7.1-COMMENTS | Comments open in a fixed desktop/mobile contextual drawer before API completion, expose loading/error states, trap Escape/focus, and return focus to the originating button | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx), [`gate-b.spec.ts`](../frontend/tests/e2e/gate-b.spec.ts) |
+| PHASE-7.1-TASKS | Assignment opens the same drawer pattern, states the entry/comment context, focuses the title, keeps task errors inside the drawer, and returns focus on close | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx), [`gate-b.spec.ts`](../frontend/tests/e2e/gate-b.spec.ts) |
+| PHASE-7.1-PREVIEW | Same-origin embedded preview provides real internal 1440x900 and 390x844 viewports, preserves query/auth state, prevents recursion, and closes with Escape | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx), [`gate-b.spec.ts`](../frontend/tests/e2e/gate-b.spec.ts) |
+| PHASE-7.1-REHEARSAL | PM/developer-familiar user completed Chinese desktop rehearsal in 5 seconds with 4/4 correct; not independent UX-01 evidence | recorded only | [`UX_10_SECOND_TEST.md`](UX_10_SECOND_TEST.md) |
+
+Phase 7.1 regression evidence is **51 backend tests**, **17 Vitest tests**, and **12 Playwright
+tests** across 1440x900 and 390x844. The independent UX-01 participant, deployment PRIV-04,
+final video, and external submission remain open.
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.
