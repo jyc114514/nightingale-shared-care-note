@@ -11,7 +11,7 @@ Status: **Render deployment live with synthetic evaluation limitations documente
 - [x] Production image builds the frontend and serves it from FastAPI on the Render `$PORT`.
 - [x] Production startup validates secure settings, runs the complete Alembic chain through
       `0010_postgres_compat`, and runs synthetic seed only with `DEMO_SEED_ENABLED=true`.
-- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice model is in
+- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=fixture`; no DeepSeek key or Voice model is in
       the Render production image/configuration.
 - [x] Successful deploy `dep-da7ptlek1f9s73ch6910` from commit `d2a12cd` is live at
       `https://nightingale-shared-care-note.onrender.com`.
@@ -49,4 +49,5 @@ Official references: [Blueprint specification](https://render.com/docs/blueprint
 - [x] Fixture remains the default and network-free AI path.
 - [x] DeepSeek remains opt-in and local-only; it is not part of Render configuration.
 - [x] Redaction and schema validation remain server-side, with explicit provider failure behavior.
-- [x] Voice remains Level C fixture-only locally and is disabled on Render.
+- [x] Voice remains Level C fixture-only locally and is enabled on Render only through the fixture
+      provider.

@@ -296,12 +296,12 @@ outside the local implementation boundary.
 
 Phase 9 adds a secret-safe private GitHub publication, a Docker/Render Free deployment-readiness
 path, and a Level-C prerecorded synthetic Voice prototype. The GitHub repository is private and
-`origin/main` matches the local pushed checkpoint. The Render Blueprint is prepared but its actual
-resource creation and HTTPS/database smoke remain an external track. Voice uses two small
+the existing Render Web/Postgres resources are live after HTTPS/database smoke. Voice uses two small
 synthetic WAV fixtures, precomputed immutable transcript segments, role/patient scope, and the
 existing fixture-first summary path. Local faster-whisper installation and a bounded Turbo probe
 were attempted; no functional ASR transcript was achieved, so the project does not claim Level A/B,
-WER, or Whisper quality. Render keeps `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`.
+WER, or Whisper quality. Render keeps `LLM_PROVIDER=fixture` and enables only the prerecorded
+synthetic `VOICE_PROVIDER=fixture` path.
 - Candidate name in the submission subject.
 
 They must be resolved before the relevant phase. Never paste secrets into chat or commit them; use local environment files and an `.env.example` with placeholders.

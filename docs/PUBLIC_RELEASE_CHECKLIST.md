@@ -13,7 +13,8 @@ Before any future public release:
   databases, runtime logs, environment dumps, model caches, or raw uploaded audio are present.
 - Inspect GitHub Actions logs and artifacts, if Actions are enabled.
 - Confirm deployment secrets exist only in the hosting secret store and that `LLM_PROVIDER=fixture`
-  and `VOICE_PROVIDER=disabled` remain the public-demo defaults.
+  and `VOICE_PROVIDER=fixture` remain the public-demo defaults; the Voice path is still Level C
+  only.
 - Recheck `ATTRIBUTION.txt`, dependency licenses, synthetic-only fixtures, and Voice scope labels.
 - Reconfirm independent UX-01 evidence and deployment TLS/encryption-at-rest evidence.
 - Review the final video and package contents before sending any submission email.

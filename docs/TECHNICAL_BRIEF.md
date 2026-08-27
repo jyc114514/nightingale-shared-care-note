@@ -109,7 +109,7 @@ production PHI audio, or ASR accuracy claim.
 The production readiness path uses a multi-stage Docker build, same-origin FastAPI static serving,
 Alembic-before-seed startup, secure production settings, one Free Render Web Service, and one Free
 Render Postgres database. Render is configured for `LLM_PROVIDER=fixture` and
-`VOICE_PROVIDER=disabled`. The external deployment now runs against Render PostgreSQL 18 at
+`VOICE_PROVIDER=fixture` for the deployed Level-C path. The external deployment now runs against Render PostgreSQL 18 at
 `https://nightingale-shared-care-note.onrender.com`; migration/seed, HTTPS, and provider
 encryption evidence are recorded separately. The platform-generated demo password was not read
 for this audit, so authenticated production login remains a follow-up.
@@ -118,7 +118,7 @@ for this audit, so authenticated production login remains a follow-up.
 
 Implemented and independently checked at the Phase 9 local checkpoint:
 
-- Backend: **82 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
+- Backend: **86 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
   Alembic head `0010_postgres_compat`, including fresh, legacy, downgrade/re-upgrade, and
   `alembic check`. A real PostgreSQL 18 GitHub Actions gate also passed the full migration chain,
   schema/FK assertions, seed idempotency, and the backend suite.
@@ -160,8 +160,9 @@ is system-authored, suggested, source-linked, and requires clinician review.
 
 Optional Phase 9: staff or clinician opens **Ambient Voice Prototype**, plays a prerecorded
 synthetic fixture, selects a timestamped mock transcript segment, and opens its generated source.
-Patients receive only the patient sample and no internal source identifiers. The current Voice
-status is Level C architecture/demo only; ASR inference is unavailable in this environment.
+Patients receive only the patient sample and no internal source identifiers. The deployed Voice
+status is Partial Bonus / Level C: ASR inference is unavailable, and there is no diarization or
+microphone capture.
 
 ## Delivery limitation
 

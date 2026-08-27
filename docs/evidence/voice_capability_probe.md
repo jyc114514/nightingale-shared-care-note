@@ -52,3 +52,12 @@ The Voice path preserves clinic/patient authorization, immutable ordered transcr
 audio hash and duration metadata, source-segment linkage, fixture-first summary processing, safe
 failure states, and metadata-only SSE. It does not implement microphone capture, diarization,
 overlap/noise handling, multilingual clinical ASR, production PHI audio, or model-quality claims.
+
+## Render Level-C enablement
+
+The existing Render evaluation app enables `VOICE_PROVIDER=fixture` while keeping
+`LLM_PROVIDER=fixture`. The deployed flow was verified with an authenticated clinician and a
+synthetic patient view: prerecorded WAV playback, mock timestamped transcript, unavailable
+confidence, generated suggested source/provenance, and role-scoped sample visibility. No
+`faster-whisper` import, model download, network ASR, microphone capture, upload, or diarization
+is part of the deployed path. This is a **Partial Bonus / Level C** result, not full Ambient Voice.

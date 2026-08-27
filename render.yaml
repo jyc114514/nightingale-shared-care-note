@@ -27,7 +27,7 @@ services:
       - key: LLM_PROVIDER
         value: fixture
       - key: VOICE_PROVIDER
-        value: disabled
+        value: fixture
 
 databases:
   - name: nightingale-shared-care-note-db

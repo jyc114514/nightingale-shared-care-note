@@ -85,7 +85,7 @@ microphone button.”
 ## 3:25-3:40 - Honest boundary
 
 **Say:** “The prototype still needs an independent ten-second usability test and hosted deployment
-security evidence. Render is configured for fixture AI and disabled Voice. This prototype does not
+security evidence. Render is configured for fixture AI and the Level-C Voice fixture. This prototype does not
 claim clinical validation, production PHI capture, or model quality.”
 
 **Action:** End on the English workspace and do not open credentials or configuration files.

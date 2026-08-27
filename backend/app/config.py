@@ -78,8 +78,8 @@ class Settings(BaseSettings):
                 )
             if (self.llm_provider or "fixture").strip().lower() != "fixture":
                 raise ValueError("LLM_PROVIDER=fixture is required in production")
-            if voice_provider != "disabled":
-                raise ValueError("VOICE_PROVIDER=disabled is required in production")
+            if voice_provider not in {"disabled", "fixture"}:
+                raise ValueError("VOICE_PROVIDER must be disabled or fixture in production")
 
 
 settings = Settings()

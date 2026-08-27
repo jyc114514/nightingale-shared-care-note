@@ -43,6 +43,53 @@ def test_production_validation_requires_secure_hosting_values() -> None:
     )
     secure.validate_runtime_security()
 
+    fixture = Settings(
+        app_env="production",
+        database_url="postgresql://user:password@db.internal/nightingale",
+        session_secret="a" * 40,
+        cookie_secure=True,
+        allowed_origins="https://nightingale-shared-care-note.onrender.com",
+        llm_provider="fixture",
+        voice_provider="fixture",
+    )
+    fixture.validate_runtime_security()
+
+    local_whisper = Settings(
+        app_env="production",
+        database_url="postgresql://user:password@db.internal/nightingale",
+        session_secret="a" * 40,
+        cookie_secure=True,
+        allowed_origins="https://nightingale-shared-care-note.onrender.com",
+        llm_provider="fixture",
+        voice_provider="local_whisper",
+    )
+    with pytest.raises(ValueError, match="disabled or fixture"):
+        local_whisper.validate_runtime_security()
+
+    unknown = Settings(
+        app_env="production",
+        database_url="postgresql://user:password@db.internal/nightingale",
+        session_secret="a" * 40,
+        cookie_secure=True,
+        allowed_origins="https://nightingale-shared-care-note.onrender.com",
+        llm_provider="fixture",
+        voice_provider="unknown",
+    )
+    with pytest.raises(ValueError, match="disabled, fixture, or local_whisper"):
+        unknown.validate_runtime_security()
+
+
+def test_render_configuration_keeps_voice_fixture_outside_the_docker_image() -> None:
+    repository_root = Path(__file__).resolve().parents[2]
+    dockerfile = (repository_root / "Dockerfile").read_text(encoding="utf-8").lower()
+    render_blueprint = (repository_root / "render.yaml").read_text(encoding="utf-8")
+    assert "requirements.voice.lock" not in dockerfile
+    assert "faster-whisper" not in dockerfile
+    assert "voice_model_cache" not in dockerfile
+    assert "key: VOICE_PROVIDER\n        value: fixture" in render_blueprint
+    assert "key: LLM_PROVIDER\n        value: fixture" in render_blueprint
+    assert "DEEPSEEK" not in render_blueprint
+
 
 @pytest.mark.asyncio
 async def test_production_app_serves_same_origin_spa_without_catching_health(

@@ -9,11 +9,11 @@ assignments, and metadata-only near-real-time invalidation are implemented local
 The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance and
 hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. The
 optional DeepSeek V4 Flash adapter is implemented behind the redaction boundary, while the
-deterministic fixture remains the default. This is not yet a hosted production deployment:
-PostgreSQL execution, TLS/encryption-at-rest evidence, production retention/deletion policy,
-final video, and external submission remain pending. Ambient Voice is limited to a clearly
-labelled Level-C architecture/demo path with prerecorded synthetic audio and mock transcript
-fixtures; local ASR inference was not achieved in this environment. The
+deterministic fixture remains the default. The hosted Render evaluation deployment uses managed
+PostgreSQL 18, fixture AI, and the existing Level-C Voice fixture path; it is not a clinical
+production guarantee. Ambient Voice is limited to a clearly labelled Level-C path with
+prerecorded synthetic audio and mock transcript fixtures; local ASR inference was not achieved in
+this environment. The
 repository-root `requirements.txt` is the candidate brief, **not** a
 pip requirements file; never run `pip install -r requirements.txt`.
 
@@ -32,9 +32,9 @@ documented prototype limitation, not a production recommendation; production mig
 Python 3.12+ is a follow-up. The shared environment is not upgraded or replaced during this
 sprint.
 
-SQLite is used for local development/tests. PostgreSQL is the target through `DATABASE_URL`, but
-it has not been provisioned or claimed as locally verified. Copy `.env.example` to a local `.env`,
-set a random `SESSION_SECRET` of at least 32 characters, and set `DEMO_SEED_PASSWORD` only when
+SQLite is used for local development/tests. The hosted Render evaluation uses PostgreSQL through
+`DATABASE_URL`; local development can still use SQLite. Copy `.env.example` to a local `.env`, set
+a random `SESSION_SECRET` of at least 32 characters, and set `DEMO_SEED_PASSWORD` only when
 running the synthetic seed. `.env` is ignored by Git.
 
 ## Backend setup
@@ -155,14 +155,16 @@ evaluation or production compliance claim.
 The Phase 7.1/8 delivery set includes the editable and rendered Technical Brief, attribution audit,
 demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
 synthetic browser screenshots. Phase 9 adds a Docker/Render production-readiness path and a
-Level-C Ambient Voice prototype. The Render image keeps `VOICE_PROVIDER=disabled` and
-`LLM_PROVIDER=fixture`; it does not install Voice dependencies or model weights.
+Level-C Ambient Voice prototype. Render enables only `VOICE_PROVIDER=fixture` and keeps
+`LLM_PROVIDER=fixture`; the Docker image still does not install Voice dependencies or model
+weights.
 There is no final video claim while a reliable local recorder/codec is unavailable.
 
 The Ambient Voice section is intentionally not continuous ambient capture. It plays two small,
 pre-recorded synthetic WAV fixtures, displays precomputed timestamped transcripts, and labels
-confidence as unavailable. The current achieved status is: “Architecture/demo only: prerecorded
-synthetic audio with mock transcript fixture; ASR inference unavailable in this environment.”
+confidence as unavailable. The current achieved status is: “Partial Bonus / Level C: deployed
+prerecorded synthetic audio with mock transcript fixture and segment provenance; no ASR inference,
+diarization, or microphone capture.”
 
 ## Bonus importance logic
 
@@ -266,10 +268,11 @@ hosted PostgreSQL production benchmark.
   unsupported diagnosis as fact. Display priority, explicit risk, and clinician confirmation are
   separate fields.
 - No external LLM key is committed or required. The optional DeepSeek path is explicitly selected,
-  redaction-gated, and cost/network dependent; the fixture path remains local and deterministic by
-  default. Docker/Render production readiness is prepared, but hosted PostgreSQL,
-  TLS/encryption-at-rest, final video, and external submission remain explicit delivery gates. The
-  local Technical Brief PDF is local evidence, not hosted compliance evidence.
+  redaction-gated, and cost/network dependent; the fixture path remains deterministic by default.
+  The Render synthetic evaluation uses managed PostgreSQL, HTTPS/TLS, and the Level-C Voice
+  fixture; these are evaluation evidence, not clinical compliance evidence. Final video and
+  external submission remain explicit delivery gates. The local Technical Brief PDF is local
+  evidence, not hosted compliance evidence.
 - Ambient Voice is Level C only: pre-recorded synthetic audio and mock transcript fixtures. There
   is no microphone capture, local Whisper success claim, diarization, or production PHI audio path.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and

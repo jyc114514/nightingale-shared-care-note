@@ -72,8 +72,8 @@ modify demo state: Accept, Reject, Edit, Revert, Comment, and Task creation/upda
 
 ## Optional Phase 9 - Ambient Voice Level C (20-30 seconds)
 
-1. Open **Ambient Voice Prototype** as a staff/clinician or patient synthetic user. The panel is
-   hidden when `VOICE_PROVIDER=disabled`.
+1. Open **Ambient Voice Prototype** as a staff/clinician or patient synthetic user. On the
+   deployed evaluation app it is enabled only through `VOICE_PROVIDER=fixture`.
 2. Play one prerecorded synthetic WAV fixture. Do not use a microphone or upload audio.
 3. Say: “Architecture/demo only: prerecorded synthetic audio with mock transcript fixture; ASR
    inference unavailable in this environment.”
@@ -87,8 +87,9 @@ modify demo state: Accept, Reject, Edit, Revert, Comment, and Task creation/upda
 
 The repository contains a Docker multi-stage build and a Render Blueprint for one Free Web Service
 and one Free Postgres database. If deployed, use `LLM_PROVIDER=fixture` and
-`VOICE_PROVIDER=disabled`; never deploy the local DeepSeek key, Voice dependencies, model weights,
-or local SQLite database. Free-tier spin-down and database expiration remain explicit limitations.
+`VOICE_PROVIDER=fixture`; never deploy the local DeepSeek key, Voice dependencies, model weights,
+or local SQLite database. This remains a Level-C fixture demonstration, not live ASR. Free-tier
+spin-down and database expiration remain explicit limitations.
 
 ## If a live action fails
 

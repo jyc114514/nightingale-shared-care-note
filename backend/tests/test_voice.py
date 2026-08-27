@@ -2,6 +2,7 @@
 
 from dataclasses import replace
 from hashlib import sha256
+import builtins
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -13,6 +14,7 @@ from app.config import Settings
 from app.services.authorization import get_patient_context
 from app.services.voice import (
     VoiceProviderError,
+    get_voice_provider,
     inspect_audio_fixture,
     process_voice_session,
 )
@@ -69,6 +71,17 @@ async def test_voice_samples_and_audio_are_role_scoped(
     await login(client, "staff@clinic-b.test")
     cross_clinic = await client.get(f"/patients/{patient_id}/voice/samples")
     assert cross_clinic.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_voice_audio_requires_authentication(
+    client: Any, test_settings: Settings, demo_data: Any
+) -> None:
+    test_settings.voice_provider = "fixture"
+    response = await client.get(
+        f"/patients/{demo_data.patient_a.id}/voice/samples/{CLINICAL_SAMPLE.sample_id}/audio"
+    )
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -186,6 +199,22 @@ def test_audio_hash_and_duration_are_bound_to_synthetic_fixture() -> None:
     missing = replace(PATIENT_SAMPLE, audio_filename="missing.wav")
     with pytest.raises(VoiceProviderError, match="audio_fixture_missing"):
         inspect_audio_fixture(missing)
+
+
+def test_fixture_provider_does_not_import_optional_asr(monkeypatch: pytest.MonkeyPatch) -> None:
+    original_import = builtins.__import__
+
+    def guarded_import(name: str, *args: Any, **kwargs: Any) -> Any:
+        if name == "faster_whisper" or name.startswith("faster_whisper."):
+            raise AssertionError("fixture provider must not import faster-whisper")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    provider = get_voice_provider(Settings(voice_provider="fixture"))
+    result = provider.transcribe(PATIENT_SAMPLE.audio_path, PATIENT_SAMPLE)
+    assert result.language == "en"
+    assert len(result.segments) == 3
+    assert all(segment.confidence is None for segment in result.segments)
 
 
 def test_faster_whisper_adapter_is_unit_testable_without_model_download() -> None:

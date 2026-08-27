@@ -43,7 +43,7 @@ audit. The Free database is temporary and intended only for evaluation.
 ## Application security observations
 
 - The deployed `render.yaml` sets `COOKIE_SECURE=true`, an HTTPS-only `ALLOWED_ORIGINS` value,
-  `LLM_PROVIDER=fixture`, and `VOICE_PROVIDER=disabled`.
+  `LLM_PROVIDER=fixture`, and `VOICE_PROVIDER=fixture`.
 - Startup validates production settings before migration and seed.
 - The public unauthenticated `/auth/me` endpoint returned `401`.
 - The sign-in screen was served from the same-origin FastAPI SPA.
