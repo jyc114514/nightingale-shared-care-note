@@ -135,7 +135,7 @@ jobs:
                   assert (version_column["type"].length or 0) >= 64
                   assert (
                       connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                      == "0009_voice_capture"
+                      == "0010_postgres_compat"
                   )
           finally:
               engine.dispose()

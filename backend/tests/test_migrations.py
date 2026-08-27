@@ -119,7 +119,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0009_voice_capture"
+                == "0010_postgres_compat"
             )
     finally:
         engine.dispose()
@@ -174,7 +174,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0009_voice_capture"
+                == "0010_postgres_compat"
             )
     finally:
         engine.dispose()
