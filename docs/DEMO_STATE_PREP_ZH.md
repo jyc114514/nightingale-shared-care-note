@@ -9,7 +9,7 @@
 ## 推荐登录顺序
 
 1. **Staff A**：完成 Glance View、source、Voice 和协作入口。
-2. **Clinician A**：完成 Clinician section、History、Compare/Revert 和 Historical context。
+2. **Clinician A**：完成 Clinician plan、History、Compare/Revert 和 Historical context。
 3. **Sarah Patient**：完成患者可见内容和 Patient Voice。
 
 账号切换使用镜头外 `Sign out` cut；密码框、自动填充和登录过程不出现在画面中。
@@ -19,7 +19,7 @@
 以下是上一轮 Staff-first dry run 记录的基线，只用于帮助准备，不得当作录制时的固定事实：
 
 - Staff/Clinician/Patient 三个角色和 `Sarah Tan` 均已可用；内部页面预期显示 `Up to date`。
-- Staff note 和 Clinician section 已有多个版本；History 中通常可看到 earlier version、
+- Staff note 和 Clinician plan 已有多个版本；History 中通常可看到 earlier version、
   `Compare` 和 `Revert`。
 - Glance 通常包含 `Needs review`、`Reviewed` 或其他可审查状态；录制前选择页面实际存在
   的卡片，不写死名称或状态。
@@ -56,7 +56,7 @@
 ## 不要点击或展示
 
 - 不打开环境变量、密码、API key、Render Environment、browser storage、Cookie、DevTools
-  或 provider console。
+  或外部服务控制台。
 - 不运行 reset、delete 或 seed 来恢复旧版本号。
 - 不把 `View original record` 说成精确来源面板；它的作用是导航到对应时间线位置。
 - 不把准备好的 Voice transcript 说成 ASR 质量证据。

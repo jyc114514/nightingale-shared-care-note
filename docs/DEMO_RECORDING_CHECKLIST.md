@@ -1,5 +1,7 @@
 # Nightingale 录制前后 Checklist
 
+录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为 checklist 参考。
+
 ## 录制前
 
 - [ ] 打开现有 Render HTTPS 地址，等待服务唤醒。
@@ -13,8 +15,8 @@
 
 ## 录制中
 
-- [ ] 按 [`DEMO_OPERATOR_RUNBOOK_ZH.md`](DEMO_OPERATOR_RUNBOOK_ZH.md) 的中文动作执行。
-- [ ] 英文旁白只念 [`DEMO_SCRIPT_SPOKEN_EN.md`](DEMO_SCRIPT_SPOKEN_EN.md) 中的内容。
+- [ ] 按 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 的中文动作执行。
+- [ ] 英文旁白只念 Master Runbook 中与 cue 对应的内容；SRT 使用同一文件的派生版本。
 - [ ] 保留真实 English label，例如 `Open source`、`Close source`、`Compare`、`Revert`。
 - [ ] `Original source` 的 `Technical details` 默认折叠；主画面保持产品信息简洁。
 - [ ] Voice 只展示音频、prepared timestamped transcript、建议和来源链路；不把 transcript

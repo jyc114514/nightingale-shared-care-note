@@ -1,65 +1,199 @@
 1
-00:00:00,000 --> 00:00:24,000
-Nightingale brings a shared care record into one clear workspace. I begin as Staff with Sarah Tan.
-The page separates care notes, suggestions, actions, and review history, so the team can see what
-needs attention and why.
+00:00:00,000 --> 00:00:07,000
+Nightingale brings a shared care record
+into one clear workspace for this team.
 
 2
-00:00:24,000 --> 00:01:06,000
-Staff starts with Glance View. At a glance I can see the items needing attention, the next step,
-current review status, item kind, risk flag, and priority. Priority organises the view; it is not
-a medical risk score. I open the source of an AI-assisted note. The page takes me to the matching
-timeline entry and keeps the highlighted passage tied to its original record version. This makes
-the suggestion useful immediately while keeping the evidence easy to inspect. I can close the
-source when I am done, and the record itself is unchanged.
+00:00:07,000 --> 00:00:14,000
+I begin as Staff with Sarah Tan, then wait
+for the workspace to settle.
 
 3
-00:01:06,000 --> 00:01:44,000
-Here is a Voice note. I can review a pre-recorded care conversation, listen to the audio, and
-follow the prepared timestamped transcript. Each segment is connected to a reviewable care-note
-suggestion. I select a segment, move through the conversation, and open its source. The same
-source and highlight path connects the conversation to the longitudinal record. The suggestion
-is ready for clinician review.
+00:00:14,000 --> 00:00:20,000
+The page separates notes, suggestions,
+actions, and review history.
 
 4
-00:01:44,000 --> 00:02:08,000
-Back in Staff, I edit the existing Staff note and save a new revision. Then I add a team
-discussion and mention Clinician A from the visible menu. The conversation stays attached to this
-record, so follow-up context is available where the work happens.
+00:00:20,000 --> 00:00:26,000
+The team can see what needs attention
+and why right now for everyone.
 
 5
-00:02:08,000 --> 00:02:30,000
-Discussion states are explicit: Resolve and Unresolve show whether follow-up is complete. Pin and
-Unpin let the team provide feedback to prioritisation. These actions are recorded separately from
-clinical risk and source content.
+00:00:26,000 --> 00:00:32,000
+Staff starts with Glance View, where
+items are visible together at once.
 
 6
-00:02:30,000 --> 00:03:05,000
-Now I switch to Clinician. Clinician authority is focused on review and care planning. I edit the
-Clinician section, open History, and compare an earlier version with the current one. Before and
-After make the change visible. Revert restores earlier content by creating a new version, while
-the full history remains available. A review action can confirm a suggestion without rewriting
-its source.
+00:00:32,000 --> 00:00:39,000
+Each card shows content, a next step,
+review status, item kind, risk, priority.
 
 7
-00:03:05,000 --> 00:03:37,000
-Historical context brings recent information, earlier context, and concise historical summaries
-together. A summary is labelled clearly and links to the original records. I can open an original
-record to reach the relevant point in the timeline. This keeps a quick overview connected to
-detail when I need to verify it. An independent participant using the Simplified Chinese interface
-completed the glance task in approximately nine seconds without coaching.
+00:00:39,000 --> 00:00:45,000
+Priority organises the view; it is not a
+medical risk score to guide review.
 
 8
-00:03:37,000 --> 00:04:10,000
-Finally, I switch to Patient. The patient view contains only information shared for the patient,
-including care summaries, instructions, and the patient conversation. Internal Glance items, team
-discussions, tasks, and clinician-only review controls stay out of this view. The patient Voice
-note follows the same reviewable path: audio, timestamped transcript, and patient-facing care-note
-context.
+00:00:45,000 --> 00:00:50,000
+I open the source of an AI-assisted note
+for careful team review.
 
 9
-00:04:10,000 --> 00:04:30,000
-Across the workspace, the principle is simple: make the next step visible, keep the original record
-easy to verify, and preserve human review at every suggestion boundary. The demo uses synthetic
-data and the deployed service provides the hosted HTTPS workspace. Nightingale turns shared care
-context into a clear, traceable workflow.
+00:00:50,000 --> 00:00:56,000
+The page takes me to the matching
+timeline entry for team verification.
+
+10
+00:00:56,000 --> 00:01:02,000
+The highlighted passage stays tied to its
+original record version in context.
+
+11
+00:01:02,000 --> 00:01:10,000
+The evidence is easy to inspect; closing
+Source leaves the record unchanged.
+
+12
+00:01:10,000 --> 00:01:17,000
+Here is a Voice note: a pre-recorded
+synthetic care conversation with audio.
+
+13
+00:01:17,000 --> 00:01:23,000
+I follow the prepared timestamped
+transcript at every step.
+
+14
+00:01:23,000 --> 00:01:30,000
+Each segment connects to a reviewable
+care-note suggestion for the care team.
+
+15
+00:01:30,000 --> 00:01:38,000
+I select a segment, open its source, and
+keep the exact highlighted path.
+
+16
+00:01:38,000 --> 00:01:47,000
+The suggestion is ready for clinician
+review today.
+
+17
+00:01:47,000 --> 00:01:54,000
+Back in Staff, I edit the existing Staff
+note and save a new revision for review.
+
+18
+00:01:54,000 --> 00:01:59,000
+I wait for the saved state before
+continuing on screen for this recording.
+
+19
+00:01:59,000 --> 00:02:06,000
+Then I add a team discussion and mention
+Clinician A from the visible menu.
+
+20
+00:02:06,000 --> 00:02:15,000
+The discussion stays with the record,
+keeping follow-up context available.
+
+21
+00:02:15,000 --> 00:02:21,000
+Resolve and Unresolve make discussion
+status explicit for the whole team.
+
+22
+00:02:21,000 --> 00:02:28,000
+Pin and Unpin guide prioritisation; Assign
+task opens follow-up work when needed.
+
+23
+00:02:28,000 --> 00:02:34,000
+These collaboration actions stay separate
+from clinical risk and source content.
+
+24
+00:02:34,000 --> 00:02:42,000
+Now I switch to Clinician, whose authority
+is focused on review and care planning.
+
+25
+00:02:42,000 --> 00:02:50,000
+I edit the Clinician plan, save, then open
+History for safe review carefully.
+
+26
+00:02:50,000 --> 00:02:59,000
+I compare an earlier version with the
+current one.
+
+27
+00:02:59,000 --> 00:03:05,000
+Before and After show the change; Revert
+creates a new version for review.
+
+28
+00:03:05,000 --> 00:03:10,000
+History stays available; review confirms
+suggestions; the source remains unchanged.
+
+29
+00:03:10,000 --> 00:03:16,000
+Historical context brings recent and
+earlier summaries together for review.
+
+30
+00:03:16,000 --> 00:03:22,000
+Each summary is labelled clearly and links
+to original records for team verification.
+
+31
+00:03:22,000 --> 00:03:29,000
+I open an original record and reach the
+relevant timeline point when needed.
+
+32
+00:03:29,000 --> 00:03:38,000
+An independent participant used Simplified
+Chinese; the glance task had no coaching.
+
+33
+00:03:38,000 --> 00:03:44,000
+The result was approximately nine seconds,
+with all four observations correct.
+
+34
+00:03:44,000 --> 00:03:51,000
+Finally, I switch to Patient; the patient
+view contains only shared information.
+
+35
+00:03:51,000 --> 00:03:58,000
+It shows care summaries, instructions, and
+patient conversation.
+
+36
+00:03:58,000 --> 00:04:05,000
+Internal items, team discussions, tasks,
+and clinician-only controls stay out.
+
+37
+00:04:05,000 --> 00:04:12,000
+Patient Voice follows this path: audio,
+timestamped transcript, and care context.
+
+38
+00:04:12,000 --> 00:04:18,000
+Next steps stay visible; the original
+record stays verifiable.
+
+39
+00:04:18,000 --> 00:04:23,000
+Human review remains at every suggestion
+boundary throughout.
+
+40
+00:04:23,000 --> 00:04:30,000
+The demo uses synthetic data and a hosted
+HTTPS workspace for a traceable workflow.

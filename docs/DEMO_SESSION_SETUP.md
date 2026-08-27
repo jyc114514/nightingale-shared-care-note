@@ -1,5 +1,7 @@
 # Nightingale 录制 Session Setup
 
+录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为 session 准备参考。
+
 ## 录制目标
 
 - 地址：`https://nightingale-shared-care-note.onrender.com`
@@ -10,14 +12,14 @@
 - 操作提示用中文；网页标签保留真实 English label；口播和字幕使用 English
 
 最终视频不得展示密码、API key、数据库 URL、环境变量、Cookie、browser storage、DevTools
-或 provider console。账号切换用镜头外 cut，密码输入永远不出现在画面中。
+或外部服务控制台。账号切换用镜头外 cut，密码输入永远不出现在画面中。
 
 ## 三个 session
 
 | 顺序 | 角色 | 页面起点 | 录制内容 |
 | --- | --- | --- | --- |
 | 1 | `Staff A` | `Staff view`、`Sarah Tan` | Glance View、source、Voice、Staff note、Comments、mention、Resolve/Unresolve、Pin/Unpin |
-| 2 | `Clinician A` | `Clinician view`、`Sarah Tan` | Clinician section、History、Compare/Revert、Historical context |
+| 2 | `Clinician A` | `Clinician view`、`Sarah Tan` | Clinician plan、History、Compare/Revert、Historical context |
 | 3 | `Sarah Patient` | `Patient view`、`Sarah Tan` | Your care summary、Patient Voice、患者可见内容 |
 
 ## 每个 session 开始前
@@ -63,8 +65,8 @@
 
 ## 不要点击或展示
 
-- 不打开 Render Environment、密码、API key、数据库配置、DevTools、Cookie 或 provider
-  console。
+- 不打开 Render Environment、密码、API key、数据库配置、DevTools、Cookie 或外部服务
+  控制台。
 - 不录入真实患者信息；临床原文保持原始语言。
 - 不把 prepared transcript 说成 ASR 质量证据，也不口播未在画面中验证的技术结果。
 - 不为视频制造不存在的控件、固定版本号或固定 suggestion 状态。

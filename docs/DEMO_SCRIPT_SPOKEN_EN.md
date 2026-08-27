@@ -1,17 +1,19 @@
 # Nightingale final recording script: Chinese operation / English narration
 
+录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为逐镜头旁白参考。
+
 目标时长：**4:30**  · 目标语速：**105–120 words per minute**  · 页面：**English**
 
 角色顺序固定为 **Staff → Clinician → Patient**。操作提示用中文；网页按钮、字段和状态保留
 实际 English label；需要念的内容只念每个镜头的英文旁白。全部内容使用 synthetic demo data。
 
 密码、账号切换、加载等待和错误处理都在镜头外完成。不要录入或展示密码、API key、数据库
-URL、环境变量、浏览器 storage、DevTools 或 provider console。页面上的 clinical note 原文
+URL、环境变量、浏览器 storage、DevTools 或外部服务控制台。页面上的 clinical note 原文
 保持原始语言；不要临场翻译或改写它。
 
 ## 镜头 1：Staff 打开共享工作区
 
-- **时间：** 00:00–00:24
+- **时间：** 00:00–00:26
 - **角色：** Staff A
 - **中文操作：** 镜头开始前在镜头外登录 Staff，选择 `Sarah Tan`，确认语言为 `English`。
   等待状态显示 `Up to date`，关闭 `Guide`、所有 drawer 和浏览器提示，把鼠标移到空白处。
@@ -25,7 +27,7 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 2：Staff Glance View 与来源
 
-- **时间：** 00:24–01:06
+- **时间：** 00:26–01:10
 - **角色：** Staff A
 - **中文操作：** 在 `Glance View` 找到当前页面实际显示的 AI-assisted card。指出卡片上的
   内容、`Next step`、`Needs review` 或 `Reviewed`、item kind、`Risk flag`/`No risk flag` 和
@@ -45,7 +47,7 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 3：Staff Voice note
 
-- **时间：** 01:06–01:44
+- **时间：** 01:10–01:47
 - **角色：** Staff A
 - **中文操作：** 向下找到 `Voice note`。先确认 `About this example` 保持折叠；如没有已有
   result，播放 native audio，等待播放器时间前进后只点击一次 `Create care-note suggestion`。
@@ -64,7 +66,7 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 4：Staff note、评论和 mention
 
-- **时间：** 01:44–02:08
+- **时间：** 01:47–02:15
 - **角色：** Staff A
 - **中文操作：** 关闭来源面板，找到 `Staff note`，点击 `Edit`，输入 synthetic rehearsal
   sentence，点击 `Save revision`。然后点击 `Comments`，等待 drawer 出现，在 `Comment body`
@@ -79,7 +81,7 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 5：协作状态与角色切换
 
-- **时间：** 02:08–02:30
+- **时间：** 02:15–02:34
 - **角色：** Staff A，随后切换 Clinician A
 - **中文操作：** 在刚才的讨论中按页面实际状态完成一次 `Resolve`/`Unresolve`。在一张当前
   卡片上按页面实际状态完成一次 `Pin`/`Unpin`。关闭 drawer，停录，镜头外点击 `Sign out`
@@ -94,9 +96,9 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 6：Clinician review、Compare 与 Revert
 
-- **时间：** 02:30–03:05
+- **时间：** 02:34–03:10
 - **角色：** Clinician A
-- **中文操作：** 在 `Clinician section` 点击 `Edit`，修改 synthetic plan sentence 并点击
+- **中文操作：** 在 `Clinician plan` 点击 `Edit`，修改 synthetic plan sentence 并点击
   `Save revision`。打开 `History`，选择一个页面实际可用的 earlier version，点击 `Compare`，
   等待 `Before` 和 `After`。如 `Revert` 可用，点击一次并确认新版本出现；不写死版本号。
 - **应看到：** 变化前后内容、可继续查看的历史版本和新的恢复版本。只有页面确实显示 review
@@ -105,14 +107,14 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 - **英文旁白：**
 
   > Now I switch to Clinician. Clinician authority is focused on review and care planning. I edit the
-  > Clinician section, open History, and compare an earlier version with the current one. Before and
+  > Clinician plan, open History, and compare an earlier version with the current one. Before and
   > After make the change visible. Revert restores earlier content by creating a new version, while
   > the full history remains available. A review action can confirm a suggestion without rewriting
   > its source.
 
 ## 镜头 7：历史上下文与 UX-01 evidence
 
-- **时间：** 03:05–03:37
+- **时间：** 03:10–03:44
 - **角色：** Clinician A
 - **中文操作：** 关闭 History、Comments 和 Source。找到 `Historical context`，展开
   `How historical context is organised`，指出 `Recent context`、`Earlier context` 和
@@ -131,7 +133,7 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 8：Patient privacy 与 Patient Voice
 
-- **时间：** 03:37–04:10
+- **时间：** 03:44–04:12
 - **角色：** Sarah Patient
 - **中文操作：** 停录，镜头外 `Sign out` 并登录 Patient。确认 `Patient view`、`Sarah Tan` 和
   `Your care summary`。展示患者可见时间线和 `Voice note`；如需要处理，播放 patient audio
@@ -149,11 +151,11 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 
 ## 镜头 9：收尾
 
-- **时间：** 04:10–04:30
+- **时间：** 04:12–04:30
 - **角色：** 任一稳定的内部角色
 - **中文操作：** 关闭所有 drawer，停在稳定的 English workspace；不要打开配置页。指向页面的
   synthetic-only disclosure 和 source/review boundary，鼠标移到空白处后念完旁白。
-- **应看到：** HTTPS 应用页面保持稳定；没有密码、配置、日志或 provider console。
+- **应看到：** HTTPS 应用页面保持稳定；没有密码、配置、日志或外部服务控制台。
 - **Requirement mapping：** `requirements.txt:50–54, 74–85, 99–104`。
 - **英文旁白：**
 
@@ -167,6 +169,6 @@ URL、环境变量、浏览器 storage、DevTools 或 provider console。页面�
 - 版本号、卡片状态和当前 Voice result 以录制时页面为准，不在口播中硬编码。
 - Voice 旁白只描述音频、准备好的时间戳文字记录、建议和来源链路；不把 prepared transcript
   当作 ASR 质量证据。
-- 需要解释实现边界、provider、redaction、P95、部署安全或 Voice 级别时，放到 Technical
+- 需要解释实现边界、外部服务实现、redaction、P95、部署安全或 Voice 级别时，放到 Technical
   Brief 或 evidence，不放进主旁白。
 - 视频完成并完整观看通过 QA 前，不生成最终 PDF/ZIP/MANIFEST，不 push，不发邮件。

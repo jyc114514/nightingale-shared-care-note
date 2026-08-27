@@ -1,8 +1,10 @@
 # Nightingale 最终录制 Operator Runbook
 
-这是录制时的主操作文件。所有操作提示均为中文；网页按钮、字段和状态保留实际 English
-label；需要念的内容只念 [`DEMO_SCRIPT_SPOKEN_EN.md`](DEMO_SCRIPT_SPOKEN_EN.md) 中的
-English narration。角色顺序固定为 **Staff → Clinician → Patient**。
+录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为中文参考。
+
+这是中文操作参考文件。所有操作提示均为中文；网页按钮、字段和状态保留实际 English
+label；需要念的内容以 Master Runbook 中的 English narration 和 SRT cue 为准。角色顺序固定
+为 **Staff → Clinician → Patient**。
 
 ## 通用规则
 
@@ -66,7 +68,7 @@ English narration。角色顺序固定为 **Staff → Clinician → Patient**。
 
 ### 6. Clinician History、Compare 和 Revert
 
-1. 在 `Clinician section` 点击 `Edit`，输入 synthetic plan sentence，点击 `Save revision`。
+1. 在 `Clinician plan` 点击 `Edit`，输入 synthetic plan sentence，点击 `Save revision`。
 2. 点击 `History`，选择列表中实际可见的 earlier version。
 3. 点击 `Compare`，等待 `Before` 和 `After`。
 4. 如果 `Revert` 可用，点击一次，确认新版本出现并且 earlier rows 仍保留。
@@ -98,8 +100,8 @@ English narration。角色顺序固定为 **Staff → Clinician → Patient**。
 ### 9. 收尾
 
 关闭所有 drawer，停在稳定的 English workspace，指向 synthetic-only disclosure 和
-source/review boundary，念脚本镜头 9。不要打开配置、日志、PDF、ZIP、MANIFEST 或 provider
-console。
+source/review boundary，念脚本镜头 9。不要打开配置、日志、PDF、ZIP、MANIFEST 或外部服务
+控制台。
 
 ## 会修改线上 synthetic state 的动作
 
