@@ -1,73 +1,52 @@
 # Deployment checklist
 
-Status: **Render deployment blocked after two meaningful attempts; no third attempt will be
-made in this phase.**
+Status: **Render deployment live with synthetic evaluation limitations documented.**
 
-## Required before a hosted demo
-
-- [ ] Choose a managed PostgreSQL provider and record the provider, region, backup policy, and
-      encryption-at-rest evidence.
-- [ ] Set `DATABASE_URL` through the platform secret store; never commit it or expose it to the
-      browser.
-- [ ] Set a random `SESSION_SECRET` with at least 32 characters.
-- [ ] Set `COOKIE_SECURE=true`; verify production startup fails closed when it is false.
-- [ ] Configure the exact frontend Origin allowlist; verify credentialed writes reject foreign
-      origins.
-- [ ] Terminate HTTPS/TLS at the platform and record certificate/transport evidence.
-- [ ] Run `alembic upgrade head` against a disposable deployment database, then `alembic check`.
-- [ ] Run synthetic seed or a deployment-specific fixture only; never load real patient data.
-- [ ] Verify logs contain request/job metadata only and no raw note, credentials, or tokens.
-- [ ] Re-run the warm-path benchmark against the actual database/service topology.
-- [ ] Verify backups, retention, deletion, incident response, and access review with the provider.
-
-## Render blueprint boundary
+## Hosted evidence
 
 - [x] Exactly one Docker web service named `nightingale-shared-care-note`, Free plan, Singapore
-      region, `/health` HTTP health check was created.
-- [x] Exactly one Free Render Postgres database was created and connected through the Blueprint
-      `connectionString`.
-- [x] The production image build completed on the first deployment attempt and includes the
-      frontend build plus FastAPI static serving on the Render `$PORT`.
-- [x] Production startup validates secure settings, runs `alembic upgrade head`, and runs the
-      synthetic seed only when `DEMO_SEED_ENABLED=true`.
-- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice dependency is
-      part of the Render production configuration.
-- [ ] Confirm a healthy Render service URL, successful migration/seed, HTTPS smoke, secure cookie,
-      and database encryption evidence in `docs/evidence/deployment_security.md`.
-- [ ] Repair the PostgreSQL-specific `0002_gate_b` comments batch migration, then perform a future
-      bounded deployment attempt under an explicitly reopened deployment gate.
+      region, `/health` HTTP health check.
+- [x] Exactly one Free Render Postgres database, PostgreSQL 18, Singapore, connected through the
+      Blueprint `connectionString`.
+- [x] Production image builds the frontend and serves it from FastAPI on the Render `$PORT`.
+- [x] Production startup validates secure settings, runs the complete Alembic chain through
+      `0010_postgres_compat`, and runs synthetic seed only with `DEMO_SEED_ENABLED=true`.
+- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice model is in
+      the Render production image/configuration.
+- [x] Successful deploy `dep-da7ptlek1f9s73ch6910` from commit `d2a12cd` is live at
+      `https://nightingale-shared-care-note.onrender.com`.
+- [x] HTTP-to-HTTPS redirect, HTTPS `/health`, SPA root, unauthenticated `401`, migration/seed
+      logs, and PostgreSQL schema evidence are recorded in
+      [`deployment_security.md`](evidence/deployment_security.md).
+- [x] Render provider TLS and Postgres AES-256-at-rest documentation is linked in the security
+      evidence.
 
-The exact two-attempt outcome is recorded in
-[`deployment_attempt.md`](evidence/deployment_attempt.md). The reserved service address is
-`https://nightingale-shared-care-note.onrender.com`, but it is not reported as a working demo
-because both deployments failed before health.
+## Application and operational follow-up
 
-Render Free limitations must remain visible: free web services spin down after inactivity, the
-filesystem is ephemeral, and Free Postgres is limited to 1 GB and expires after 30 days. This is
+- [x] `DATABASE_URL` is supplied by the platform Blueprint connection string; it is not committed
+      or exposed to the browser.
+- [x] `SESSION_SECRET` and `DEMO_SEED_PASSWORD` are platform-generated and were not copied into
+      the repository, logs, screenshots, or this record.
+- [x] `COOKIE_SECURE=true` and the exact HTTPS Origin are declared in the deployed Blueprint;
+      local production validation fails closed when secure settings are missing.
+- [ ] Perform an authenticated production login smoke with the platform-generated demo password.
+      This audit intentionally did not read or transmit that secret.
+- [ ] Re-run the warm-path benchmark against the hosted PostgreSQL/service topology.
+- [ ] Verify backups, restore, retention, deletion, incident response, and access review with the
+      provider.
+- [ ] Complete independent UX-01, final video playback, and submission email steps.
+
+Render Free limitations remain material: free web services can spin down after inactivity, the
+filesystem is ephemeral, and Free Postgres is limited to 1 GB with a temporary lifetime. This is
 an evaluation deployment, not a clinical production guarantee.
 
-Official references used for the readiness design: [Blueprint specification](https://render.com/docs/blueprint-spec),
-[HTTP health checks](https://render.com/docs/health-checks), [Free instance limitations](https://render.com/docs/free),
-[managed TLS](https://render.com/docs/tls), and [Render Postgres encryption](https://render.com/docs/postgresql-creating-connecting).
+Official references: [Blueprint specification](https://render.com/docs/blueprint-spec), [HTTP health checks](https://render.com/docs/health-checks),
+[Free instance limitations](https://render.com/docs/free), [managed TLS](https://render.com/docs/tls), and
+[Render Postgres encryption](https://render.com/docs/postgresql-creating-connecting).
 
 ## Optional external provider boundary
 
-- [x] Keep `LLM_PROVIDER=fixture` as the default and network-free test/demo path.
-- [x] If DeepSeek is selected, use only `deepseek-v4-flash` through the official API endpoint.
-- [x] Store only an external key-file path in ignored `.nightingale-local.json`; never commit or
-      expose the key/path to the browser, runtime metadata, logs, PDFs, or ZIPs.
-- [x] Redact and validate synthetic text server-side before the provider call; do not send source
-      reference, patient/clinic/user IDs, names, phones, IC/ID values, comments, or task metadata.
-- [x] Keep provider failures explicit; no silent fixture fallback.
-- [x] Record the one bounded synthetic smoke in [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md).
-- [ ] Perform a provider-specific data-processing/compliance review and production cost/latency
-      evaluation.
-
-## Current local and external boundary
-
-SQLite + real Uvicorn TCP is measured locally. Render resources exist, but the application has not
-completed PostgreSQL migrations or reached a healthy service. Therefore PostgreSQL runtime,
-TLS, encryption-at-rest, deployment backup, hosted operational controls, and external LLM quality
-remain unverified. The DeepSeek smoke proves one bounded local request only; it does not establish
-provider compliance or production quality. `Start Nightingale Demo.cmd` is a local convenience
-wrapper, not deployment.
+- [x] Fixture remains the default and network-free AI path.
+- [x] DeepSeek remains opt-in and local-only; it is not part of Render configuration.
+- [x] Redaction and schema validation remain server-side, with explicit provider failure behavior.
+- [x] Voice remains Level C fixture-only locally and is disabled on Render.

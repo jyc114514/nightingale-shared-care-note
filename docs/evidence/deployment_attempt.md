@@ -1,71 +1,92 @@
-# Render deployment attempt - 2026-08-27
+# Render deployment attempts - 2026-08-27
 
-## Outcome
+## Final outcome
 
-**Blocked after two meaningful deployment attempts.** The existing Render Blueprint created
-exactly one Free Web Service and one Free Postgres database. No second resource pair, paid
-resource, billing change, custom domain, worker, Redis, or destructive database operation was
-created or performed. The repository and Render service remain private.
-
-The deployment track is stopped at the two-attempt boundary required by the Phase 9 handoff. No
-third source push or manual redeploy was triggered.
-
-## Resources and source
+**Healthy deployment achieved on the existing resources after migration recovery.** Exactly one
+Free Render Web Service and one Free Render Postgres database were used. No duplicate resource
+pair, paid plan, billing change, custom domain, worker, Redis, or destructive database operation
+was created or performed.
 
 - Blueprint: `exs-da7p448n74is73a07s0g`
 - Web Service: `nightingale-shared-care-note` (`srv-da7p56s9v7es73f7n12g`), Free, Singapore
-- Postgres: `nightingale-shared-care-note-db`, Free, Singapore, available in the Render dashboard
-- Reserved service URL: `https://nightingale-shared-care-note.onrender.com`
-- Private GitHub source: `jyc114514/nightingale-shared-care-note`, branch `main`
-- Repair commit pushed before attempt 2: `9fe8c40` (`fix: make Gate B migration PostgreSQL safe`)
+- Postgres: `nightingale-shared-care-note-db` (`dpg-da7p4gk9v7es73f7l6eg-a`), Free, Singapore
+- Successful deploy: `dep-da7ptlek1f9s73ch6910`
+- Successful source: `d2a12cd`
+- Service URL: `https://nightingale-shared-care-note.onrender.com`
+- GitHub repository: `jyc114514/nightingale-shared-care-note` (private)
 
-The URL is recorded as a service address only. It is **not** a successful application URL:
-neither deployment reached a healthy running service, so no hosted smoke or production cookie
-claim is made.
+## Attempt history
 
-## Attempt 1
+### Attempt 1
 
 - Deploy ID: `dep-da7p5749v7es73f7n450`
 - Source: `a4d7bd6`
 - Trigger: Blueprint
-- Result: failed while running the application after the Docker image build completed
-- Blocker: `0002_gate_b` used `batch_alter_table("entries", recreate="always")`. PostgreSQL
-  could not drop `entries_pkey` because foreign keys in `entry_versions`, `conflicts`, and
-  `comments` depended on it.
+- Result: failed during startup migration after the Docker image build completed
+- Blocker: `0002_gate_b` used `batch_alter_table("entries", recreate="always")`; PostgreSQL
+  rejected dropping `entries_pkey` while `entry_versions`, `conflicts`, and `comments` still
+  depended on it.
 
-## Attempt 2
+### Attempt 2
 
 - Deploy ID: `dep-da7p9o7lk1mc738bdor0`
 - Source: `9fe8c40`
-- Trigger: Auto-Deploy from the pushed repair commit
-- Result: failed while running the application after 43.7 seconds
-- Blocker: after the `entries` path was changed to in-place PostgreSQL `ALTER COLUMN`, the
-  subsequent PostgreSQL `comments` batch recreate dropped the original `comments_pkey` before
-  creating `_alembic_tmp_comments`. Its self-referential foreign key
-  `parent_comment_id REFERENCES comments(id)` then failed with:
-  `psycopg.errors.InvalidForeignKey: there is no unique constraint matching given keys for
-  referenced table "comments"`.
+- Trigger: Auto-Deploy
+- Result: failed during startup migration after 43.7 seconds
+- Blocker: the `comments` batch recreate dropped `comments_pkey` before creating the temporary
+  table with its self-referential `parent_comment_id REFERENCES comments(id)` foreign key.
 
-This is a migration implementation blocker, not evidence that the application or PostgreSQL
-schema is production-ready. The next repair would need a PostgreSQL-specific in-place comments
-path while preserving the SQLite batch path; it was intentionally not attempted in this phase
-because the two-attempt limit has been reached.
+### Recovery and CI
 
-## Local evidence before the repair
+The isolated branch `codex/postgres-migration-fix` repaired the PostgreSQL paths and added a real
+PostgreSQL 18 GitHub Actions gate. The successful run was:
 
-- Focused migration and production-readiness tests: 7 passed.
-- Ruff check: passed.
-- mypy: passed.
-- The patched migration file passed its individual Ruff format check.
-- Offline PostgreSQL generation showed the repaired `entries` statements as in-place
-  `ALTER COLUMN ... SET NOT NULL`; full offline generation cannot render the existing live-
-  reflection comments batch and therefore is not treated as deployment evidence.
+- Run: `33032765274`
+- Job: `98388787825`
+- Source: `d2a12cd`
+- Result: success in 1m34s
+- Evidence: full `0001→0010` upgrade, `alembic check`, downgrade to `0001` and re-upgrade,
+  PostgreSQL schema/FK assertions, seed twice with stable counts, and 82 backend tests.
 
-## Security boundary
+The recovery included:
 
-No deployment secret, database connection string, API key, raw note, patient identifier, or
-credential was written to the repository or included in this record. Because no deployment
-reached health, there is no valid evidence yet for HTTPS smoke, secure cookie behavior against the
-live app, successful Alembic head, seed execution, or encryption-at-rest. `PRIV-04` remains
-**planned**. Do not create `deployment_security.md` until a healthy deployment supplies those
-facts.
+- PostgreSQL in-place changes for `entries` and `comments` in `0002_gate_b`, while preserving
+  SQLite batch behavior.
+- PostgreSQL widening of Alembic's bookkeeping `version_num` before the long `0007` revision is
+  recorded.
+- `0010_postgres_compat`, a forward corrective migration that removes the redundant PostgreSQL
+  `users_email_key` constraint while retaining the ORM-required unique `ix_users_email` index.
+
+## Successful Render startup evidence
+
+Render deploy logs for `dep-da7ptlek1f9s73ch6910` show `Context impl PostgresqlImpl`, all migration
+steps through `0010_postgres_compat`, successful synthetic seed counts, `Application startup
+complete`, Uvicorn listening on the Render port, and repeated `GET /health 200 OK` checks.
+
+The logged seed counts were:
+
+`clinics=2`, `patients=2`, `users=5`, `entries=7`, `comments=2`, `highlights=5`,
+`glance_items=5`, `archival_summaries=1`, `archival_sources=2`.
+
+No raw note text, credentials, database URL, API key, or patient identifier was copied into this
+record.
+
+## Deployment smoke
+
+- HTTP `/health`: `301` with `Location: https://nightingale-shared-care-note.onrender.com/health`.
+- HTTPS `/health`: `200`, body `{"status":"ok","phase":"4-bonus-local"}`.
+- HTTPS `/`: `200`, SPA mount present, no localhost API origin in the returned HTML.
+- Unauthenticated `/auth/me`: `401`.
+- Browser navigation to the HTTPS root displayed the sign-in screen and synthetic persona choices.
+
+The production login flow was not exercised because `DEMO_SEED_PASSWORD` is a platform-generated
+secret and was intentionally neither read nor printed. `COOKIE_SECURE=true`, fixture LLM, and
+Voice-disabled settings are declared in the deployed `render.yaml`; local production validation
+also fails closed when secure cookie settings are missing.
+
+## External security boundary
+
+The detailed TLS and database evidence is in [`deployment_security.md`](deployment_security.md).
+This is an evaluation deployment using synthetic data only. Render Free web instances may sleep,
+and the Free Postgres resource is limited and temporary; no clinical compliance, PHI readiness, or
+production operational guarantee is claimed.

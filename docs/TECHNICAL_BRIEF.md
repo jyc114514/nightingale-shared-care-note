@@ -109,15 +109,19 @@ production PHI audio, or ASR accuracy claim.
 The production readiness path uses a multi-stage Docker build, same-origin FastAPI static serving,
 Alembic-before-seed startup, secure production settings, one Free Render Web Service, and one Free
 Render Postgres database. Render is configured for `LLM_PROVIDER=fixture` and
-`VOICE_PROVIDER=disabled`. Actual hosted URL, migration/seed smoke, TLS, and encryption-at-rest
-evidence remain dependent on the external deployment attempt.
+`VOICE_PROVIDER=disabled`. The external deployment now runs against Render PostgreSQL 18 at
+`https://nightingale-shared-care-note.onrender.com`; migration/seed, HTTPS, and provider
+encryption evidence are recorded separately. The platform-generated demo password was not read
+for this audit, so authenticated production login remains a follow-up.
 
 ## 5. Evidence, trade-offs, and remaining boundary
 
 Implemented and independently checked at the Phase 9 local checkpoint:
 
-- Backend: **81 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
-  Alembic head `0009_voice_capture`, including fresh, legacy, downgrade/re-upgrade, and `alembic check`.
+- Backend: **82 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
+  Alembic head `0010_postgres_compat`, including fresh, legacy, downgrade/re-upgrade, and
+  `alembic check`. A real PostgreSQL 18 GitHub Actions gate also passed the full migration chain,
+  schema/FK assertions, seed idempotency, and the backend suite.
 - Frontend: **21 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
 - Browser: **16 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
   provenance persistence, distinguishable original-record rows, contextual comments/tasks,
@@ -133,9 +137,9 @@ The central trade-off remains trust over automation. Materialized reads and the 
 make the default prototype reproducible; the optional adapter adds network, balance, provider-data
 processing, and latency dependencies. SSE is invalidation only, not simultaneous character editing;
 CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience, not
-deployment. Hosted PostgreSQL, TLS/encryption-at-rest, model quality, production retention/deletion
-policy, final video, and human UX-01 sign-off remain unclaimed; the current Render track is an
-attempt/readiness path until external smoke evidence exists.
+deployment. Render PostgreSQL, HTTPS/TLS, and provider encryption-at-rest evidence are now
+recorded for the synthetic evaluation deployment. Model quality, production retention/deletion
+policy, an authenticated hosted login smoke, final video, and human UX-01 sign-off remain open.
 
 ## Demo scenarios
 
