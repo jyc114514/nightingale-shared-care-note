@@ -137,3 +137,46 @@ the task drawer, Glance-to-source navigation, historical original-record scroll,
 resolve/unresolve, and Clinician diff/revert. Detailed step timings and replacements are recorded
 in [`demo_rehearsal.md`](demo_rehearsal.md). The live database contains only synthetic rehearsal
 mutations and is not described as a pristine seed.
+
+## Final release-candidate deployment and online verification - 2026-08-27
+
+The application commits were pushed to the existing private GitHub repository after the local
+secret/commit check. Render reused the existing Web Service and Postgres resource; no new resource
+or paid plan was created. The latest deployed commit is `42a01b6` (`fix: normalize legacy
+suggestion labels in the UI`) and its existing-service deploy `dep-da84vcp5efls73dm07vg` is Live.
+The preceding local Voice/history fix `1779407` was also deployed as
+`dep-da84pac9v7es73a35t5g` and reached Live before the final display-only correction.
+
+The final online browser checks used the same HTTPS host and manually authenticated synthetic
+sessions. No password, cookie, environment value, database URL, API key, or raw log content was
+read or recorded.
+
+- Staff: `Staff A`, `Staff view`, `Record status: Up to date`; Glance cards showed content,
+  action/state, risk flag, and priority. `Open source` navigated to the matching timeline entry;
+  `Close source` removed the source selection while retaining the patient query parameter. The
+  Comments drawer, Task drawer, and Staff History all opened on the final deployment. The one
+  authorized online mutating action created one synthetic Voice suggestion, which reached
+  `Suggestion status: Ready for review`.
+- Staff Voice: the 24-second WAV loaded with `readyState=4`, no media error, and a prepared three-
+  segment transcript. Clicking the second segment moved playback to exactly `8.0` seconds.
+  `View source` showed `Original source` and the exact highlighted quote tied to saved version 1.
+- Clinician: the page showed `Clinician A` and `Clinician view`. The 24-second Voice audio loaded;
+  the Clinician plan History showed `Current`, `Compare`, and `Revert`, and Compare displayed
+  Before/After. The Glance source for `Unresolved cardiology referral` opened with a matching mark.
+  No edit, save, revert, accept, or reject action was executed in this verification.
+- Patient: the page showed `Sarah Patient`, `Patient view`, and `Your care summary`. Only two
+  patient-facing timeline records and the `patient follow-up` Voice sample were visible. The
+  patient audio loaded with `readyState=4`, 24-second metadata, and no media error. No Comments,
+  History, Assign task, Edit, Accept, Reject, View source, Open source, internal Glance, raw
+  suggestion text, or team discussion appeared in the Patient projection.
+
+The final online screenshots are stored as local, ignored evidence:
+
+- [Staff Voice result](../../artifacts/gate-b/online-voice-result.png)
+- [Staff Voice source](../../artifacts/gate-b/online-voice-source.png)
+- [Clinician workspace](../../artifacts/gate-b/online-clinician.png)
+- [Patient privacy projection](../../artifacts/gate-b/online-patient.png)
+
+This verification confirms the deployed fixture and privacy paths; it does not claim live DeepSeek,
+ASR inference, diarization, ambient microphone support, clinical validation, or a final recorded
+video.

@@ -2,16 +2,17 @@
 
 Rehearsal date: 2026-08-27
 Deployed URL: `https://nightingale-shared-care-note.onrender.com`
-Observed deployed commit: `e766fe9`
+Final observed deployed commit: `42a01b6`
+Historical rehearsal commit: `e766fe9`
 UI language used for the rehearsal: English
 
 This document maps the candidate brief to what can be shown in a short demo. It separates
 authenticated production rehearsal from local automated evidence. It does not turn a demo
 observation into a claim of clinical validation.
 
-The product-language polish in this phase is a local release-candidate change. The deployed
-rehearsal commit `e766fe9` and its screenshots remain historical evidence until an explicitly
-authorized release push; the current recording materials use the labels listed below.
+The original `e766fe9` rehearsal and its screenshots remain historical evidence. The final
+release-candidate UI was pushed as `42a01b6` and verified on the same HTTPS service; the final
+online addendum below supersedes only the old pending-deployment wording.
 
 ## Evidence legend
 
@@ -70,3 +71,19 @@ provide reliable evidence for them:
 
 These boundaries preserve the distinction between what the prototype implements locally and what
 the final video can honestly demonstrate from the deployed UI.
+
+## Final release-candidate online addendum - 2026-08-27
+
+The final online pass used the Live `42a01b6` deployment `dep-da84vcp5efls73dm07vg` and manual
+English Staff, Clinician, and Patient sessions. It confirmed the product-language labels used by
+the recording materials: `Record status: Up to date`, `Glance View`, `Voice note`, `Ready for
+review`, `Original source`, `Team discussion`, `Current`, `Compare`, `Before`, `After`, `Patient
+view`, and `Your care summary`.
+
+The Staff Voice path produced one authorized synthetic suggestion, sought the second transcript
+segment to `8.0s`, and opened the exact immutable source span. Clinician History/Compare and the
+Glance source path passed without a write action. Patient projection showed two patient-facing
+timeline records and patient Voice only; internal buttons and raw suggestion text were absent.
+The final online evidence and screenshot paths are recorded in
+[`docs/evidence/demo_rehearsal.md`](evidence/demo_rehearsal.md) and
+[`docs/evidence/deployment_security.md`](evidence/deployment_security.md).

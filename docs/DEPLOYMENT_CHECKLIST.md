@@ -16,6 +16,9 @@ Status: **Render deployment live with synthetic evaluation limitations documente
 - [x] Successful Voice fixture deploys `dep-da7t9tjl550s73cvmhgg` (Auto-Deploy) and
       `dep-da7t9u0chk0s73c7dbl0` (Blueprint sync) from commit `e766fe9` are Live at
       `https://nightingale-shared-care-note.onrender.com`.
+- [x] Final release-candidate commits `1779407` and `42a01b6` were pushed to the same private
+      repository. The latest existing-service deploy `dep-da84vcp5efls73dm07vg` from `42a01b6`
+      is Live; no duplicate Render resource was created.
 - [x] HTTP-to-HTTPS redirect, HTTPS `/health`, SPA root, unauthenticated `401`, migration/seed
       logs, and PostgreSQL schema evidence are recorded in
       [`deployment_security.md`](evidence/deployment_security.md).
@@ -30,8 +33,8 @@ Status: **Render deployment live with synthetic evaluation limitations documente
       the repository, logs, screenshots, or this record.
 - [x] `COOKIE_SECURE=true` and the exact HTTPS Origin are declared in the deployed Blueprint;
       local production validation fails closed when secure settings are missing.
-- [ ] Perform an authenticated production login smoke with the platform-generated demo password.
-      This audit intentionally did not read or transmit that secret.
+- [x] Perform an authenticated production login smoke with the platform-generated demo password
+      entered manually by the user. The audit did not read, print, or transmit that secret.
 - [ ] Re-run the warm-path benchmark against the hosted PostgreSQL/service topology.
 - [ ] Verify backups, restore, retention, deletion, incident response, and access review with the
       provider.
@@ -52,5 +55,6 @@ Official references: [Blueprint specification](https://render.com/docs/blueprint
 - [x] Redaction and schema validation remain server-side, with explicit provider failure behavior.
 - [x] Voice remains Level C fixture-only locally and is enabled on Render only through the fixture
       provider; no ASR inference, microphone, upload, or diarization is deployed.
-- [ ] Complete authenticated online Voice smoke with both clinical and patient sessions; the
-      browser session available during this deployment audit had expired.
+- [x] Complete authenticated online Voice smoke with Staff, Clinician, and Patient sessions. The
+      final check confirmed the Staff suggestion/source path, Clinician audio availability, and
+      Patient-only audio/privacy projection; no microphone, upload, ASR, or diarization was used.

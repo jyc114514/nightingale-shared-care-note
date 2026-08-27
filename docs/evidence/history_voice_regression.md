@@ -66,3 +66,30 @@ Screenshots:
   `4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5`.
 - Render, GitHub, PDF, ZIP, MANIFEST, providers, RBAC, and privacy configuration were not changed
   by this fix.
+
+## Final online release-candidate verification - 2026-08-27
+
+The deployed UI was rechecked after `1779407` and the final display-only correction `42a01b6`; the
+latest existing Render service deploy was `dep-da84vcp5efls73dm07vg` and was Live.
+
+- Staff History rendered aligned version/date/action columns with the current row labelled
+  `Current`; earlier rows exposed `Compare` and `Revert`.
+- Staff Voice created one synthetic suggestion with explicit `Ready for review` status. The 24-
+  second audio loaded without a media error, transcript segment 2 moved the player to exactly
+  `8.0` seconds, and `View source` displayed the immutable source and exact marked quote.
+- Clinician History exposed `Current`, `Compare`, and `Revert`; Compare rendered Before/After.
+  Clinician Voice audio metadata loaded at 24 seconds. No Clinician write action was performed.
+- Patient Voice exposed only the `patient follow-up` sample. Its 24-second audio metadata loaded
+  without error, while patient timeline projection contained two patient-facing records and no
+  internal comments, task, history, edit, review, or source controls.
+
+Online screenshots:
+
+- [Staff Voice result](../../artifacts/gate-b/online-voice-result.png)
+- [Staff Voice source](../../artifacts/gate-b/online-voice-source.png)
+- [Clinician workspace](../../artifacts/gate-b/online-clinician.png)
+- [Patient privacy projection](../../artifacts/gate-b/online-patient.png)
+
+The local frontend count after `42a01b6` was `37 passed` (33 App tests and 4 API tests); the
+backend regression and static checks remained green. This section is online evidence and does not
+replace the local History/Voice regression tests.

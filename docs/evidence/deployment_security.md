@@ -103,3 +103,38 @@ environment value, database URL, raw log line, or provider key.
 The browser rehearsal also recorded a one-refresh fallback for an initially stale Comments state;
 after refresh the drawer opened, remained visible beyond five seconds, and closed through its
 explicit control. Full step evidence is in [`demo_rehearsal.md`](demo_rehearsal.md).
+
+## Final release-candidate online addendum - 2026-08-27
+
+The earlier statements that the product-language and authenticated Voice checks were pending are
+historical. After the final UI correction, the existing HTTPS service was verified on the Live
+`42a01b6` deployment (`dep-da84vcp5efls73dm07vg`). The preceding `1779407` deployment
+(`dep-da84pac9v7es73a35t5g`) also reached Live. Both used the existing Render Web Service and
+Postgres; no new resource was created.
+
+The user manually authenticated sequential English Staff, Clinician, and Patient sessions. The
+browser automation did not inspect cookies, passwords, storage, environment values, database URLs,
+or provider keys.
+
+- Staff Voice created one user-authorized synthetic suggestion. The result was `Ready for review`,
+  the audio metadata was 24 seconds with `readyState=4`, transcript segment 2 sought to exactly
+  `8.0` seconds, and `View source` displayed the original source plus the exact highlighted span.
+- Staff Source, Comments, Task, and History opened on the final deployment. History retained the
+  aligned `Current` row, and the Comments drawer showed the existing synthetic mention comment.
+- Clinician showed `Clinician view`; its audio metadata was ready, History exposed `Current`,
+  `Compare`, and `Revert`, Compare showed Before/After, and a Glance source opened with the
+  expected highlighted quote. No Clinician write action was executed.
+- Patient showed `Patient view` and `Your care summary`, only patient-facing timeline records, and
+  the patient Voice sample. The player metadata was ready at 24 seconds with no media error. The
+  patient DOM contained zero buttons named `Comments`, `History`, `Assign task`, `Edit`, `Accept`,
+  `Reject`, `View source`, or `Open source`; no internal Glance, raw suggestion, or team discussion
+  text was present.
+- The final normal English workflow scan found zero occurrences of the developer/provider terms
+  `Level-C`, `fixture`, `mock-transcript-fixture`, `precomputed-v1`, `Python code-point`,
+  `SHA-256`, `source_entry_id`, `source_version_id`, `expected_version`, `actual_version`, `CAS`,
+  `metadata-only`, `migration`, `Alembic`, `cookie session`, `Fixture suggestion`, `No action
+  label`, and `No action state`.
+
+The browser checks are product and privacy evidence for a synthetic evaluation deployment. They do
+not upgrade the result to live LLM/ASR, ambient Voice, clinical production readiness, or a provider-
+independent cryptographic audit.

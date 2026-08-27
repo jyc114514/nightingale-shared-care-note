@@ -81,3 +81,33 @@ The planned short demo is reproducible with the documented fallbacks and covers 
 deployed path. UX-01 is closed by the separate independent participant result; this browser
 rehearsal is not presented as a second participant study. It also does not claim full ambient Voice,
 ASR, diarization, clinical validation, or a final recorded video.
+
+## Final release-candidate online verification - 2026-08-27
+
+This addendum records the final online pass after the existing Render service deployed `42a01b6`
+as `dep-da84vcp5efls73dm07vg`. It supersedes only the older “pending login” statements; earlier
+rehearsal results remain historical. The user manually authenticated each session, and no password,
+cookie, environment value, database URL, API key, or raw log content was read or recorded.
+
+| Role | Verified online result | Mutation boundary |
+| --- | --- | --- |
+| Staff A | `Staff view` and `Record status: Up to date`; Glance, Source, Comments, Task, and History opened. One user-authorized `Create care-note suggestion` action produced `Ready for review`; the 24-second audio loaded, transcript segment 2 sought to exactly `8.0s`, and `View source` showed the exact highlighted immutable source span. | One new synthetic Voice suggestion only; no note/comment/task/review mutation in this final pass. |
+| Clinician A | `Clinician view`; 24-second Voice audio metadata loaded. Clinician plan History showed `Current`, `Compare`, and `Revert`; Compare showed Before/After. The Glance source for `Unresolved cardiology referral` opened with the matching mark. | Read-only; no Edit, Save, Revert, Accept, or Reject. |
+| Sarah Patient | `Patient view`, `Your care summary`, two patient-facing timeline records, and only `patient follow-up` Voice. Patient audio metadata loaded at 24 seconds with no media error. | Read-only; no processing, source navigation, or internal-control attempt. |
+
+The Patient DOM contained zero buttons named `Comments`, `History`, `Assign task`, `Edit`, `Accept`,
+`Reject`, `View source`, or `Open source`; it also contained no internal Glance, raw suggestion, or
+team discussion text. The final normal English Staff DOM scan found zero occurrences of the recorded
+developer/provider terms listed in [`ui_product_language_audit.md`](ui_product_language_audit.md).
+
+Final online screenshots:
+
+- [Staff Voice result](../../artifacts/gate-b/online-voice-result.png)
+- [Staff Voice source](../../artifacts/gate-b/online-voice-source.png)
+- [Clinician workspace](../../artifacts/gate-b/online-clinician.png)
+- [Patient privacy projection](../../artifacts/gate-b/online-patient.png)
+
+This pass confirms the deployed synthetic demo path and the server-side Patient projection. It does
+not claim a final recorded video, live ASR/DeepSeek, diarization, microphone support, clinical
+validation, or a pristine database; the one authorized Voice creation is recorded as synthetic
+rehearsal state.

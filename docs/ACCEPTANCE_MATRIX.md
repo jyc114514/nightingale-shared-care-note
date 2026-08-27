@@ -271,6 +271,21 @@ has reached Render until the separately authorized push/deploy is completed.
 Phase 9.6 is local-only. It does not push GitHub, trigger Render, regenerate delivery artifacts, or
 change the backend Voice route, provider, authorization, or database schema.
 
+## Phase 9.7 / final Render release-candidate verification - 2026-08-27
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-9.7-DEPLOY | Final application commit `42a01b6` is Live on the existing Render Web Service as deploy `dep-da84vcp5efls73dm07vg`; the existing Postgres resource and private GitHub repository were reused | passed | [deployment evidence](evidence/deployment_attempt.md), [security evidence](evidence/deployment_security.md) |
+| PHASE-9.7-ONLINE-VOICE | Authenticated Staff Voice suggestion creation, 24-second audio, exact 8-second transcript seek, and immutable source navigation passed; Clinician audio/source path and Patient-only Voice listing passed | passed | [online rehearsal](evidence/demo_rehearsal.md), [History/Voice evidence](evidence/history_voice_regression.md), [online screenshots](../artifacts/gate-b/) |
+| PHASE-9.7-ONLINE-ROLES | Clinician History/Compare/Before-After and Staff Comments/Task/History/Source passed; Patient showed only two patient-facing timeline records and no internal controls | passed | [online rehearsal](evidence/demo_rehearsal.md), [security evidence](evidence/deployment_security.md) |
+| PHASE-9.7-PRODUCT-LANGUAGE | Final online English DOM scan found no recorded developer/provider terms in the normal workflow; Staff, Clinician, and Patient product labels were visible | passed | [UI product-language audit](evidence/ui_product_language_audit.md) |
+| PHASE-9.7-DELIVERY | Chinese operator instructions, English narration, subtitles, state prep, and QA checklist are ready; final video, refreshed PDF, ZIP, and MANIFEST remain intentionally pending | in progress | [operator runbook](DEMO_OPERATOR_RUNBOOK_ZH.md), [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [video QA](DEMO_VIDEO_QA.md) |
+
+Phase 9.7 confirms the final deployed synthetic evaluation path. It does not claim live DeepSeek,
+ASR inference, diarization, ambient microphone support, clinical production readiness, or a final
+recorded video. The earlier Phase 9 rows retain their historical commit-specific evidence; this
+section records the newer release-candidate deployment.
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

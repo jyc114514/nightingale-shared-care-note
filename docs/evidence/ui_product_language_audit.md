@@ -8,10 +8,10 @@ This audit checks that contestant-facing surfaces describe user value first whil
 technical facts needed for trust, debugging, and review. It does not delete provenance data, change
 RBAC, change the database model, or describe the prepared Voice transcript as ASR output.
 
-The product-language changes are local at this point. The last observed Render rehearsal commit was
-`e766fe9`; its screenshots and online observations remain historical until an explicitly authorized
-release push. The after screenshots below were generated from the local Alembic-migrated, seeded
-Playwright environment.
+The original product-language audit and its `e766fe9` observations are retained as historical local
+release-candidate evidence. The final online verification after the authorized release push is
+recorded at the end of this document. The after screenshots below were generated from the local
+Alembic-migrated, seeded Playwright environment.
 
 ## Before / after mapping
 
@@ -75,7 +75,8 @@ password, API key, database URL, environment value, cookie, or raw log.
 
 ## Automated checks
 
-- Frontend product-language/unit suite: `28 passed`.
+- Frontend Vitest suite after the final display-only correction: `37 passed` (33 App tests and 4
+  API tests), including the product-language assertions.
 - Frontend lint, Prettier, TypeScript build/type-check: passed.
 - Gate B browser suite: `14 passed` across desktop `1440×900` and mobile `390×844`.
 - Voice browser suite: `4 passed` across desktop and mobile.
@@ -93,3 +94,32 @@ password, API key, database URL, environment value, cookie, or raw log.
   evidence; the local product-language screenshots are not additional UX-01 participants.
 - The final video, final PDF refresh, final ZIP/MANIFEST, and external release are intentionally not
   claimed by this audit.
+
+## Final online product-language verification - 2026-08-27
+
+The existing Render service was checked after final commit `42a01b6` and Live deploy
+`dep-da84vcp5efls73dm07vg`. The normal English Staff workflow showed `Record status: Up to date`,
+`Glance View`, `Voice note`, `Care note suggestion`, `Original source`, `Team discussion`, and
+`Historical summary` without exposing implementation identifiers in the primary workflow.
+
+The browser DOM scan found zero occurrences of these deliberately hidden developer/provider terms:
+`Level-C`, `fixture`, `mock-transcript-fixture`, `precomputed-v1`, `Python code-point`, `SHA-256`,
+`source_entry_id`, `source_version_id`, `expected_version`, `actual_version`, `CAS`,
+`metadata-only`, `migration`, `Alembic`, `cookie session`, `Fixture suggestion`, `No action label`,
+and `No action state`.
+
+Role-specific product wording was also checked:
+
+- Clinician: `Clinician A`, `Clinician view`, `Current`, `Compare`, and `Before`/`After`.
+- Patient: `Sarah Patient`, `Patient view`, and `Your care summary`; no internal workflow labels or
+  raw care-note suggestion text appeared.
+
+Online screenshots are kept as local ignored evidence:
+
+- [Staff Voice result](../../artifacts/gate-b/online-voice-result.png)
+- [Staff Voice source](../../artifacts/gate-b/online-voice-source.png)
+- [Clinician workspace](../../artifacts/gate-b/online-clinician.png)
+- [Patient privacy projection](../../artifacts/gate-b/online-patient.png)
+
+This confirms the deployed product-language surface at the final commit. It does not claim that
+clinical note prose was translated or that a live LLM/ASR provider is present.
