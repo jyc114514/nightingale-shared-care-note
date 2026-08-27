@@ -158,9 +158,7 @@ class FasterWhisperProvider:
                 segments=tuple(segments),
                 language=str(getattr(info, "language", "en")),
                 language_probability=(
-                    float(language_probability)
-                    if language_probability is not None
-                    else None
+                    float(language_probability) if language_probability is not None else None
                 ),
                 word_timestamps_available=word_timestamps_available,
                 confidence_available=confidence_available,
