@@ -177,6 +177,37 @@ type ExactSpanResult =
   | { valid: true; before: string; quote: string; after: string }
   | { valid: false; reason: string };
 
+const legacySuggestionPrefix = "Fixture suggestion: ";
+const productSuggestionPrefix = "Care note suggestion: ";
+
+export function productizeSuggestionText(text: string) {
+  return text.startsWith(legacySuggestionPrefix)
+    ? productSuggestionPrefix + text.slice(legacySuggestionPrefix.length)
+    : text;
+}
+
+export function productizeProvenanceSource(source: ProvenanceSource) {
+  if (!source.version_content.startsWith(legacySuggestionPrefix)) {
+    return source;
+  }
+  const legacyCodepoints = Array.from(source.version_content);
+  const quoteAtStoredSpan = legacyCodepoints
+    .slice(source.start_offset, source.end_offset)
+    .join("");
+  const storedPrefixLength = Array.from(legacySuggestionPrefix).length;
+  const displayedPrefixLength = Array.from(productSuggestionPrefix).length;
+  const offsetDelta =
+    quoteAtStoredSpan === source.quote
+      ? displayedPrefixLength - storedPrefixLength
+      : 0;
+  return {
+    ...source,
+    version_content: productizeSuggestionText(source.version_content),
+    start_offset: source.start_offset + offsetDelta,
+    end_offset: source.end_offset + offsetDelta,
+  };
+}
+
 export function exactCodepointSpan(
   text: string,
   quote: string,
@@ -914,6 +945,7 @@ function SourcePanel({
       </section>
     );
   }
+  const displaySource = productizeProvenanceSource(source);
   return (
     <section
       className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5"
@@ -961,10 +993,10 @@ function SourcePanel({
       </dl>
       <blockquote className="mt-4 rounded-xl border border-blue-100 bg-white p-4 text-sm leading-7 text-slate-800">
         <ExactSpanView
-          text={source.version_content}
-          quote={source.quote}
-          startOffset={source.start_offset}
-          endOffset={source.end_offset}
+          text={displaySource.version_content}
+          quote={displaySource.quote}
+          startOffset={displaySource.start_offset}
+          endOffset={displaySource.end_offset}
         />
       </blockquote>
       <details
@@ -1002,6 +1034,7 @@ function SourcePanel({
 
 function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
   const { t } = useI18n();
+  const displaySource = productizeProvenanceSource(source);
   return (
     <section
       className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
@@ -1028,10 +1061,10 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
       <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-800">
         <span data-testid="source-rendered-text">
           <ExactSpanView
-            text={source.version_content}
-            quote={source.quote}
-            startOffset={source.start_offset}
-            endOffset={source.end_offset}
+            text={displaySource.version_content}
+            quote={displaySource.quote}
+            startOffset={displaySource.start_offset}
+            endOffset={displaySource.end_offset}
           />
         </span>
       </div>
@@ -1442,7 +1475,7 @@ function HistoryPanel({
                   <span className="font-semibold">
                     {t("history.conflict.current")}
                   </span>{" "}
-                  {entry.content}
+                  {productizeSuggestionText(entry.content)}
                 </p>
                 <p className="mt-1">
                   <span className="font-semibold">
@@ -3729,7 +3762,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                         </div>
                       ) : (
                         <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                          {entry.content}
+                          {productizeSuggestionText(entry.content)}
                         </p>
                       )}
                       {source?.source_entry_id === entry.id && (

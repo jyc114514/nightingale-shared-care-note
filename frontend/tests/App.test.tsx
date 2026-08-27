@@ -10,9 +10,15 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { App, exactCodepointSpan, scrollToElement } from "../src/App";
+import {
+  App,
+  exactCodepointSpan,
+  productizeProvenanceSource,
+  productizeSuggestionText,
+  scrollToElement,
+} from "../src/App";
 import { en, zhCN } from "../src/i18n";
-import type { Me, Patient, Version } from "../src/types";
+import type { Me, Patient, ProvenanceSource, Version } from "../src/types";
 
 const staffUser: Me = {
   id: "staff-user",
@@ -432,6 +438,28 @@ describe("Gate B shared care note", () => {
     expect(invalid).toMatchObject({ valid: false });
   });
 
+  it("productizes legacy suggestion prefixes without breaking source offsets", () => {
+    const rawText = "Fixture suggestion: Pending renal panel";
+    const quote = "Pending renal panel";
+    const storedStart = Array.from("Fixture suggestion: ").length;
+    const source = {
+      version_content: rawText,
+      quote,
+      start_offset: storedStart,
+      end_offset: storedStart + Array.from(quote).length,
+    } as ProvenanceSource;
+    const displayed = productizeProvenanceSource(source);
+    expect(productizeSuggestionText(rawText)).toBe(
+      "Care note suggestion: Pending renal panel",
+    );
+    expect(displayed.start_offset).toBe(storedStart + 2);
+    expect(
+      Array.from(displayed.version_content)
+        .slice(displayed.start_offset, displayed.end_offset)
+        .join(""),
+    ).toBe(quote);
+  });
+
   it("keeps bilingual dictionaries in parity and localizes chrome only", async () => {
     expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
     mockAuthenticatedApi(staffUser, { endOffset: 19 });
@@ -439,7 +467,7 @@ describe("Gate B shared care note", () => {
     expect(await screen.findByText("Shared Care Note")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "简体中文" }));
     expect(screen.getByText("共享照护记录")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-scribe-panel")).toHaveTextContent(
+    expect(await screen.findByTestId("ai-scribe-panel")).toHaveTextContent(
       "AI 辅助记录",
     );
     const localizedSourceButtons = await screen.findAllByRole("button", {
