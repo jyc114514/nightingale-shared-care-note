@@ -28,6 +28,47 @@ const apiBaseUrl = (
   configuredApiBaseUrl ?? (import.meta.env.DEV ? "http://localhost:8000" : "")
 ).replace(/\/$/, "");
 
+function safeAudioPathSegment(value: string) {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) {
+    throw new Error("audio_path_invalid");
+  }
+  return encodeURIComponent(value);
+}
+
+export function voiceAudioRequestUrl(
+  patientId: string,
+  sampleId: string,
+  baseUrl = apiBaseUrl,
+) {
+  const patientPath = safeAudioPathSegment(patientId);
+  const samplePath = safeAudioPathSegment(sampleId);
+  const normalizedBaseUrl = baseUrl.replace(/\/$/, "");
+  return `${normalizedBaseUrl}/patients/${patientPath}/voice/samples/${samplePath}/audio`;
+}
+
+async function loadVoiceAudio(
+  patientId: string,
+  sampleId: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await fetch(voiceAudioRequestUrl(patientId, sampleId), {
+    credentials: "include",
+    signal,
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, {});
+  }
+  const contentType = response.headers
+    .get("content-type")
+    ?.split(";", 1)[0]
+    .trim()
+    .toLowerCase();
+  if (contentType !== "audio/wav" && contentType !== "audio/x-wav") {
+    throw new Error("audio_content_type_invalid");
+  }
+  return response.blob();
+}
+
 export class ApiError extends Error {
   readonly status: number;
   readonly body: ApiErrorShape;
@@ -188,8 +229,8 @@ export const api = {
   voiceProvider: () => request<VoiceProviderInfo>("/voice/provider"),
   voiceSamples: (patientId: string) =>
     request<VoiceSample[]>(`/patients/${patientId}/voice/samples`),
-  voiceAudioUrl: (patientId: string, sampleId: string) =>
-    `${apiBaseUrl}/patients/${patientId}/voice/samples/${sampleId}/audio`,
+  loadVoiceAudio: (patientId: string, sampleId: string, signal?: AbortSignal) =>
+    loadVoiceAudio(patientId, sampleId, signal),
   createVoiceSession: (
     patientId: string,
     payload: { sample_id: string; idempotency_key: string },

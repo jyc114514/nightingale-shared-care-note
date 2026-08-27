@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App, exactCodepointSpan, scrollToElement } from "../src/App";
 import { en, zhCN } from "../src/i18n";
-import type { Me, Patient } from "../src/types";
+import type { Me, Patient, Version } from "../src/types";
 
 const staffUser: Me = {
   id: "staff-user",
@@ -154,6 +154,17 @@ function response(payload: unknown, status = 200) {
   };
 }
 
+function audioResponse(status = 200, contentType = "audio/wav") {
+  const blob = new Blob(["RIFF synthetic audio"], { type: contentType });
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Headers({ "content-type": contentType }),
+    blob: async () => blob,
+    text: async () => "",
+  };
+}
+
 function renderApp() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -179,6 +190,10 @@ function mockAuthenticatedApi(
     voiceProviderResponse?: unknown;
     voiceSamplesResponse?: unknown;
     voiceSessionResponse?: unknown;
+    voiceAudioStatus?: number;
+    voiceAudioContentType?: string;
+    voiceAudioDelayMs?: number;
+    versionsResponse?: Version[];
   } = {},
 ) {
   let timelineCallCount = 0;
@@ -212,6 +227,17 @@ function mockAuthenticatedApi(
         return response(sourceOptions.voiceProviderResponse ?? {});
       if (url.endsWith("/voice/samples"))
         return response(sourceOptions.voiceSamplesResponse ?? []);
+      if (url.includes("/voice/samples/") && url.endsWith("/audio")) {
+        if (sourceOptions.voiceAudioDelayMs) {
+          await new Promise((resolve) =>
+            window.setTimeout(resolve, sourceOptions.voiceAudioDelayMs),
+          );
+        }
+        return audioResponse(
+          sourceOptions.voiceAudioStatus ?? 200,
+          sourceOptions.voiceAudioContentType ?? "audio/wav",
+        );
+      }
       if (url.endsWith("/voice/sessions") && init?.method === "POST")
         return response(sourceOptions.voiceSessionResponse ?? {});
       if (url.endsWith("/ai-processing/provider"))
@@ -298,7 +324,8 @@ function mockAuthenticatedApi(
           );
         return response([]);
       }
-      if (url.includes("/versions")) return response([]);
+      if (url.includes("/versions"))
+        return response(sourceOptions.versionsResponse ?? []);
       if (url.includes("/conflicts")) return response([]);
       if (url.endsWith("/auth/logout")) return response(undefined, 204);
       if (init?.method === "POST" || init?.method === "PATCH")
@@ -358,11 +385,31 @@ describe("Gate B shared care note", () => {
     window.history.replaceState({}, "", "/");
     window.localStorage.clear();
     document.documentElement.lang = "en-SG";
+    if (typeof URL.createObjectURL !== "function") {
+      Object.defineProperty(URL, "createObjectURL", {
+        configurable: true,
+        writable: true,
+        value: () => "",
+      });
+    }
+    if (typeof URL.revokeObjectURL !== "function") {
+      Object.defineProperty(URL, "revokeObjectURL", {
+        configurable: true,
+        writable: true,
+        value: () => undefined,
+      });
+    }
+    let objectUrlCounter = 0;
+    vi.spyOn(URL, "createObjectURL").mockImplementation(
+      () => `blob:nightingale-test-${++objectUrlCounter}`,
+    );
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it("renders exact non-BMP codepoint occurrences and rejects approximate spans", () => {
@@ -560,7 +607,7 @@ describe("Gate B shared care note", () => {
   });
 
   it("shows a Voice note with segments and source navigation", async () => {
-    mockAuthenticatedApi(staffUser, {
+    const fetchMock = mockAuthenticatedApi(staffUser, {
       voiceProviderResponse: {
         provider_name: "mock-transcript-fixture",
         model: "precomputed-v1",
@@ -611,6 +658,14 @@ describe("Gate B shared care note", () => {
             text: "This is a synthetic nurse follow-up.",
             confidence: null,
           },
+          {
+            id: "voice-segment-1",
+            segment_index: 1,
+            start_ms: 8000,
+            end_ms: 16000,
+            text: "The scheduled laboratory review remains pending.",
+            confidence: null,
+          },
         ],
       },
     });
@@ -629,6 +684,28 @@ describe("Gate B shared care note", () => {
     expect(voiceAbout).toHaveTextContent(
       "pre-recorded synthetic care conversation and a prepared timestamped transcript",
     );
+    const audio = within(panel).getByTestId("voice-audio");
+    const audioCall = await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([input]) =>
+        String(input).endsWith(
+          "/patients/patient-a/voice/samples/nurse-follow-up/audio",
+        ),
+      );
+      expect(call).toBeDefined();
+      return call;
+    });
+    expect(audioCall?.[1]).toMatchObject({ credentials: "include" });
+    expect(audio).toHaveAttribute("data-audio-state", "loading");
+    fireEvent.loadedMetadata(audio);
+    expect(audio).toHaveAttribute("data-audio-state", "ready");
+    let currentTime = 0;
+    Object.defineProperty(audio, "currentTime", {
+      configurable: true,
+      get: () => currentTime,
+      set: (value: number) => {
+        currentTime = value;
+      },
+    });
     fireEvent.click(
       within(panel).getByRole("button", {
         name: "Create care-note suggestion",
@@ -638,6 +715,8 @@ describe("Gate B shared care note", () => {
     expect(result).toHaveTextContent("Suggestion status: Ready for review");
     expect(result).toHaveTextContent("This is a synthetic nurse follow-up.");
     expect(result).not.toHaveTextContent("ASR confidence");
+    fireEvent.click(within(result).getByTestId("voice-segment-1"));
+    expect(currentTime).toBe(8);
     fireEvent.click(
       within(result).getByRole("button", { name: "View source" }),
     );
@@ -709,6 +788,124 @@ describe("Gate B shared care note", () => {
       "Suggestion status: Ready for review",
     );
     expect(screen.queryByRole("button", { name: "View source" })).toBeNull();
+  });
+
+  it("shows a safe audio loading error in English and Chinese", async () => {
+    const sample = {
+      sample_id: "nurse-follow-up",
+      label: "Synthetic nurse follow-up",
+      scope: "clinical" as const,
+      interaction_type: "ai_nurse_consult_summary",
+      duration_ms: 24000,
+      audio_url: "/ignored-relative-audio-url",
+      provider_disclosure: "internal test disclosure",
+    };
+    mockAuthenticatedApi(staffUser, {
+      voiceProviderResponse: { enabled: true },
+      voiceSamplesResponse: [sample],
+      voiceAudioStatus: 503,
+    });
+    renderApp();
+    const englishError = await screen.findByTestId("voice-audio-error");
+    expect(englishError).toHaveTextContent(
+      "This audio sample could not be loaded.",
+    );
+    expect(englishError).not.toHaveTextContent("503");
+    expect(englishError).not.toHaveTextContent("localhost:8000");
+
+    cleanup();
+    window.history.replaceState({}, "", "/?lang=zh-CN");
+    mockAuthenticatedApi(staffUser, {
+      voiceProviderResponse: { enabled: true },
+      voiceSamplesResponse: [sample],
+      voiceAudioStatus: 503,
+    });
+    renderApp();
+    const chineseError = await screen.findByTestId("voice-audio-error");
+    expect(chineseError).toHaveTextContent("这段音频暂时无法加载。");
+    expect(chineseError).not.toHaveTextContent("503");
+    expect(chineseError).not.toHaveTextContent("localhost:8000");
+  });
+
+  it("revokes audio object URLs when switching samples and unmounting", async () => {
+    const samples = [
+      {
+        sample_id: "nurse-follow-up",
+        label: "Synthetic nurse follow-up",
+        scope: "clinical" as const,
+        interaction_type: "ai_nurse_consult_summary",
+        duration_ms: 24000,
+        audio_url: "/ignored-nurse-audio-url",
+        provider_disclosure: "internal test disclosure",
+      },
+      {
+        sample_id: "patient-follow-up",
+        label: "Synthetic patient follow-up",
+        scope: "patient" as const,
+        interaction_type: "ai_patient_session_summary",
+        duration_ms: 24000,
+        audio_url: "/ignored-patient-audio-url",
+        provider_disclosure: "internal test disclosure",
+      },
+    ];
+    mockAuthenticatedApi(staffUser, {
+      voiceProviderResponse: { enabled: true },
+      voiceSamplesResponse: samples,
+    });
+    const rendered = renderApp();
+    const panel = await screen.findByTestId("voice-panel");
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
+    fireEvent.change(within(panel).getByLabelText("Choose a conversation"), {
+      target: { value: "patient-follow-up" },
+    });
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(2));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:nightingale-test-1");
+    rendered.unmount();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:nightingale-test-2");
+  });
+
+  it("ignores a stale audio response after switching samples", async () => {
+    const samples = [
+      {
+        sample_id: "nurse-follow-up",
+        label: "Synthetic nurse follow-up",
+        scope: "clinical" as const,
+        interaction_type: "ai_nurse_consult_summary",
+        duration_ms: 24000,
+        audio_url: "/ignored-nurse-audio-url",
+        provider_disclosure: "internal test disclosure",
+      },
+      {
+        sample_id: "patient-follow-up",
+        label: "Synthetic patient follow-up",
+        scope: "patient" as const,
+        interaction_type: "ai_patient_session_summary",
+        duration_ms: 24000,
+        audio_url: "/ignored-patient-audio-url",
+        provider_disclosure: "internal test disclosure",
+      },
+    ];
+    const fetchMock = mockAuthenticatedApi(staffUser, {
+      voiceProviderResponse: { enabled: true },
+      voiceSamplesResponse: samples,
+      voiceAudioDelayMs: 20,
+    });
+    const rendered = renderApp();
+    const panel = await screen.findByTestId("voice-panel");
+    fireEvent.change(within(panel).getByLabelText("Choose a conversation"), {
+      target: { value: "patient-follow-up" },
+    });
+    await waitFor(() => expect(URL.createObjectURL).toHaveBeenCalledTimes(1));
+    expect(
+      fetchMock.mock.calls.filter(([input]) =>
+        String(input).includes("/audio"),
+      ),
+    ).toHaveLength(2);
+    expect(screen.getByTestId("voice-audio")).toHaveAttribute(
+      "src",
+      "blob:nightingale-test-1",
+    );
+    rendered.unmount();
   });
 
   it("restores saved locale while URL locale takes precedence", async () => {
@@ -812,6 +1009,60 @@ describe("Gate B shared care note", () => {
       6,
     );
     expect(screen.getAllByRole("button", { name: "Comments" }).length).toBe(2);
+  });
+
+  it("keeps History rows on aligned columns and labels the current row", async () => {
+    const versions: Version[] = [
+      {
+        id: "version-staff-1",
+        entry_id: "entry-staff",
+        version_number: 1,
+        content: "Original staff note.",
+        created_by_user_id: "staff-user",
+        created_by_role: "staff",
+        base_version: 0,
+        reverted_from_version: null,
+        created_at: "2026-08-24T08:00:00Z",
+      },
+      {
+        id: "version-staff-2",
+        entry_id: "entry-staff",
+        version_number: 2,
+        content: "Pending renal panel requires coordination.",
+        created_by_user_id: "staff-user",
+        created_by_role: "staff",
+        base_version: 1,
+        reverted_from_version: null,
+        created_at: "2026-08-25T08:00:00Z",
+      },
+    ];
+    mockAuthenticatedApi(staffUser, { versionsResponse: versions });
+    renderApp();
+    const staffCard = await screen.findByTestId("timeline-entry-entry-staff");
+    fireEvent.click(within(staffCard).getByRole("button", { name: "History" }));
+    const history = await within(staffCard).findByRole("region", {
+      name: "History",
+    });
+    const rows = within(history).getAllByTestId(/^history-row-/);
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.className).toContain(
+        "sm:grid-cols-[minmax(0,1fr)_minmax(10rem,auto)_9rem]",
+      );
+    }
+    const previousRow = within(history).getByTestId("history-row-1");
+    expect(
+      within(previousRow).getByRole("button", { name: "Compare" }),
+    ).toBeInTheDocument();
+    expect(
+      within(previousRow).getByRole("button", { name: "Revert" }),
+    ).toBeInTheDocument();
+    const currentRow = within(history).getByTestId("history-row-2");
+    expect(currentRow).toHaveAttribute("data-current", "true");
+    expect(
+      within(currentRow).getByTestId("history-current-row-label"),
+    ).toHaveTextContent("Current");
+    expect(within(currentRow).queryAllByRole("button")).toHaveLength(0);
   });
 
   it("keeps implementation language out of the primary product surfaces", async () => {

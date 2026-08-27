@@ -34,13 +34,48 @@ test.describe.configure({ mode: "serial" });
 test("Voice note clinical flow exposes segments and source navigation", async ({
   page,
 }) => {
+  const consoleErrors: string[] = [];
+  const errorResponses: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      errorResponses.push(
+        response.status() + " " + new URL(response.url()).pathname,
+      );
+    }
+  });
+  const audioResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname;
+    return (
+      response.request().method() === "GET" &&
+      /\/voice\/samples\/[^/]+\/audio$/.test(pathname)
+    );
+  });
   await login(page, "clinician.a@clinic-a.test");
+  const audioResponse = await audioResponsePromise;
+  consoleErrors.length = 0;
+  errorResponses.length = 0;
+  expect(audioResponse.status()).toBe(200);
+  expect(audioResponse.headers()["content-type"]).toMatch(/^audio\/wav/);
+  expect(new URL(audioResponse.url()).port).toBe("8000");
   const voice = page.getByTestId("voice-panel");
   await expect(voice).toBeVisible();
   await expect(voice).toContainText("Review a pre-recorded care conversation");
   await expect(voice).toContainText("nurse follow-up");
   await expect(voice).not.toContainText("mock-transcript-fixture");
-  await expect(voice.getByTestId("voice-audio")).toBeVisible();
+  const audio = voice.getByTestId("voice-audio");
+  await expect(audio).toBeVisible();
+  await expect(audio).toHaveAttribute("data-audio-state", "ready");
+  const audioMetadata = await audio.evaluate((element) => ({
+    readyState: (element as HTMLAudioElement).readyState,
+    duration: (element as HTMLAudioElement).duration,
+    src: (element as HTMLAudioElement).src,
+  }));
+  expect(audioMetadata.readyState).toBeGreaterThanOrEqual(1);
+  expect(audioMetadata.duration).toBeGreaterThan(0);
+  expect(audioMetadata.src).toMatch(/^blob:/);
   await voice
     .getByRole("button", { name: "Create care-note suggestion" })
     .click();
@@ -53,7 +88,16 @@ test("Voice note clinical flow exposes segments and source navigation", async ({
     path: screenshotPath(test.info().project.name, "voice-clinical.png"),
     fullPage: false,
   });
-  const audio = voice.getByTestId("voice-audio");
+  await audio.click();
+  await audio.evaluate(async (element) => {
+    await (element as HTMLAudioElement).play();
+  });
+  await expect
+    .poll(() =>
+      audio.evaluate((element) => (element as HTMLAudioElement).currentTime),
+    )
+    .toBeGreaterThan(0);
+  await audio.evaluate((element) => (element as HTMLAudioElement).pause());
   await result.getByTestId("voice-segment-1").click();
   await expect
     .poll(() =>
@@ -64,19 +108,59 @@ test("Voice note clinical flow exposes segments and source navigation", async ({
   await expect(
     page.getByRole("region", { name: "Original source", exact: true }),
   ).toBeVisible();
+  await expect(audio).toHaveJSProperty("error", null);
+  expect({ consoleErrors, errorResponses }).toEqual({
+    consoleErrors: [],
+    errorResponses: [],
+  });
 });
 
 test("Voice note patient flow exposes only the patient sample", async ({
   page,
 }) => {
+  const consoleErrors: string[] = [];
+  const errorResponses: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") consoleErrors.push(message.text());
+  });
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      errorResponses.push(
+        response.status() + " " + new URL(response.url()).pathname,
+      );
+    }
+  });
+  const audioResponsePromise = page.waitForResponse((response) => {
+    const pathname = new URL(response.url()).pathname;
+    return (
+      response.request().method() === "GET" &&
+      /\/voice\/samples\/[^/]+\/audio$/.test(pathname)
+    );
+  });
   await login(page, "sarah.patient@clinic-a.test");
+  const audioResponse = await audioResponsePromise;
+  consoleErrors.length = 0;
+  errorResponses.length = 0;
+  expect(audioResponse.status()).toBe(200);
+  expect(audioResponse.headers()["content-type"]).toMatch(/^audio\/wav/);
+  expect(new URL(audioResponse.url()).port).toBe("8000");
   const voice = page.getByTestId("voice-panel");
   await expect(voice).toBeVisible();
   await expect(voice).toContainText("Review a pre-recorded care conversation");
   await expect(voice).toContainText("patient follow-up");
   await expect(voice).not.toContainText("nurse follow-up");
   await expect(voice).not.toContainText("mock-transcript-fixture");
-  await expect(voice.getByTestId("voice-audio")).toBeVisible();
+  const audio = voice.getByTestId("voice-audio");
+  await expect(audio).toBeVisible();
+  await expect(audio).toHaveAttribute("data-audio-state", "ready");
+  const audioMetadata = await audio.evaluate((element) => ({
+    readyState: (element as HTMLAudioElement).readyState,
+    duration: (element as HTMLAudioElement).duration,
+    src: (element as HTMLAudioElement).src,
+  }));
+  expect(audioMetadata.readyState).toBeGreaterThanOrEqual(1);
+  expect(audioMetadata.duration).toBeGreaterThan(0);
+  expect(audioMetadata.src).toMatch(/^blob:/);
   await expect(voice.getByRole("button", { name: /microphone/i })).toHaveCount(
     0,
   );
@@ -97,5 +181,20 @@ test("Voice note patient flow exposes only the patient sample", async ({
   await page.screenshot({
     path: screenshotPath(test.info().project.name, "voice-patient.png"),
     fullPage: false,
+  });
+  await audio.click();
+  await audio.evaluate(async (element) => {
+    await (element as HTMLAudioElement).play();
+  });
+  await expect
+    .poll(() =>
+      audio.evaluate((element) => (element as HTMLAudioElement).currentTime),
+    )
+    .toBeGreaterThan(0);
+  await audio.evaluate((element) => (element as HTMLAudioElement).pause());
+  await expect(audio).toHaveJSProperty("error", null);
+  expect({ consoleErrors, errorResponses }).toEqual({
+    consoleErrors: [],
+    errorResponses: [],
   });
 });

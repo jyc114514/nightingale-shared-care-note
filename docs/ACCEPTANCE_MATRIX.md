@@ -261,6 +261,16 @@ unreproducible in the deployed rehearsal.
 Phase 9.5 is a local release-candidate change. It does not claim that the product-language update
 has reached Render until the separately authorized push/deploy is completed.
 
+## Phase 9.6 / local History and Voice regression fixes - 2026-08-27
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-9.6-HISTORY | Every History row uses aligned version/date/action columns; current rows retain a `Current`/`当前` status slot; English/Chinese desktop and mobile checks pass | passed | [App.tsx](../frontend/src/App.tsx), [App.test.tsx](../frontend/tests/App.test.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [regression evidence](evidence/history_voice_regression.md) |
+| PHASE-9.6-VOICE | Local Voice fetches an authenticated WAV through the API host, creates/revokes Blob URLs safely, exposes loading/error states, and proves actual playback plus 8-second transcript seeking for clinical/patient paths | passed | [api.ts](../frontend/src/api.ts), [App.tsx](../frontend/src/App.tsx), [api.test.ts](../frontend/tests/api.test.ts), [App.test.tsx](../frontend/tests/App.test.tsx), [voice.spec.ts](../frontend/tests/e2e/voice.spec.ts), [regression evidence](evidence/history_voice_regression.md) |
+
+Phase 9.6 is local-only. It does not push GitHub, trigger Render, regenerate delivery artifacts, or
+change the backend Voice route, provider, authorization, or database schema.
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

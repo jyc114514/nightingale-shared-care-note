@@ -231,6 +231,10 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await staffCard.getByRole("button", { name: "History" }).click();
   const history = staffCard.getByRole("region", { name: "History" });
   await expect(history).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "history-open.png"),
+    fullPage: false,
+  });
 
   const revisedContent =
     "Staff revision " + testInfo.project.name + " " + Date.now();
@@ -263,6 +267,13 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   ).toBeVisible();
   await expect(history).toContainText("Version " + (entry.currentVersion + 2));
   await expect(history).toContainText("Version 1");
+  await page.screenshot({
+    path: screenshotPath(
+      testInfo.project.name,
+      "history-open-after-revert.png",
+    ),
+    fullPage: false,
+  });
 
   const staffSourceCard = page
     .getByTestId("glance-item")
@@ -535,7 +546,7 @@ test("Patient privacy - cookie patient sees only patient-facing entries and inte
 
 test("Chinese chrome keeps source data and provenance controls usable", async ({
   page,
-}) => {
+}, testInfo) => {
   await login(page, "staff.a@clinic-a.test");
   await page.getByRole("button", { name: "简体中文" }).click();
   await expect(page.getByText("共享照护记录")).toBeVisible();
@@ -561,6 +572,25 @@ test("Chinese chrome keeps source data and provenance controls usable", async ({
   ).toHaveCount(0);
   await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
   expect(new URL(page.url()).searchParams.has("highlight")).toBe(false);
+  const chineseEntry = await staffEntry(page);
+  const chineseStaffCard = page.getByTestId(
+    "timeline-entry-" + chineseEntry.id,
+  );
+  await chineseStaffCard
+    .getByRole("button", { name: "历史", exact: true })
+    .click();
+  const chineseHistory = chineseStaffCard.getByRole("region", {
+    name: "历史记录",
+    exact: true,
+  });
+  await expect(chineseHistory).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "history-chinese.png"),
+    fullPage: false,
+  });
+  await chineseStaffCard
+    .getByRole("button", { name: "隐藏历史", exact: true })
+    .click();
 });
 
 test("Demo preview uses real internal viewports without recursive controls", async ({

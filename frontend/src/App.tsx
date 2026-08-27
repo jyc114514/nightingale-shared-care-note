@@ -1351,39 +1351,50 @@ function HistoryPanel({
         <h3 className="text-sm font-bold text-slate-800">
           {t("history.title")}
         </h3>
-        <Pill>{t("history.current", { version: entry.current_version })}</Pill>
       </div>
       <div className="mt-3 space-y-2">
         {versions.map((version) => (
           <div
             key={version.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-2 text-xs"
+            className="grid grid-cols-1 items-start gap-2 rounded-lg bg-white p-2 text-xs sm:grid-cols-[minmax(0,1fr)_minmax(10rem,auto)_9rem] sm:items-center"
+            data-current={version.version_number === entry.current_version}
+            data-testid={`history-row-${version.version_number}`}
           >
-            <span className="font-semibold text-slate-700">
+            <span className="min-w-0 font-semibold text-slate-700">
               {t("history.versionRole", {
                 version: version.version_number,
                 role: t(roleKeys[version.created_by_role] ?? "role.system"),
               })}
             </span>
-            <span className="text-slate-400">
+            <span className="text-slate-400 sm:justify-self-start">
               {formatDate(version.created_at, locale)}
             </span>
-            <div className="flex gap-1">
+            <div className="flex min-h-8 items-center gap-1 sm:w-[9rem] sm:justify-end sm:gap-1">
               {version.version_number !== entry.current_version && (
-                <Button
-                  kind="quiet"
-                  onClick={() => onDiff(version.version_number)}
-                >
-                  {t("history.compare")}
-                </Button>
+                <>
+                  <Button
+                    kind="quiet"
+                    onClick={() => onDiff(version.version_number)}
+                  >
+                    {t("history.compare")}
+                  </Button>
+                  {canEdit && (
+                    <Button
+                      kind="quiet"
+                      onClick={() => onRevert(version.version_number)}
+                    >
+                      {t("history.revert")}
+                    </Button>
+                  )}
+                </>
               )}
-              {canEdit && version.version_number !== entry.current_version && (
-                <Button
-                  kind="quiet"
-                  onClick={() => onRevert(version.version_number)}
+              {version.version_number === entry.current_version && (
+                <span
+                  className="text-right font-semibold text-slate-400"
+                  data-testid="history-current-row-label"
                 >
-                  {t("history.revert")}
-                </Button>
+                  {t("history.currentRow")}
+                </span>
               )}
             </div>
           </div>
@@ -2097,6 +2108,7 @@ function voiceSampleLabel(sample: VoiceSample) {
 }
 
 function VoicePanel({
+  patientId,
   samples,
   session,
   busy,
@@ -2104,6 +2116,7 @@ function VoicePanel({
   onProcess,
   onOpenSource,
 }: {
+  patientId: string;
   samples: VoiceSample[];
   session: VoiceSession | null;
   busy: boolean;
@@ -2120,6 +2133,13 @@ function VoicePanel({
     samples.find((sample) => sample.sample_id === selectedSampleId) ??
     samples[0] ??
     null;
+  const selectedSampleKey = selectedSample?.sample_id ?? null;
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioState, setAudioState] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [audioLoadError, setAudioLoadError] = useState<string | null>(null);
+  const audioObjectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!samples.some((sample) => sample.sample_id === selectedSampleId)) {
@@ -2127,9 +2147,66 @@ function VoicePanel({
     }
   }, [samples, selectedSampleId]);
 
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const previousUrl = audioObjectUrlRef.current;
+    if (previousUrl && typeof URL.revokeObjectURL === "function") {
+      URL.revokeObjectURL(previousUrl);
+      audioObjectUrlRef.current = null;
+    } else if (previousUrl) {
+      audioObjectUrlRef.current = null;
+    }
+    setAudioUrl(null);
+    setAudioLoadError(null);
+    setAudioState("loading");
+
+    if (!selectedSampleKey) {
+      setAudioState("error");
+      return () => controller.abort();
+    }
+
+    void api
+      .loadVoiceAudio(patientId, selectedSampleKey, controller.signal)
+      .then((blob) => {
+        if (!active) return;
+        if (typeof URL.createObjectURL !== "function") {
+          throw new Error("audio_object_url_unavailable");
+        }
+        const nextUrl = URL.createObjectURL(blob);
+        audioObjectUrlRef.current = nextUrl;
+        setAudioUrl(nextUrl);
+      })
+      .catch((loadError) => {
+        if (
+          !active ||
+          (loadError instanceof DOMException && loadError.name === "AbortError")
+        ) {
+          return;
+        }
+        setAudioState("error");
+        setAudioLoadError(t("voice.audioLoadError"));
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+      const currentUrl = audioObjectUrlRef.current;
+      if (currentUrl && typeof URL.revokeObjectURL === "function") {
+        URL.revokeObjectURL(currentUrl);
+        audioObjectUrlRef.current = null;
+      } else if (currentUrl) {
+        audioObjectUrlRef.current = null;
+      }
+    };
+  }, [patientId, selectedSampleKey, t]);
+
   function seekTo(segment: TranscriptSegment) {
-    if (audioRef.current)
-      audioRef.current.currentTime = segment.start_ms / 1000;
+    if (!audioRef.current || audioState !== "ready") {
+      setAudioLoadError(t("voice.audioNotReady"));
+      return;
+    }
+    audioRef.current.currentTime = segment.start_ms / 1000;
   }
 
   return (
@@ -2188,15 +2265,44 @@ function VoicePanel({
           </label>
           <audio
             ref={audioRef}
-            controls
+            controls={audioState === "ready"}
             preload="metadata"
-            src={selectedSample.audio_url}
+            src={audioUrl ?? undefined}
             aria-label={t("voice.audioLabel", {
               label: voiceSampleLabel(selectedSample),
             })}
+            aria-busy={audioState === "loading"}
+            onLoadedMetadata={() => {
+              setAudioState("ready");
+              setAudioLoadError(null);
+            }}
+            onError={() => {
+              setAudioState("error");
+              setAudioLoadError(t("voice.audioLoadError"));
+            }}
             className="w-full"
             data-testid="voice-audio"
+            data-audio-state={audioState}
           />
+          {audioState === "loading" && (
+            <p
+              className="text-xs text-slate-600"
+              role="status"
+              aria-live="polite"
+              data-testid="voice-audio-loading"
+            >
+              {t("voice.audioLoading")}
+            </p>
+          )}
+          {audioLoadError && (
+            <p
+              className="text-xs text-rose-700"
+              role="alert"
+              data-testid="voice-audio-error"
+            >
+              {audioLoadError}
+            </p>
+          )}
           <p className="text-xs text-slate-600">
             {t("voice.duration", {
               duration: formatVoiceTime(selectedSample.duration_ms),
@@ -3257,6 +3363,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             patientId &&
             voiceSamples.length > 0 && (
               <VoicePanel
+                patientId={patientId}
                 samples={voiceSamples}
                 session={voiceSession}
                 busy={voiceBusy}
