@@ -13,6 +13,7 @@ depends_on = None
 def upgrade() -> None:
     """Extend existing Gate A rows without replacing immutable history."""
 
+    is_postgresql = op.get_bind().dialect.name == "postgresql"
     op.add_column("entries", sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("entries", sa.Column("source_kind", sa.String(length=40), nullable=True))
     op.add_column("entries", sa.Column("source_reference", sa.String(length=200), nullable=True))
@@ -40,7 +41,7 @@ def upgrade() -> None:
             "'ai_patient_session_summary') AND source_reference IS NULL"
         )
     )
-    if op.get_bind().dialect.name == "postgresql":
+    if is_postgresql:
         # PostgreSQL can alter these columns in place. Recreate-always would
         # try to drop entries_pkey while entry_versions/comments/conflicts
         # still reference it during a fresh deployment.
@@ -61,20 +62,51 @@ def upgrade() -> None:
             batch.alter_column("occurred_at", nullable=False)
             batch.alter_column("source_kind", nullable=False)
 
-    with op.batch_alter_table("comments", recreate="always") as batch:
-        batch.add_column(sa.Column("parent_comment_id", sa.String(length=36), nullable=True))
-        batch.add_column(sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True))
-        batch.add_column(sa.Column("resolved_by_user_id", sa.String(length=36), nullable=True))
-        batch.add_column(sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True))
-        batch.create_foreign_key(
-            "fk_comments_parent_comment_id", "comments", ["parent_comment_id"], ["id"]
+    if is_postgresql:
+        # Keep the original comments primary key in place while adding the self-reference.
+        # PostgreSQL rejects Alembic's recreate-always temp-table path because it drops
+        # comments_pkey before the new table can reference comments(id).
+        op.add_column(
+            "comments", sa.Column("parent_comment_id", sa.String(length=36), nullable=True)
         )
-        batch.create_foreign_key(
-            "fk_comments_resolved_by_user_id", "users", ["resolved_by_user_id"], ["id"]
+        op.add_column(
+            "comments", sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True)
         )
+        op.add_column(
+            "comments", sa.Column("resolved_by_user_id", sa.String(length=36), nullable=True)
+        )
+        op.add_column(
+            "comments", sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True)
+        )
+        op.create_foreign_key(
+            "fk_comments_parent_comment_id", "comments", "comments", ["parent_comment_id"], ["id"]
+        )
+        op.create_foreign_key(
+            "fk_comments_resolved_by_user_id", "comments", "users", ["resolved_by_user_id"], ["id"]
+        )
+    else:
+        with op.batch_alter_table("comments", recreate="always") as batch:
+            batch.add_column(sa.Column("parent_comment_id", sa.String(length=36), nullable=True))
+            batch.add_column(sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=True))
+            batch.add_column(sa.Column("resolved_by_user_id", sa.String(length=36), nullable=True))
+            batch.add_column(sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True))
+            batch.create_foreign_key(
+                "fk_comments_parent_comment_id", "comments", ["parent_comment_id"], ["id"]
+            )
+            batch.create_foreign_key(
+                "fk_comments_resolved_by_user_id", "users", ["resolved_by_user_id"], ["id"]
+            )
     op.execute(sa.text("UPDATE comments SET updated_at = created_at WHERE updated_at IS NULL"))
-    with op.batch_alter_table("comments", recreate="always") as batch:
-        batch.alter_column("updated_at", nullable=False)
+    if is_postgresql:
+        op.alter_column(
+            "comments",
+            "updated_at",
+            existing_type=sa.DateTime(timezone=True),
+            nullable=False,
+        )
+    else:
+        with op.batch_alter_table("comments", recreate="always") as batch:
+            batch.alter_column("updated_at", nullable=False)
     op.create_index("ix_comments_parent_comment_id", "comments", ["parent_comment_id"])
 
     op.create_table(
@@ -121,14 +153,26 @@ def downgrade() -> None:
         op.drop_index(f"ix_highlights_{column}", table_name="highlights")
     op.drop_table("highlights")
     op.drop_index("ix_comments_parent_comment_id", table_name="comments")
-    with op.batch_alter_table("comments", recreate="always") as batch:
-        batch.drop_constraint("fk_comments_parent_comment_id", type_="foreignkey")
-        batch.drop_constraint("fk_comments_resolved_by_user_id", type_="foreignkey")
-        batch.drop_column("parent_comment_id")
-        batch.drop_column("resolved_at")
-        batch.drop_column("resolved_by_user_id")
-        batch.drop_column("updated_at")
-    with op.batch_alter_table("entries", recreate="always") as batch:
-        batch.drop_column("occurred_at")
-        batch.drop_column("source_kind")
-        batch.drop_column("source_reference")
+    is_postgresql = op.get_bind().dialect.name == "postgresql"
+    if is_postgresql:
+        op.drop_constraint("fk_comments_parent_comment_id", "comments", type_="foreignkey")
+        op.drop_constraint("fk_comments_resolved_by_user_id", "comments", type_="foreignkey")
+        op.drop_column("comments", "parent_comment_id")
+        op.drop_column("comments", "resolved_at")
+        op.drop_column("comments", "resolved_by_user_id")
+        op.drop_column("comments", "updated_at")
+        op.drop_column("entries", "occurred_at")
+        op.drop_column("entries", "source_kind")
+        op.drop_column("entries", "source_reference")
+    else:
+        with op.batch_alter_table("comments", recreate="always") as batch:
+            batch.drop_constraint("fk_comments_parent_comment_id", type_="foreignkey")
+            batch.drop_constraint("fk_comments_resolved_by_user_id", type_="foreignkey")
+            batch.drop_column("parent_comment_id")
+            batch.drop_column("resolved_at")
+            batch.drop_column("resolved_by_user_id")
+            batch.drop_column("updated_at")
+        with op.batch_alter_table("entries", recreate="always") as batch:
+            batch.drop_column("occurred_at")
+            batch.drop_column("source_kind")
+            batch.drop_column("source_reference")
