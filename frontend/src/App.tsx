@@ -332,11 +332,17 @@ function ContextualDrawer({
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const explicitCloseRef = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  const requestClose = () => {
+    explicitCloseRef.current = true;
+    onCloseRef.current();
+  };
 
   useEffect(() => {
     if (!open) return;
+    explicitCloseRef.current = false;
     previousFocusRef.current = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -349,7 +355,7 @@ function ContextualDrawer({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onCloseRef.current();
+        requestClose();
         return;
       }
       if (event.key !== "Tab" || !panelRef.current) return;
@@ -374,7 +380,8 @@ function ContextualDrawer({
       window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      previousFocusRef.current?.focus();
+      if (explicitCloseRef.current) previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
     };
   }, [initialFocusRef, open]);
 
@@ -385,7 +392,7 @@ function ContextualDrawer({
       className="fixed inset-0 z-40 bg-slate-950/35"
       data-testid={`${testId}-backdrop`}
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <section
@@ -404,7 +411,7 @@ function ContextualDrawer({
           <Button
             kind="quiet"
             buttonRef={closeButtonRef}
-            onClick={onClose}
+            onClick={requestClose}
             ariaLabel={closeLabel}
           >
             {closeLabel}
@@ -2319,8 +2326,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const commentsInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
   const commentsRequestRef = useRef(0);
+  const commentsEntryIdRef = useRef<string | null>(null);
+  const editingEntryIdRef = useRef<string | null>(null);
+  const translationRef = useRef(t);
   const taskTitleInputRef = useRef<HTMLInputElement>(null);
   const taskReturnFocusRef = useRef<HTMLElement | null>(null);
+  commentsEntryIdRef.current = commentsEntryId;
+  editingEntryIdRef.current = editingEntryId;
+  translationRef.current = t;
 
   useEffect(() => {
     let active = true;
@@ -2343,14 +2356,17 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   }, [user.id]);
 
   useEffect(() => {
-    if (!patientId) return;
-    let active = true;
-    setLoading(true);
-    setLoadError(null);
+    commentsRequestRef.current += 1;
+    commentsEntryIdRef.current = null;
+    editingEntryIdRef.current = null;
+    commentsReturnFocusRef.current = null;
+    taskReturnFocusRef.current = null;
     setSource(null);
     setContext(null);
     setCollaborators([]);
     setTasks([]);
+    setTimeline([]);
+    setGlance([]);
     setTaskSource(null);
     setTaskDrawerOpen(false);
     setTaskFocusId(null);
@@ -2360,7 +2376,25 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setSourceLoading(false);
     setFocusEntryId(null);
     setCommentsEntryId(null);
+    setComments([]);
     setCommentsError(null);
+    setReplyTo(null);
+    setCommentBusy(false);
+    setHistoryEntryId(null);
+    setVersions([]);
+    setDiff(null);
+    setConflicts([]);
+    setEditingEntryId(null);
+    setEditingText("");
+    setRemoteUpdatePending(false);
+    setMutationError(null);
+  }, [patientId, internal, user.id]);
+
+  useEffect(() => {
+    if (!patientId) return;
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
     const requestedHighlightId = new URLSearchParams(
       window.location.search,
     ).get("highlight");
@@ -2389,6 +2423,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           tasksResult,
         ]) => {
           if (!active) return;
+          const activeCommentEntryId = commentsEntryIdRef.current;
+          if (
+            activeCommentEntryId &&
+            !timelineResult.some((entry) => entry.id === activeCommentEntryId)
+          ) {
+            commentsRequestRef.current += 1;
+            commentsEntryIdRef.current = null;
+            setCommentsEntryId(null);
+            setComments([]);
+            setCommentsError(null);
+            setReplyTo(null);
+            setCommentBusy(false);
+            setMutationError(
+              translationRef.current("comments.entryUnavailable"),
+            );
+          }
           setTimeline(timelineResult);
           setGlance(glanceResult);
           setContext(contextResult);
@@ -2509,20 +2559,23 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         const payload = JSON.parse((event as MessageEvent<string>).data) as {
           resource_type?: string;
         };
-        if (payload.resource_type === "comment" && commentsEntryId) {
+        const activeCommentsEntryId = commentsEntryIdRef.current;
+        if (payload.resource_type === "comment" && activeCommentsEntryId) {
           void api
-            .comments(commentsEntryId)
+            .comments(activeCommentsEntryId)
             .then(setComments)
-            .catch((error) => setCommentsError(displayError(error, t)));
+            .catch((error) =>
+              setCommentsError(displayError(error, translationRef.current)),
+            );
           return;
         }
         if (payload.resource_type === "task") {
           void refreshTasksAndGlance().catch((error) =>
-            setLoadError(displayError(error, t)),
+            setLoadError(displayError(error, translationRef.current)),
           );
           return;
         }
-        if (editingEntryId) {
+        if (editingEntryIdRef.current) {
           setRemoteUpdatePending(true);
         } else {
           setRefreshToken((value) => value + 1);
@@ -2532,7 +2585,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       }
     });
     return () => stream.close();
-  }, [patientId, internal, commentsEntryId, editingEntryId]);
+  }, [patientId, internal, user.id]);
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === patientId),
@@ -2704,6 +2757,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   function openComments(entryId: string) {
     commentsReturnFocusRef.current =
       document.activeElement as HTMLElement | null;
+    commentsEntryIdRef.current = entryId;
     const requestId = commentsRequestRef.current + 1;
     commentsRequestRef.current = requestId;
     setMutationError(null);
@@ -2727,6 +2781,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   }
 
   function closeComments() {
+    commentsEntryIdRef.current = null;
     setCommentsEntryId(null);
     setCommentsError(null);
     setReplyTo(null);
@@ -2911,6 +2966,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         entry.current_version,
         editingText.trim(),
       );
+      editingEntryIdRef.current = null;
       setEditingEntryId(null);
       setRemoteUpdatePending(false);
       setRefreshToken((value) => value + 1);
@@ -3068,6 +3124,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               onChange={(event) => {
                 const nextPatientId = event.target.value;
                 setPatientId(nextPatientId);
+                commentsEntryIdRef.current = null;
+                editingEntryIdRef.current = null;
                 setSource(null);
                 setFocusEntryId(null);
                 window.history.replaceState(
@@ -3527,6 +3585,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             <Button
                               kind="quiet"
                               onClick={() => {
+                                editingEntryIdRef.current = null;
                                 setEditingEntryId(null);
                                 setRemoteUpdatePending(false);
                               }}
@@ -3576,6 +3635,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           <Button
                             kind="quiet"
                             onClick={() => {
+                              editingEntryIdRef.current = entry.id;
                               setEditingEntryId(entry.id);
                               setEditingText(entry.content);
                             }}

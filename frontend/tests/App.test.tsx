@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App, exactCodepointSpan, scrollToElement } from "../src/App";
 import { en, zhCN } from "../src/i18n";
-import type { Me } from "../src/types";
+import type { Me, Patient } from "../src/types";
 
 const staffUser: Me = {
   id: "staff-user",
@@ -170,6 +170,8 @@ function mockAuthenticatedApi(
   sourceOptions: {
     startOffset?: number;
     endOffset?: number;
+    patients?: Patient[];
+    timelineAfterRefresh?: typeof timeline;
     commentsDelayMs?: number;
     commentsStatus?: number;
     aiProviderResponse?: unknown;
@@ -179,14 +181,22 @@ function mockAuthenticatedApi(
     voiceSessionResponse?: unknown;
   } = {},
 ) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  let timelineCallCount = 0;
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.endsWith("/auth/me")) return response(user);
-      if (url.endsWith("/patients")) return response([patient]);
+      if (url.endsWith("/patients"))
+        return response(sourceOptions.patients ?? [patient]);
       if (url.endsWith("/context")) return response(context);
-      if (url.endsWith("/timeline")) return response(timeline);
+      if (url.endsWith("/timeline")) {
+        timelineCallCount += 1;
+        return response(
+          sourceOptions.timelineAfterRefresh && timelineCallCount > 1
+            ? sourceOptions.timelineAfterRefresh
+            : timeline,
+        );
+      }
       if (url.endsWith("/glance")) return response(glance);
       if (url.endsWith("/mentionable-users"))
         return response([
@@ -294,8 +304,53 @@ function mockAuthenticatedApi(
       if (init?.method === "POST" || init?.method === "PATCH")
         return response({});
       return response({});
-    }),
+    },
   );
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function installFakeEventSource() {
+  let constructorCount = 0;
+  let latestStream: {
+    emit: (resourceType: string) => void;
+  } | null = null;
+
+  class FakeEventSource {
+    onopen: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    private collaborationListener:
+      ((event: MessageEvent<string>) => void) | null = null;
+
+    constructor() {
+      constructorCount += 1;
+      latestStream = {
+        emit: (resourceType: string) => this.emit(resourceType),
+      };
+      queueMicrotask(() => this.onopen?.());
+    }
+
+    addEventListener(
+      type: string,
+      listener: (event: MessageEvent<string>) => void,
+    ) {
+      if (type === "collaboration") this.collaborationListener = listener;
+    }
+
+    close() {}
+
+    emit(resourceType: string) {
+      this.collaborationListener?.({
+        data: JSON.stringify({ resource_type: resourceType }),
+      } as MessageEvent<string>);
+    }
+  }
+
+  vi.stubGlobal("EventSource", FakeEventSource);
+  return {
+    count: () => constructorCount,
+    emit: (resourceType: string) => latestStream?.emit(resourceType),
+  };
 }
 
 describe("Gate B shared care note", () => {
@@ -799,8 +854,162 @@ describe("Gate B shared care note", () => {
 
     mockAuthenticatedApi(staffUser, { commentsStatus: 500 });
     fireEvent.click(commentsButton);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
     expect(await screen.findByTestId("comments-error")).toHaveTextContent(
       "Comments request failed",
+    );
+  });
+
+  it("keeps Comments open across refreshes without reconnecting SSE", async () => {
+    const eventSource = installFakeEventSource();
+    const fetchMock = mockAuthenticatedApi(staffUser, {
+      commentsDelayMs: 40,
+    });
+    renderApp();
+    const commentsButton = (
+      await screen.findAllByRole("button", { name: "Comments" })
+    )[0];
+    fireEvent.click(commentsButton);
+    const drawer = screen.getByTestId("comments-drawer");
+    const body = await screen.findByLabelText("Comment body");
+    body.focus();
+    expect(eventSource.count()).toBe(1);
+
+    eventSource.emit("entry");
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).endsWith("/timeline"),
+        ).length,
+      ).toBeGreaterThan(1),
+    );
+    expect(drawer).toBeVisible();
+    expect(document.activeElement).toBe(body);
+    await new Promise((resolve) => window.setTimeout(resolve, 3200));
+    expect(drawer).toBeVisible();
+    expect(eventSource.count()).toBe(1);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByTestId("comments-drawer")).toBeNull(),
+    );
+    const editButton = screen.getAllByRole("button", { name: "Edit" })[0];
+    fireEvent.click(editButton);
+    expect(eventSource.count()).toBe(1);
+  });
+
+  it("closes Comments when the patient scope changes", async () => {
+    mockAuthenticatedApi(staffUser, {
+      patients: [
+        patient,
+        {
+          ...patient,
+          id: "patient-b",
+          synthetic_display_name: "Jordan Lim",
+        },
+      ],
+    });
+    renderApp();
+    const commentsButton = (
+      await screen.findAllByRole("button", { name: "Comments" })
+    )[0];
+    fireEvent.click(commentsButton);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Select patient"), {
+      target: { value: "patient-b" },
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId("comments-drawer")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("closes a Comments drawer safely when refresh removes its entry", async () => {
+    const eventSource = installFakeEventSource();
+    mockAuthenticatedApi(staffUser, { timelineAfterRefresh: [] });
+    renderApp();
+    const commentsButton = (
+      await screen.findAllByRole("button", { name: "Comments" })
+    )[0];
+    fireEvent.click(commentsButton);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
+    eventSource.emit("entry");
+    await waitFor(() =>
+      expect(screen.queryByTestId("comments-drawer")).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "This entry is no longer available",
+    );
+  });
+
+  it("preserves source and task drawers during a background refresh", async () => {
+    const eventSource = installFakeEventSource();
+    const fetchMock = mockAuthenticatedApi(staffUser, { endOffset: 19 });
+    renderApp();
+    const sourceButton = (
+      await screen.findAllByRole("button", {
+        name: "Open source",
+      })
+    )[0];
+    fireEvent.click(sourceButton);
+    expect(
+      await screen.findByRole("region", { name: "Immutable source" }),
+    ).toBeInTheDocument();
+    eventSource.emit("entry");
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).endsWith("/timeline"),
+        ).length,
+      ).toBeGreaterThan(1),
+    );
+    expect(
+      screen.getByRole("region", { name: "Immutable source" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close source" }));
+    const assignButton = (
+      await screen.findAllByRole("button", { name: "Assign task" })
+    )[0];
+    fireEvent.click(assignButton);
+    expect(screen.getByTestId("task-drawer")).toBeVisible();
+    eventSource.emit("entry");
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).endsWith("/timeline"),
+        ).length,
+      ).toBeGreaterThan(2),
+    );
+    expect(screen.getByTestId("task-drawer")).toBeVisible();
+  });
+
+  it("closes Comments from a deliberate backdrop interaction", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    const commentsButton = (
+      await screen.findAllByRole("button", { name: "Comments" })
+    )[0];
+    fireEvent.click(commentsButton);
+    const backdrop = screen.getByTestId("comments-drawer-backdrop");
+    fireEvent.mouseDown(backdrop);
+    await waitFor(() =>
+      expect(screen.queryByTestId("comments-drawer")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("replaces the selected entry without flashing the Comments drawer closed", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    const commentButtons = await screen.findAllByRole("button", {
+      name: "Comments",
+    });
+    fireEvent.click(commentButtons[0]);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
+    fireEvent.click(commentButtons[1]);
+    expect(screen.getByTestId("comments-drawer")).toBeVisible();
+    expect(screen.getByTestId("comments-panel")).toHaveAttribute(
+      "data-entry-id",
+      "entry-ai",
     );
   });
 

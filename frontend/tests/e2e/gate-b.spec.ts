@@ -376,6 +376,50 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   });
 });
 
+test("Comments drawer survives realtime refresh and updates in place", async ({
+  page,
+  browser,
+}) => {
+  await login(page, "staff.a@clinic-a.test");
+  const entry = await staffEntry(page);
+  const card = page.getByTestId("timeline-entry-" + entry.id);
+  const commentsButton = card.getByRole("button", { name: "Comments" });
+  await commentsButton.click();
+  const drawer = page.getByTestId("comments-drawer");
+  await expect(drawer).toBeVisible();
+  await expect(page.getByRole("region", { name: "Comments" })).toBeVisible();
+
+  // The seed and preceding serial scenarios leave collaboration events in the stream.
+  await page.waitForTimeout(5200);
+  await expect(drawer).toBeVisible();
+  await expect(page.getByRole("region", { name: "Comments" })).toBeVisible();
+
+  const secondContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const secondPage = await secondContext.newPage();
+  try {
+    await login(secondPage, "clinician.a@clinic-a.test");
+    const secondEntry = await staffEntry(secondPage);
+    const secondComments = secondPage
+      .getByTestId("timeline-entry-" + secondEntry.id)
+      .getByRole("button", { name: "Comments" });
+    await secondComments.click();
+    const secondDrawer = secondPage.getByTestId("comments-drawer");
+    await expect(secondDrawer).toBeVisible();
+    const body = "Realtime drawer check " + Date.now();
+    await secondPage.getByLabel("Comment body").fill(body);
+    await secondDrawer.getByRole("button", { name: "Add comment" }).click();
+    await expect(secondDrawer).toContainText(body);
+    await expect(drawer).toContainText(body);
+  } finally {
+    await secondContext.close();
+  }
+
+  await drawer.getByRole("button", { name: "Close" }).click();
+  await expect(drawer).toHaveCount(0);
+});
+
 test("Scenario C - stale write returns 409 and remains visible as an optimistic conflict", async ({
   page,
 }, testInfo) => {

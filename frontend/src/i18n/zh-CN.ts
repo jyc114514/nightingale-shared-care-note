@@ -135,6 +135,7 @@ export const zhCN: TranslationDictionary = {
   "comments.internal": "内部讨论",
   "comments.loading": "正在加载评论……",
   "comments.close": "关闭",
+  "comments.entryUnavailable": "该条记录已不可用，评论面板已安全关闭。",
   "comments.noComments": "暂时没有评论。",
   "comments.reply": "回复",
   "comments.resolve": "解决",

@@ -137,6 +137,8 @@ export const en = {
   "actionState.notApplicable": "No action state",
   "comments.internal": "Internal discussion",
   "comments.close": "Close",
+  "comments.entryUnavailable":
+    "This entry is no longer available; the Comments drawer was closed safely.",
   "comments.loading": "Loading comments...",
   "comments.noComments": "No comments yet.",
   "comments.reply": "Reply",
