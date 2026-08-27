@@ -7,8 +7,8 @@ for the Render transport/database boundary, not a clinical compliance certificat
 
 - Web Service: `nightingale-shared-care-note`, Free, Singapore
 - Postgres: `nightingale-shared-care-note-db`, Free, Singapore, PostgreSQL 18, 1 GB
-- Deploy: `dep-da7ptlek1f9s73ch6910`
-- Commit: `d2a12cd`
+- Migration baseline deploy: `dep-da7ptlek1f9s73ch6910` (`d2a12cd`)
+- Comments fix deploy: `dep-da7s4v3l550s73cusqv0` (`8a46b96`)
 - URL: `https://nightingale-shared-care-note.onrender.com`
 
 ## Transport encryption
@@ -47,6 +47,11 @@ audit. The Free database is temporary and intended only for evaluation.
 - Startup validates production settings before migration and seed.
 - The public unauthenticated `/auth/me` endpoint returned `401`.
 - The sign-in screen was served from the same-origin FastAPI SPA.
+- The authenticated clinician smoke opened Comments, kept the drawer visible beyond 5 seconds,
+  loaded an existing PostgreSQL comment record, and closed it only through the explicit close
+  control. Render logs showed `/entries/{entry_id}/comments` returning `200 OK`.
+- Opening Comments did not create a new `/patients/{patient_id}/events` request in the observed
+  Render log window, consistent with the stable EventSource lifecycle fix.
 - Render startup logs contained migration/status/request metadata and synthetic seed counts only;
   no raw note text or provider response content was observed.
 - The live successful login/`Set-Cookie` path was not exercised because the seed password is a

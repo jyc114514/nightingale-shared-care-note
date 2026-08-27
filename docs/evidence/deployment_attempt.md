@@ -10,8 +10,8 @@ was created or performed.
 - Blueprint: `exs-da7p448n74is73a07s0g`
 - Web Service: `nightingale-shared-care-note` (`srv-da7p56s9v7es73f7n12g`), Free, Singapore
 - Postgres: `nightingale-shared-care-note-db` (`dpg-da7p4gk9v7es73f7l6eg-a`), Free, Singapore
-- Successful deploy: `dep-da7ptlek1f9s73ch6910`
-- Successful source: `d2a12cd`
+- Successful migration deploy: `dep-da7ptlek1f9s73ch6910` from `d2a12cd`
+- Successful Comments fix deploy: `dep-da7s4v3l550s73cusqv0` from `8a46b96`
 - Service URL: `https://nightingale-shared-care-note.onrender.com`
 - GitHub repository: `jyc114514/nightingale-shared-care-note` (private)
 
@@ -61,7 +61,8 @@ The recovery included:
 
 Render deploy logs for `dep-da7ptlek1f9s73ch6910` show `Context impl PostgresqlImpl`, all migration
 steps through `0010_postgres_compat`, successful synthetic seed counts, `Application startup
-complete`, Uvicorn listening on the Render port, and repeated `GET /health 200 OK` checks.
+complete`, Uvicorn listening on the Render port, and repeated `GET /health 200 OK` checks. The
+follow-up production Comments fix deploy `dep-da7s4v3l550s73cusqv0` from `8a46b96` is also Live.
 
 The logged seed counts were:
 
@@ -78,6 +79,11 @@ record.
 - HTTPS `/`: `200`, SPA mount present, no localhost API origin in the returned HTML.
 - Unauthenticated `/auth/me`: `401`.
 - Browser navigation to the HTTPS root displayed the sign-in screen and synthetic persona choices.
+- Authenticated clinician browser smoke on `8a46b96`: Comments opened immediately, remained open
+  after 5.5 seconds, loaded an existing PostgreSQL comment record, and closed only after the
+  explicit close control. Source, task, fixture-AI, and Voice-disabled UI checks remained usable.
+- Render application logs showed the Comments request path `/entries/{entry_id}/comments` returning
+  `200 OK`; no new `/patients/{patient_id}/events` connection appeared when the drawer opened.
 
 The production login flow was not exercised because `DEMO_SEED_PASSWORD` is a platform-generated
 secret and was intentionally neither read nor printed. `COOKIE_SECURE=true`, fixture LLM, and

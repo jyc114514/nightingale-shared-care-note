@@ -14,9 +14,9 @@ clinician review; explicit risk, display ranking, provenance, and human confirma
 
 The browser uses a real FastAPI application through credentialed cookie requests. Authorization is
 resolved server-side from clinic membership or a patient link on every protected route. The local
-database is SQLite; the Render readiness path normalizes PostgreSQL URLs to the installed psycopg
-driver, but hosted PostgreSQL is not yet claimed as deployed. The shared `ai_env` remains at Python
-3.10.20 by PM decision; the production Docker image targets Python 3.12.
+database is SQLite; the live Render service runs against the managed PostgreSQL 18 resource using
+the normalized psycopg URL path. The shared `ai_env` remains at Python 3.10.20 by PM decision; the
+production Docker image targets Python 3.12.
 
 ```text
 Browser: React + TypeScript + Vite + Tailwind
@@ -122,8 +122,8 @@ Implemented and independently checked at the Phase 9 local checkpoint:
   Alembic head `0010_postgres_compat`, including fresh, legacy, downgrade/re-upgrade, and
   `alembic check`. A real PostgreSQL 18 GitHub Actions gate also passed the full migration chain,
   schema/FK assertions, seed idempotency, and the backend suite.
-- Frontend: **21 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
-- Browser: **16 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
+- Frontend: **27 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
+- Browser: **18 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
   provenance persistence, distinguishable original-record rows, contextual comments/tasks,
   Desktop/Mobile preview, mentions, assignments, two-browser SSE invalidation, conflict handling,
   patient privacy, Voice sample scope, timestamp seeking, and source navigation.
