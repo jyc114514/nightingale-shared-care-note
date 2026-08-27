@@ -53,6 +53,30 @@ audio hash and duration metadata, source-segment linkage, fixture-first summary 
 failure states, and metadata-only SSE. It does not implement microphone capture, diarization,
 overlap/noise handling, multilingual clinical ASR, production PHI audio, or model-quality claims.
 
+## Authenticated Render smoke addendum - 2026-08-27
+
+The previously available browser session had expired when the deployment note above was written.
+After manual authentication, the existing Render deployment was exercised in English with the
+following results:
+
+- Clinician A saw only `Synthetic nurse follow-up · clinical`. The native player advanced for
+  several seconds; one `Process sample` action returned `Voice session status: completed` with
+  three fixture segments at 0-8, 8-16, and 16-24 seconds. Segment 1 seeked the player to 8.0
+  seconds.
+- The clinical result showed `Mock transcript fixture`, `ASR confidence unavailable for
+  fixture`, a system-authored review suggestion, and an immutable v1 source with a Python
+  code-point exact span. No microphone, upload, Whisper, DeepSeek, or live-model claim appeared.
+- Sarah Patient saw only `Synthetic patient follow-up · patient`. The native player advanced from
+  about 0:10 to 0:13 of 0:24; one process action completed with three mock timestamped segments
+  and confidence unavailable. There was no clinical sample and no generated-source control.
+- The patient page had no Top Card, internal Comments, Assign task, or History controls, and the
+  timeline contained only patient-facing instruction/summary entries. This is browser evidence of
+  the projection; server-side enforcement remains covered by the backend tests.
+
+This completes the online Level-C fixture smoke. It does **not** upgrade the result to full
+Ambient Voice: there is still no microphone capture, upload, ASR inference, diarization, speaker
+labelling, or production PHI audio.
+
 ## Render Level-C enablement
 
 The existing Render evaluation app now enables `VOICE_PROVIDER=fixture` while keeping

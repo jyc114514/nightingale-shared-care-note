@@ -1,91 +1,209 @@
-# Nightingale spoken English demo script
+# Nightingale final spoken English demo script
 
-Target runtime: approximately 3 minutes 30 seconds. Keep the UI in English. Use the local
-fixture provider. Every record and audio file is synthetic. Text in the patient record is never
-translated by the application.
+Target runtime: **4:20**. Target speaking rate: **105-120 words per minute**.
+Target UI: English. Target data: synthetic only.
+This is a recording script based on the deployed rehearsal on 2026-08-27. It is not a claim of
+independent UX-01 evidence, clinical validation, live ASR, or a final recorded video.
 
-## 0:00-0:20 - Opening
+Password entry, role switching, loading waits, and any error recovery are off-camera cuts. Never
+show a credential, key, environment screen, database URL, browser storage, or provider console.
 
-**Say:** “Nightingale is a shared-care note. It is not an autonomous medical system. It shows
-what needs attention, and keeps every suggestion linked to an immutable source.”
+## Shot 1 — Opening workspace
 
-**Action:** Open the local demo and sign in as the synthetic clinician.
+- **Time:** 00:00-00:30
+- **Browser / profile / role:** Existing Chrome user tab; Clinician A; Sarah Tan selected.
+- **Starting state:** Deployed root is open; English is selected; page has reached `Live updates:
+  Connected`.
+- **Exact action:** Confirm `English`; confirm `Select patient` is `Sarah Tan`; scroll to the
+  workspace header.
+- **Visible result expected and verified:** `Shared Care Note`, `Clinician view`, patient name,
+  and the synthetic-only trust boundary are visible.
+- **Maximum wait:** 6 seconds for the authenticated workspace. If the header says reconnecting,
+  wait once for `Connected`; if it remains stale, refresh once before recording.
+- **Mutation / reset note:** Read-only. No note or Voice mutation.
+- **Requirements:** `requirements.txt:3-5, 8, 33-40`.
+- **Say exactly:**
 
-**Pause:** Wait for the patient workspace and the Top Card.
+  > Nightingale is a shared care note for synthetic data. It is a trust system, not an autonomous
+  > medical system. I use one patient workspace and keep the interface in English. The page
+  > separates human notes, system suggestions, patient context, and review metadata.
 
-## 0:20-1:05 - Glance and provenance
+## Shot 2 — Glance and exact provenance
 
-**Say:** “The Top Card has at most six items. Each item shows content, action, status, risk, and
-source. Ranking priority is not a medical risk score.”
+- **Time:** 00:30-01:08
+- **Browser / profile / role:** Same Chrome tab; Clinician A; internal view.
+- **Starting state:** The `Top Card` region is visible with six or fewer items.
+- **Exact action:** Read `What needs attention now`; point to a card's action/status/risk/source;
+  click `Open source` on `Unresolved cardiology referral`; wait for the timeline target.
+- **Visible result expected and verified:** The card shows `Action: Review referral · Open`,
+  `P100`, `Suggested` or the current review state, and `Why ranked? Ranking priority, not a
+  medical risk score.` The source panel shows `Immutable source`, `v1`, Python code-point offsets,
+  and the timeline `<mark>` contains `Unresolved cardiology referral`.
+- **Maximum wait:** 2 seconds for the source panel. If the card has already been reviewed, use
+  another visible AI-scribed card with `Open source`; do not claim a missing review button.
+- **Mutation / reset note:** Opening and closing source is view-only. `Close source` removes the
+  source span and `highlight` query while retaining `patient`.
+- **Requirements:** `requirements.txt:8-13, 25-26, 41-44, 87-89`.
+- **Say exactly:**
 
-**Action:** Expand “Why ranked?”. Open a doctor-consult source.
+  > The Top Card is designed for a fast glance. It has no more than six source-linked items. Each
+  > card shows content, an action, a status, an item kind, and a risk label. The ranking note is
+  > important: ranking priority is not a medical risk score. This nurse entry is an AI-scribed
+  > suggestion. Open source takes me to the exact timeline entry. The source panel names immutable
+  > version one, the source reference, and Python code-point offsets. The highlight is the stored
+  > quote, not a rewritten sentence.
 
-**Say:** “This quote comes from a saved immutable version. I can check the exact span in the
-timeline. The source stays visible after the focus animation.”
+## Shot 3 — Level-C Voice fixture
 
-**Action:** Wait three seconds, refresh the deep link, then close the source.
+- **Time:** 01:08-01:45
+- **Browser / profile / role:** Same Chrome tab; Clinician A; internal Voice panel.
+- **Starting state:** `Ambient Voice Prototype` is visible with `Synthetic nurse follow-up ·
+  clinical` selected and no existing Voice result, or the result is prepared before recording.
+- **Exact action:** Click the native audio play control; click `Process sample` once; wait for
+  `Voice session status: completed`; click transcript segment `8.0s - 16.0s`; click `Open
+  generated source` if the result is not already on screen.
+- **Visible result expected and verified:** The player advances for several seconds; the panel
+  shows `Mock transcript fixture`, three fixture timestamp ranges, `ASR confidence unavailable
+  for fixture`, a system suggestion requiring review, and an immutable source with an exact mark.
+  No microphone or upload control is visible.
+- **Maximum wait:** 3 seconds for playback evidence; 10 seconds for processing; 2 seconds for
+  segment seeking/source. If processing fails, show the explicit safe failure and remove the shot
+  from the final video rather than calling it a success.
+- **Mutation / reset note:** Processing one synthetic sample creates one recorded Voice session
+  and source entry. Do not click `Process sample` twice.
+- **Requirements:** `requirements.txt:21-26, 45-48, 53`.
+- **Say exactly:**
 
-**Say:** “Closing changes only the view. The patient query stays, and the highlight query is
-removed.”
+  > This is a Level-C architecture and demo path. The audio is prerecorded synthetic signal data,
+  > and the timestamps are fixture timestamps. The transcript is a mock fixture because local ASR
+  > was unavailable in this environment, so confidence is unavailable. This optional prototype uses
+  > prerecorded synthetic audio and a mock timestamped transcript. It demonstrates audio-to-summary
+  > provenance, but it does not claim live ASR or diarization. The suggestion remains system-authored
+  > and requires clinician review.
 
-## 1:05-2:00 - Collaboration, history, and conflict
+## Shot 4 — Staff collaboration and mention
 
-**Action:** Sign in as synthetic staff. Edit the staff note, open History, compare two versions,
-and revert.
+- **Time:** 01:45-02:25
+- **Browser / profile / role:** Same Chrome tab after an off-camera cut; Staff A; Sarah Tan.
+- **Starting state:** Staff page shows `Staff view`, `Timeline`, and the existing `Staff note`.
+- **Exact action:** Click `Edit`; replace the text with the synthetic rehearsal sentence; click
+  `Save revision`; click `Comments`; type a comment ending in `@clinician`; choose
+  `@Clinician A · clinician`; click `Add comment`.
+- **Visible result expected and verified:** The Staff note shows a new version. The drawer shows
+  the root comment and `Mentions: @Clinician A`. There is no new-note composer in the deployed UI.
+- **Maximum wait:** 4 seconds for save; 2 seconds for the drawer; 3 seconds for the comment. If
+  the drawer does not appear, refresh once and repeat the semantic `Comments` action. If the
+  mention menu does not appear, leave the step out; do not type a hidden collaborator ID.
+- **Mutation / reset note:** This creates a synthetic Staff revision and one internal comment.
+  The brief's “add a new note” step is replaced by this existing-note edit because no create
+  control was visible.
+- **Requirements:** `requirements.txt:14-19, 37-40, 90-93`.
+- **Say exactly:**
 
-**Say:** “A revert creates a new snapshot. It never erases the old version.”
+  > Now I switch to Staff. This deployed UI does not expose a new-note composer, so I use the
+  > reproducible existing Staff note edit. The new revision is saved. I add an internal comment,
+  > choose Clinician A from the mention menu, and submit it. The mention is stored as metadata, and
+  > the discussion remains inside the clinic-scoped workspace.
 
-**Action:** Open Comments. Type at sign, choose a collaborator with the keyboard, add a root
-comment, and add a reply. Assign a task from the comment and mark it done.
+## Shot 5 — Review, history, and feedback
 
-**Say:** “Comments are threaded. The task keeps its source comment and assignee. When the task is
-open, it appears as a Glance action.”
+- **Time:** 02:25-03:05
+- **Browser / profile / role:** Staff A for the first cut; then Clinician A after an off-camera
+  cut; same patient.
+- **Starting state:** Staff comment drawer contains the synthetic root comment; Clinician page has
+  the Clinician section and a suggested AI card.
+- **Exact action:** In Comments click `Resolve`, then `Unresolve`. On the Glance card click `Pin`,
+  then `Unpin`. In Clinician view click `Edit` on `Clinician section`, click `Save revision`,
+  click `History`, click `Compare` for v1, then click `Revert` for v1. If a suggested card is
+  available, click `Accept` once.
+- **Visible result expected and verified:** Resolve state toggles and returns to unresolved. Pin
+  state toggles. History shows `Diff v1 → v2` with Before/After; Revert creates v3, restores the
+  original plan, and keeps v1 and v2. Accept removes the review buttons from the accepted item.
+- **Maximum wait:** 3 seconds for each collaboration action; 4 seconds for save/revert. If the
+  current rehearsal state already has the nurse suggestion accepted, use another visible
+  Suggested/Conflict review card or omit the Accept cut.
+- **Mutation / reset note:** These actions create synthetic audit/revision/review metadata. Do not
+  reset versions by editing raw database state. The recording log must retain the observed version
+  numbers.
+- **Requirements:** `requirements.txt:15-19, 27-31, 41-44, 90-93`.
+- **Say exactly:**
 
-**Action:** Use two browser windows if available. Show the second window receiving a metadata-only
-update, then trigger two writes from one expected version.
+  > Resolve and Unresolve are explicit collaboration states. Pin and Unpin provide feedback to the
+  > importance logic, but one click is not proof of learning. Clinician authority is limited to the
+  > Clinician section. History keeps full snapshots. Compare shows the before and after. Revert
+  > creates a new version and restores the prior content. It never erases history. A review action
+  > accepts a suggestion without rewriting its source.
 
-**Say:** “The stale write returns four-oh-nine. The attempted content is preserved for review.
-There is no silent last-write-wins.”
+## Shot 6 — Longitudinal context
 
-## 2:00-2:35 - Longitudinal context and privacy
+- **Time:** 03:05-03:32
+- **Browser / profile / role:** Clinician A; same Chrome tab.
+- **Starting state:** `Historical context` is visible with current and older entries.
+- **Exact action:** Point to `Hot context`, `Warm index`, and `Derived summary · not the original
+  record`; click the first `View original record`.
+- **Visible result expected and verified:** The page scrolls to the April 2025 canonical Patient
+  summary in the Timeline. The source panel does not open for this context pointer, so the video
+  calls it original-record navigation rather than an exact-span provenance panel.
+- **Maximum wait:** 2 seconds for the scroll. If the target is not visible, use the browser's
+  normal scroll position after the click; do not invent a source panel.
+- **Mutation / reset note:** View-only. No context refresh or data-decay mutation.
+- **Requirements:** `requirements.txt:10-13, 32, 41-44, 94-97`.
+- **Say exactly:**
 
-**Action:** Open Historical context. Show Hot, Warm, and the derived cold summary. Open one
-labelled original record.
+  > Longitudinal context combines current entries with older history. The panel distinguishes Hot
+  > context, the Warm index, and a derived cold summary. The summary is labeled not the original
+  > record. View original record scrolls to the canonical Patient summary in the timeline. This is
+  > source navigation, but it is not an exact-span panel.
 
-**Say:** “The derived summary is not the original record. The immutable original remains the
-source of truth.”
+## Shot 7 — Patient privacy projection
 
-**Action:** Sign in as the synthetic patient.
+- **Time:** 03:32-04:00
+- **Browser / profile / role:** Sarah Patient after an off-camera logout/login cut; same patient.
+- **Starting state:** Patient page is in English and shows `Patient view`.
+- **Exact action:** Point to `Internal Glance View is hidden`; show the two patient-facing timeline
+  entries; open `Ambient Voice Prototype` and show only `Synthetic patient follow-up · patient`.
+- **Visible result expected and verified:** No `Top Card`, internal Comments, Assign task, History,
+  clinical Voice sample, or generated-source control is present. Patient Voice displays mock
+  transcript/timestamps and the patient-safe result.
+- **Maximum wait:** 6 seconds for the patient workspace; 3 seconds for Voice processing if the
+  patient sample is recorded live. If the patient session is unavailable, remove this shot and do
+  not claim patient privacy from an internal session.
+- **Mutation / reset note:** Processing the patient fixture once creates one synthetic patient-safe
+  Voice session. Do not process it twice.
+- **Requirements:** `requirements.txt:34-40, 45-48, 51-53`.
+- **Say exactly:**
 
-**Say:** “The patient sees patient-facing summaries and instructions only. Internal comments,
-tasks, raw AI notes, and conflict details are denied by the server.”
+  > Finally, the patient session is a different server-side projection. The internal Glance View,
+  > comments, tasks, and history controls are absent. Only patient-facing records and the patient
+  > Voice fixture appear. The transcript is mock data, timestamps are fixture timestamps, and no
+  > generated-source control is exposed. This is privacy by server-side projection, not by hiding a
+  > button in the browser.
 
-## 2:35-3:00 - Optional DeepSeek
+## Shot 8 — Honest close
 
-**Action:** Return to a staff or clinician view. Open AI Scribe Demo. Keep the fixture selected.
+- **Time:** 04:00-04:20
+- **Browser / profile / role:** English Clinician or Staff workspace; no credential/configuration
+  screen.
+- **Starting state:** Return to the cleanest English workspace view; stop before any password or
+  environment screen.
+- **Exact action:** Point to the synthetic-only disclosure and end the recording.
+- **Visible result expected and verified:** The deployed app remains on HTTPS; the repository and
+  deployment evidence document PostgreSQL, redaction, fixture providers, and clean logs. No live
+  DeepSeek call is shown.
+- **Maximum wait:** 1 second. No fallback action.
+- **Mutation / reset note:** Read-only ending. Sign out after recording if the browser is shared.
+- **Requirements:** `requirements.txt:50-54, 74-85, 99-104`.
+- **Say exactly:**
 
-**Say:** “The fixture is the default, so this demo does not need the network. DeepSeek is an
-optional redacted adapter. It receives synthetic text only, and a provider failure never becomes
-a fake fixture success.”
+  > The deployed service uses HTTPS and PostgreSQL, and this demo remains synthetic. The fixture is
+  > the default. DeepSeek is only an optional redacted adapter; no live call is shown. This prototype
+  > is designed for a ten-second glance, not independently proven. It does not claim clinical
+  > validation, live ASR, production PHI capture, or a final recorded video.
 
-## 3:00-3:25 - Optional Voice, Level C
+## Removed or replaced claims
 
-**Action:** Open Ambient Voice Prototype and select the synthetic nurse follow-up. Play the
-pre-recorded audio, process it, and click a transcript segment.
-
-**Say:** “This is a Level-C architecture and demo path. The audio is prerecorded synthetic signal
-data. The transcript is a mock fixture because local ASR was not available in this environment.
-Timestamps are fixture timestamps, and confidence is unavailable.”
-
-**Action:** Show the generated suggestion source if present.
-
-**Say:** “The suggestion remains system-authored and requires clinician review. There is no
-microphone button.”
-
-## 3:25-3:40 - Honest boundary
-
-**Say:** “The prototype still needs an independent ten-second usability test and hosted deployment
-security evidence. Render is configured for fixture AI and the Level-C Voice fixture. This prototype does not
-claim clinical validation, production PHI capture, or model quality.”
-
-**Action:** End on the English workspace and do not open credentials or configuration files.
+The final recording must not include a successful click for a new-note composer, manual phrase
+highlight creation, a second-browser SSE update, a live 409 conflict panel, task completion, live
+DeepSeek, microphone capture, upload, Whisper inference, or diarization. These were either absent
+from the deployed rehearsal or deliberately outside the Level-C boundary. The local tests and
+technical evidence remain the correct place to discuss them.

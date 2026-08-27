@@ -1,26 +1,31 @@
-# Nightingale demo shot list
+# Nightingale final demo shot list
 
-| Shot | View / action | Evidence to capture | Suggested file |
-| --- | --- | --- | --- |
-| 1 | English and Chinese chrome | Language toggle, translated heading, original clinical text | `scenario-a-language.png` |
-| 2 | Clinician Top Card | Six-or-fewer cards, action/risk/status/source | `scenario-a-desktop.png` |
-| 3 | Why ranked? | Contribution breakdown and ranking disclaimer | `scenario-a-ranking.png` |
-| 4 | Immutable source | Source entry/version, exact quote/span after focus fades | `scenario-a-source.png` |
-| 5 | Timeline deep link and close | Refresh persistence, Close source, query cleanup | `scenario-a-timeline.png` |
-| 6 | Staff revision history | Version list, diff, revert-as-new-version | `scenario-b-desktop.png` |
-| 7 | Mention autocomplete | Keyboard `@` suggestion and selected collaborator metadata | `scenario-b-mentions.png` |
-| 8 | Assignment/task | Source comment, assignee, status transition, Glance action | `scenario-b-tasks.png` |
-| 9 | Two-browser SSE | Clinician receives comment/task invalidation without page reload | `scenario-b-realtime.png` |
-| 10 | Conflict panel | Winner vs preserved stale submission, `409` | `scenario-c-conflict.png` |
-| 11 | Historical context | Hot/warm/cold and derived-summary disclosure | `scenario-c-context.png` |
-| 12 | Patient projection | Patient-facing entries only; internal tasks/comments absent | `patient-privacy.png` |
-| 13 | Mobile workspace | Chinese chrome, source/task controls, no horizontal overflow at 390x844 | `mobile-scenario-a.png` |
-| 14 | Contextual drawers | Comments loading/error focus path and task source context at desktop/mobile | `comments-open.png`, `task-open.png` |
-| 15 | Demo viewport preview | Same-origin interactive Desktop 1440x900 and Mobile 390x844 frames without recursive toolbar | `preview-desktop.png`, `preview-mobile.png` |
-| 16 | Ambient Voice Level C | Prerecorded synthetic audio, mock transcript disclosure, timestamps, confidence unavailable, no microphone | `voice-clinical.png` |
-| 17 | Voice patient privacy | Patient sample only, internal clinical sample absent, no generated-source control | `voice-patient.png` |
-| 18 | Production boundary | Render/README shows Fixture AI, Level-C Voice fixture, synthetic-only seed, and free-tier limitations | `render-boundary.png` |
+Target runtime: 4:20 · English UI · synthetic data only.
+The filenames below are recording targets, not files created by this phase. No final video or new
+screenshots are claimed.
 
-The Playwright runner emits synthetic Scenario A/B/C screenshots under ignored `artifacts/gate-b/`.
-Delivery copies should be selected after visual review; no database, password file, runtime log, or
-real patient data belongs in the package.
+| Shot | Time | Role / profile | Visible action | Rehearsed result | Capture target |
+| ---: | --- | --- | --- | --- | --- |
+| 1 | 00:00-00:30 | Clinician A / existing Chrome tab | Confirm `English`, `Sarah Tan`, `Live updates: Connected` | Shared Care Note, Clinician view and trust boundary visible | `01-opening.mp4` |
+| 2 | 00:30-01:08 | Clinician A / internal | Read `Top Card`; click `Open source` on `Unresolved cardiology referral` | Six-or-fewer card view; action/status/risk/ranking; immutable v1 source and exact mark | `02-glance-provenance.mp4` |
+| 3 | 01:08-01:45 | Clinician A / internal | Play clinical WAV; `Process sample` once; click 8-second segment; open generated source | 24-second fixture, mock transcript, three timestamps, confidence unavailable, exact source | `03-voice-level-c.mp4` |
+| 4 | 01:45-02:25 | Staff A / sequential session | `Staff note` → `Edit` → `Save revision`; `Comments`; `@clinician`; choose `@Clinician A · clinician`; `Add comment` | Staff revision and root comment with mention metadata | `04-staff-mention.mp4` |
+| 5 | 02:25-03:05 | Staff A then Clinician A | `Resolve` → `Unresolve`; `Pin` → `Unpin`; Clinician `History` → `Compare` → `Revert`; optional `Accept` | Collaboration toggle, feedback toggle, Before/After, new revert version, retained history | `05-review-history.mp4` |
+| 6 | 03:05-03:32 | Clinician A / internal | Show Hot/Warm/derived cold; click `View original record` | Scrolls to April 2025 canonical Patient summary; no false exact-span claim | `06-longitudinal-context.mp4` |
+| 7 | 03:32-04:00 | Sarah Patient / sequential session | Show `Internal Glance View is hidden`; show patient timeline and patient Voice sample | Internal controls and clinical sample absent; patient-safe fixture only | `07-patient-privacy.mp4` |
+| 8 | 04:00-04:20 | Clinician or Staff / English | End on synthetic disclosure and HTTPS app | Honest boundary: PostgreSQL, fixture providers, optional redacted adapter, no live call | `08-honest-close.mp4` |
+
+## Captured evidence versus narration
+
+The browser rehearsal directly verified shots 1-7's core visible states, including the Voice and
+patient flows. Render Deploys showed the existing service `Live` at `e766fe9`; the Render Logs
+surface was inspected without reproducing raw log lines. The recording should not show the
+dashboard unless the presenter wants a short security boundary cut.
+
+## Do not capture
+
+Do not capture password entry, API keys, database URLs, environment values, browser storage,
+provider consoles, raw Render log output, microphone permissions, file upload dialogs, live
+DeepSeek calls, or any real patient information. Do not add shots for a new-note composer, manual
+highlight selection, second-browser SSE, live 409 conflict, task completion, or Whisper/diarization
+claims; those steps were removed or replaced after rehearsal.

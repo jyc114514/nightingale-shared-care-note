@@ -113,3 +113,27 @@ The detailed TLS and database evidence is in [`deployment_security.md`](deployme
 This is an evaluation deployment using synthetic data only. Render Free web instances may sleep,
 and the Free Postgres resource is limited and temporary; no clinical compliance, PHI readiness, or
 production operational guarantee is claimed.
+
+## Prompt A authenticated Voice and demo addendum - 2026-08-27
+
+The earlier Voice section was written before a user-authenticated browser session was available;
+its “requiring user login” statement is historical. The current authenticated smoke against the
+same Live `e766fe9` deployment completed both roles:
+
+- Clinical A: the deployed Level-C panel listed only the clinical nurse WAV fixture. Playback
+  advanced for several seconds. One process action completed, exposed three mock timestamped
+  segments, sought correctly to 8.0 seconds, and opened the generated system-authored immutable
+  source span.
+- Sarah Patient: the panel listed only the patient WAV fixture. Playback advanced for several
+  seconds. One process action completed with three mock timestamped segments; no clinical sample
+  or generated-source control was exposed.
+- Clinical and Patient sessions both displayed the fixture disclosure and no microphone/upload
+  control. No live DeepSeek, Whisper, diarization, or production audio claim appeared.
+- Patient scope remained server-side: internal Glance, comments, tasks, history controls, and
+  clinical timeline entries were absent from the patient projection.
+
+The same rehearsal also verified the deployed English Comments drawer after one refresh fallback,
+the task drawer, Glance-to-source navigation, historical original-record scroll, Staff mention and
+resolve/unresolve, and Clinician diff/revert. Detailed step timings and replacements are recorded
+in [`demo_rehearsal.md`](demo_rehearsal.md). The live database contains only synthetic rehearsal
+mutations and is not described as a pristine seed.

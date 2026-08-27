@@ -1,35 +1,78 @@
 1
-00:00:00,000 --> 00:00:20,000
-Nightingale is a shared-care note. It is not an autonomous medical system.
+00:00:00,000 --> 00:00:14,000
+Nightingale is a shared care note for synthetic data.
 
 2
-00:00:20,000 --> 00:00:45,000
-The Top Card has at most six items. It shows content, action, status, risk, and source.
+00:00:14,000 --> 00:00:30,000
+It is a trust system, not an autonomous medical system.
+I use one patient workspace and an English interface.
 
 3
-00:00:45,000 --> 00:01:05,000
-Ranking priority is not a medical risk score. This quote comes from an immutable source.
+00:00:30,000 --> 00:00:49,000
+The Top Card is designed for a fast glance.
+It has no more than six source-linked items.
 
 4
-00:01:05,000 --> 00:01:35,000
-A revert creates a new snapshot. It never erases the old version.
+00:00:49,000 --> 00:01:08,000
+Each card shows content, action, status, item kind, and risk.
+Ranking priority is not a medical risk score.
 
 5
-00:01:35,000 --> 00:02:00,000
-Comments are threaded, and tasks keep their source comment and assignee.
+00:01:08,000 --> 00:01:28,000
+This nurse entry is an AI-scribed suggestion. Open source takes me to the exact timeline entry.
+The source panel names immutable version one and Python code-point offsets.
+The highlight is the stored quote.
 
 6
-00:02:00,000 --> 00:02:35,000
-The derived summary is not the original record. The immutable original remains the source of truth.
+00:01:28,000 --> 00:01:45,000
+This optional prototype uses prerecorded synthetic audio and a mock timestamped transcript.
+It demonstrates audio-to-summary provenance, but it does not claim live ASR or diarization.
 
 7
-00:02:35,000 --> 00:03:00,000
-The fixture is the default. DeepSeek is optional and receives synthetic redacted text only.
+00:01:45,000 --> 00:02:04,000
+Now I switch to Staff.
+There is no new-note composer, so I edit the existing Staff note.
 
 8
-00:03:00,000 --> 00:03:25,000
-This is a Level-C Voice demo. The transcript is a mock fixture because local ASR was unavailable.
+00:02:04,000 --> 00:02:25,000
+I add an internal comment, choose Clinician A from the mention menu,
+and submit it. The mention is stored as metadata.
 
 9
-00:03:25,000 --> 00:03:40,000
-The prototype does not claim clinical validation, production PHI capture, or model quality.
+00:02:25,000 --> 00:02:45,000
+Resolve and Unresolve are explicit collaboration states.
+Pin and Unpin provide feedback, but one click is not proof of learning.
+
+10
+00:02:45,000 --> 00:03:05,000
+History keeps full snapshots. Compare shows before and after.
+Revert creates a new version and restores prior content.
+
+11
+00:03:05,000 --> 00:03:20,000
+Longitudinal context combines current entries with older history.
+It distinguishes Hot context, Warm index, and derived cold history.
+
+12
+00:03:20,000 --> 00:03:32,000
+The summary is labeled not the original record.
+View original record scrolls to the canonical Patient summary.
+
+13
+00:03:32,000 --> 00:03:47,000
+The patient session is a different server-side projection.
+Internal Glance, comments, tasks, and history controls are absent.
+
+14
+00:03:47,000 --> 00:04:00,000
+Only patient-facing records and the patient Voice fixture appear.
+The transcript is mock data and no source control is exposed.
+
+15
+00:04:00,000 --> 00:04:10,000
+The deployed service uses HTTPS and PostgreSQL, and this demo remains synthetic.
+
+16
+00:04:10,000 --> 00:04:20,000
+DeepSeek is only an optional redacted adapter.
+This prototype is designed for a ten-second glance, not independently proven.

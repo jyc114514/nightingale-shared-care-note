@@ -202,10 +202,10 @@ final video, and external submission remain open.
 
 Phase 9 local evidence is **86 backend tests / 88% coverage**, **27 Vitest tests**, **14 core
 Playwright tests**, and **4 isolated Voice Playwright tests**. GitHub Actions run
-`33032765274` passed the real PostgreSQL 18 migration/seed gate, and Render deploy
-`dep-da7s4v3l550s73cusqv0` is Live from `8a46b96`. UX-01, authenticated production login smoke,
-final video, email submission, and public visibility remain open unless their separate evidence is
-completed.
+`33032765274` passed the real PostgreSQL 18 migration/seed gate, and the existing Render service
+is Live on the Voice-enabled `e766fe9` deployment. The authenticated production Voice smoke is
+recorded in Phase 9.2/9.3. UX-01, final video, email submission, and public visibility remain
+open unless their separate evidence is completed.
 
 ## Phase 9.1 / production Comments drawer regression - 2026-08-27
 
@@ -222,12 +222,23 @@ human usability requirement and is not marked passed.
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
-| PHASE-9.2-VOICE-FIXTURE | Render accepts only `disabled` or `fixture` in production, keeps `local_whisper` and unknown providers fail-closed, and has deployed the existing fixture configuration; authenticated online sample/provenance smoke remains pending | in progress | [config.py](../backend/app/config.py), [render.yaml](../render.yaml), [test_production_readiness.py](../backend/tests/test_production_readiness.py), [test_voice.py](../backend/tests/test_voice.py), [voice capability probe](evidence/voice_capability_probe.md), [deployment security evidence](evidence/deployment_security.md) |
+| PHASE-9.2-VOICE-FIXTURE | Render accepts only `disabled` or `fixture` in production, keeps `local_whisper` and unknown providers fail-closed, and the existing fixture configuration passed authenticated Clinical/Patient online smoke | passed | [config.py](../backend/app/config.py), [render.yaml](../render.yaml), [test_production_readiness.py](../backend/tests/test_production_readiness.py), [test_voice.py](../backend/tests/test_voice.py), [voice capability probe](evidence/voice_capability_probe.md), [deployment security evidence](evidence/deployment_security.md) |
 
-Phase 9.2 is **Partial Bonus / Level C** only. The Render fixture configuration is Live, but the
-authenticated clinical/patient online flow awaits user login. It does not mark full Ambient Voice
-passed: there is no ASR inference, Whisper model, diarization, microphone capture, upload, or real
-PHI audio.
+Phase 9.2 is **Partial Bonus / Level C** only. The Render fixture configuration is Live and the
+authenticated clinical/patient online flow passed. It does not mark full Ambient Voice passed:
+there is no ASR inference, Whisper model, diarization, microphone capture, upload, or real PHI
+audio.
+
+## Phase 9.3 / Prompt B deployed rehearsal and recording materials - 2026-08-27
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-9.3-DEMO-REHEARSAL | English deployed rehearsal covered Glance, exact provenance, Level-C Voice, Staff collaboration, historical context, Patient privacy, and Clinician revision review; failed/stale and unavailable steps were replaced or removed | passed | [demo rehearsal](evidence/demo_rehearsal.md), [traceability](DEMO_REQUIREMENT_TRACEABILITY.md) |
+| PHASE-9.3-DEMO-DOCS | Detailed English script, cue card, subtitles, shot list, recording checklist, video QA, and session setup were refreshed after actual rehearsal | passed | [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [cue card](DEMO_CUE_CARD.md), [subtitles](DEMO_SUBTITLES_EN.srt), [shot list](DEMO_SHOTLIST.md), [recording checklist](DEMO_RECORDING_CHECKLIST.md), [video QA](DEMO_VIDEO_QA.md), [session setup](DEMO_SESSION_SETUP.md) |
+
+Prompt B deliberately does not mark the final video as recorded. UX-01 still requires an
+independent unfamiliar participant, and the exact new-note/manual-highlight/two-browser-conflict
+steps were not claimed because they were unavailable or unreproducible in the deployed rehearsal.
 
 ## Hard release gate
 

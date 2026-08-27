@@ -1,7 +1,12 @@
 # Nightingale demo script
 
-Target length: 3-4 minutes. Use synthetic seed data only. The password is supplied locally to the
-launcher or `DEMO_SEED_PASSWORD`; never record, print, commit, or log it.
+> **Superseded for the deployed recording.** Use [`DEMO_SCRIPT_SPOKEN_EN.md`](DEMO_SCRIPT_SPOKEN_EN.md)
+> and [`DEMO_REQUIREMENT_TRACEABILITY.md`](DEMO_REQUIREMENT_TRACEABILITY.md) as the current
+> English script and evidence map. This file remains a historical local outline; its optional
+> steps are not current claims about the deployed rehearsal.
+
+Target length: 3-4 minutes. Use synthetic seed data only. Never record, print, commit, or log a
+password or provider key.
 
 ## Opening (15 seconds)
 

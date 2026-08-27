@@ -82,3 +82,24 @@ schema/FK, seed-idempotency, `alembic check`, and 82-test regression path:
 - Backup/restore, retention/deletion, incident response, and operational access review were not
   independently exercised.
 - The service uses Render Free capacity and is not a clinical production deployment.
+
+## Authenticated browser addendum - 2026-08-27
+
+After manual login, the existing HTTPS deployment was exercised in English with sequential
+synthetic Clinical, Staff, and Patient sessions. The browser did not expose any credential,
+environment value, database URL, raw log line, or provider key.
+
+- Clinical/Staff pages showed the internal workspace, source-linked Glance cards, and
+  `Live updates: Connected`.
+- The Patient page showed `Internal Glance View is hidden`, only patient-facing timeline entries,
+  only the patient Voice fixture, and no Comments, Assign task, History, clinical sample, or
+  generated-source control.
+- Render Deploys showed the existing service as `Live` on `e766fe9`. The Logs surface was checked
+  by classification only; no raw Voice transcript, password/key pattern, DeepSeek, or Whisper
+  claim was found.
+- The authenticated Voice smoke completed the synthetic clinical and patient fixture flows. This
+  proves deployed Level-C fixture wiring, not live ASR, diarization, or production PHI readiness.
+
+The browser rehearsal also recorded a one-refresh fallback for an initially stale Comments state;
+after refresh the drawer opened, remained visible beyond five seconds, and closed through its
+explicit control. Full step evidence is in [`demo_rehearsal.md`](demo_rehearsal.md).
