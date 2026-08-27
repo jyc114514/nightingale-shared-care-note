@@ -16,7 +16,12 @@ from app.models import TranscriptSegment, VoiceSession
 from app.services.ai_processing import process_ai_job
 from app.services.authorization import AccessContext
 from app.services.events import append_event
-from app.voice.fixtures import VoiceSample, VOICE_SAMPLES, get_voice_sample
+from app.voice.fixtures import (
+    VOICE_SCOPE_DISCLOSURE,
+    VoiceSample,
+    VOICE_SAMPLES,
+    get_voice_sample,
+)
 from app.voice.providers import (
     ASRProvider,
     FasterWhisperProvider,
@@ -99,7 +104,7 @@ def get_voice_provider_info(settings: Settings) -> VoiceProviderInfo:
             model=FixtureTranscriptProvider.model,
             mode="fixture",
             enabled=True,
-            disclosure="Mock transcript fixture - local ASR unavailable in this environment.",
+            disclosure=VOICE_SCOPE_DISCLOSURE,
         )
     if provider == "local_whisper":
         return VoiceProviderInfo(

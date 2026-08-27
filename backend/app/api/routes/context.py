@@ -112,7 +112,7 @@ def _context_response(
                 summary_text=(
                     summary_item.summary.summary_text
                     if internal
-                    else "Derived historical context; patient-facing source details remain canonical."
+                    else "A short historical summary is available; patient-facing original details remain below."
                 ),
                 source_count=(
                     summary_item.summary.source_count if internal else len(visible_sources)

@@ -165,9 +165,9 @@ def _manifest(sources: list[tuple[Entry, EntryVersion]]) -> str:
 
 def _summary_text(period_start: datetime, source_count: int) -> str:
     return (
-        f"Derived historical context for {period_start.year:04d}-{period_start.month:02d}: "
-        f"{source_count} source entr{'y' if source_count == 1 else 'ies'} remain canonical. "
-        "Open the source pointers for the immutable detail."
+        f"Historical summary for {period_start.year:04d}-{period_start.month:02d}: "
+        f"{source_count} original record{' remains' if source_count == 1 else 's remain'} available. "
+        "Open a record below to review the detail."
     )
 
 

@@ -28,7 +28,7 @@ class FixtureProvider:
     name = "fixture-redacted-v1"
 
     def process(self, payload: RedactedPayload) -> ProviderOutput:
-        prefix = "Fixture suggestion: "
+        prefix = "Care note suggestion: "
         summary = prefix + payload.redacted_text
         start_offset = len(prefix)
         end_offset = start_offset + len(payload.redacted_text)
@@ -47,7 +47,7 @@ class FixtureProvider:
             end_offset=end_offset,
             item_kind=item_kind,
             risk_level=None,
-            risk_reason="Synthetic fixture output requires clinician review.",
+            risk_reason="This suggestion is ready for clinician review.",
             action_label=action_label,
             action_state="open",
         )

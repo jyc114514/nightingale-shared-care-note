@@ -134,20 +134,26 @@ export function scrollToElement(element: HTMLElement | null) {
   });
 }
 
-function displayError(error: unknown, t: Translate) {
+function displayError(
+  error: unknown,
+  t: Translate,
+  context: "auth" | "workspace" = "workspace",
+) {
   if (error instanceof ApiError) {
     if (
       typeof error.body.detail === "object" &&
       error.body.detail?.actual_version
     ) {
       return t("error.versionConflict", {
-        message: error.message,
         version: error.body.detail.actual_version,
       });
     }
-    return error.message;
+    if (context === "auth" && error.status === 401) return t("error.signIn");
+    if (error.status === 401 || error.status === 403)
+      return t("error.permission");
+    return t("error.request");
   }
-  return error instanceof Error ? error.message : t("error.request");
+  return t("error.request");
 }
 
 function isInternalUser(user: Me) {
@@ -223,8 +229,7 @@ function ExactSpanView({
           role="alert"
           data-testid="provenance-integrity-warning"
         >
-          {t("source.integrity", { reason: result.reason })}{" "}
-          {t("source.noApprox")}
+          {t("source.integrity")} {t("source.noApprox")}
         </p>
         <p className="mt-3 whitespace-pre-wrap">{text}</p>
       </div>
@@ -789,7 +794,7 @@ function LoginScreen({
       const result = await api.login(email, password);
       onLogin(result.user);
     } catch (requestError) {
-      setError(displayError(requestError, t));
+      setError(displayError(requestError, t, "auth"));
     } finally {
       setBusy(false);
     }
@@ -927,7 +932,9 @@ function SourcePanel({
           </h2>
         </div>
         <div className="flex items-start gap-2">
-          <Pill tone="blue">v{source.version_number}</Pill>
+          <Pill tone="blue">
+            {t("source.version", { version: source.version_number })}
+          </Pill>
           <Button kind="quiet" onClick={onClose}>
             {t("source.close")}
           </Button>
@@ -951,18 +958,6 @@ function SourcePanel({
             {formatDate(source.occurred_at, locale)}
           </dd>
         </div>
-        <div>
-          <dt className="text-slate-500">{t("source.offsetUnit")}</dt>
-          <dd className="mt-1 font-semibold text-slate-800">
-            {t("source.pythonCodepoint")}
-          </dd>
-        </div>
-        <div className="col-span-2">
-          <dt className="text-slate-500">{t("source.reference")}</dt>
-          <dd className="mt-1 break-words font-mono text-slate-800">
-            {source.source_reference ?? t("source.noReference")}
-          </dd>
-        </div>
       </dl>
       <blockquote className="mt-4 rounded-xl border border-blue-100 bg-white p-4 text-sm leading-7 text-slate-800">
         <ExactSpanView
@@ -972,13 +967,35 @@ function SourcePanel({
           endOffset={source.end_offset}
         />
       </blockquote>
-      <p className="mt-3 text-xs leading-5 text-slate-500">
-        {t("source.exactSpan", {
-          start: source.start_offset,
-          end: source.end_offset,
-        })}{" "}
-        {t("source.sha")}
-      </p>
+      <details
+        className="mt-4 rounded-xl border border-slate-200 bg-white/70 p-3 text-xs"
+        data-testid="source-technical-details"
+      >
+        <summary className="cursor-pointer font-semibold text-slate-700">
+          {t("source.details")}
+        </summary>
+        <dl className="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <dt className="text-slate-500">{t("source.offsetUnit")}</dt>
+            <dd className="mt-1 font-semibold text-slate-800">
+              {t("source.pythonCodepoint")}
+            </dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-slate-500">{t("source.reference")}</dt>
+            <dd className="mt-1 break-words font-mono text-slate-800">
+              {source.source_reference ?? t("source.noReference")}
+            </dd>
+          </div>
+        </dl>
+        <p className="mt-3 leading-5 text-slate-500">
+          {t("source.exactSpan", {
+            start: source.start_offset,
+            end: source.end_offset,
+          })}{" "}
+          {t("source.sha")}
+        </p>
+      </details>
     </section>
   );
 }
@@ -1052,8 +1069,7 @@ function CommentNode({
     >
       <div className="flex items-center justify-between gap-2 text-xs text-slate-400">
         <span>
-          {comment.author_user_id.slice(0, 8)} ·{" "}
-          {formatDate(comment.created_at, locale)}
+          {t("comments.author")} · {formatDate(comment.created_at, locale)}
         </span>
         <Pill tone={comment.is_resolved ? "green" : "slate"}>
           {comment.is_resolved ? t("comments.resolved") : t("comments.open")}
@@ -1295,7 +1311,7 @@ function CommentsPanel({
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => selectMention(user)}
               >
-                @{user.display_name} · {user.role}
+                @{user.display_name} · {t(roleKeys[user.role] ?? "role.staff")}
               </button>
             ))}
           </div>
@@ -1408,7 +1424,6 @@ function HistoryPanel({
               >
                 <p className="font-semibold">
                   {t("history.conflict.expected", {
-                    expected: conflict.expected_version,
                     actual: conflict.actual_version,
                   })}
                 </p>
@@ -1478,26 +1493,33 @@ function HistoricalContextPanel({
           </Button>
         )}
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700">
-            {t("context.hot")}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {t("context.hotDescription", { count: context.hot_entries.length })}
-          </p>
+      <details className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <summary className="cursor-pointer font-semibold text-slate-700">
+          {t("context.details")}
+        </summary>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-700">
+              {t("context.hot")}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("context.hotDescription", {
+                count: context.hot_entries.length,
+              })}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
+              {t("context.warm")}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700">
+              {t("context.warmDescription", {
+                count: context.warm_entries.length,
+              })}
+            </p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
-            {t("context.warm")}
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-700">
-            {t("context.warmDescription", {
-              count: context.warm_entries.length,
-            })}
-          </p>
-        </div>
-      </div>
+      </details>
       <div className="mt-4 space-y-3">
         {context.archival_summaries.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
@@ -1765,7 +1787,7 @@ function TaskPanel({
               <option value="">{t("task.chooseAssignee")}</option>
               {collaborators.map((user) => (
                 <option key={user.user_id} value={user.user_id}>
-                  {user.display_name} · {user.role}
+                  {user.display_name} · {t(roleKeys[user.role] ?? "role.staff")}
                 </option>
               ))}
             </select>
@@ -1874,15 +1896,15 @@ const aiScribeExamples: Record<
 > = {
   ai_doctor_consult_summary: {
     text: "During this synthetic doctor follow-up, the patient reported that the scheduled laboratory review remains pending. No diagnosis or treatment recommendation was made.",
-    reference: "synthetic-doctor-demo",
+    reference: "Doctor follow-up",
   },
   ai_nurse_consult_summary: {
     text: "During this synthetic nurse follow-up, the patient reported that the scheduled laboratory review remains pending. No diagnosis or treatment recommendation was made.",
-    reference: "synthetic-nurse-demo",
+    reference: "Nurse follow-up",
   },
   ai_patient_session_summary: {
-    text: "During this synthetic AI-patient session, the patient asked what preparation is needed for the next visit. No diagnosis or treatment recommendation was made.",
-    reference: "synthetic-patient-session-demo",
+    text: "During this synthetic patient conversation, the patient asked what preparation is needed for the next visit. No diagnosis or treatment recommendation was made.",
+    reference: "Patient conversation",
   },
 };
 
@@ -1916,9 +1938,6 @@ function AIScribePanel({
   const [sourceReference, setSourceReference] = useState(
     aiScribeExamples.ai_doctor_consult_summary.reference,
   );
-  const providerLabel =
-    providerInfo?.mode === "deepseek" ? t("ai.deepseek") : t("ai.fixture");
-
   function changeInteraction(next: AIScribeInteraction) {
     setInteractionType(next);
     const example = aiScribeExamples[next];
@@ -1951,26 +1970,24 @@ function AIScribePanel({
             {t("ai.title")}
           </h2>
         </div>
-        <Pill tone="amber">{providerLabel}</Pill>
       </div>
       <p className="mt-3 rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-amber-950">
         {t("ai.warning")}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
-          {t("ai.provider")}: {providerLabel}
-        </span>
-        {providerInfo?.model && (
-          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
-            {providerInfo.model}
-          </span>
-        )}
+      <details
+        className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-3 text-xs"
+        data-testid="ai-technical-details"
+      >
+        <summary className="cursor-pointer font-semibold text-slate-700">
+          {t("ai.details")}
+        </summary>
+        <p className="mt-2 leading-5 text-slate-600">{t("ai.aboutBody")}</p>
         {providerInfo?.mode === "deepseek" && !providerInfo.configured && (
-          <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 font-semibold text-rose-700">
+          <p className="mt-2 font-semibold text-rose-700">
             {t("ai.notConfigured")}
-          </span>
+          </p>
         )}
-      </div>
+      </details>
       {providerError && (
         <p
           className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
@@ -2040,10 +2057,12 @@ function AIScribePanel({
           data-testid="ai-job-result"
         >
           <p className="font-semibold text-slate-900">
-            {t("ai.status")}: {job.status}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {t("ai.provider")}: {job.provider_name}
+            {t("ai.status")}:{" "}
+            {job.status === "completed"
+              ? t("ai.ready")
+              : job.status.startsWith("failed")
+                ? t("ai.failed")
+                : t("ai.processingStatus")}
           </p>
           {job.status === "completed" ? (
             <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -2058,7 +2077,7 @@ function AIScribePanel({
             </div>
           ) : job.status.startsWith("failed") ? (
             <p className="mt-3 text-rose-700" role="alert">
-              {t("ai.safeError", { code: job.error_code ?? "provider_failed" })}
+              {t("ai.safeError")}
             </p>
           ) : (
             <p className="mt-3 text-slate-600">{t("ai.processing")}</p>
@@ -2073,8 +2092,11 @@ function formatVoiceTime(milliseconds: number) {
   return `${(milliseconds / 1000).toFixed(1)}s`;
 }
 
+function voiceSampleLabel(sample: VoiceSample) {
+  return sample.label.replace(/^Synthetic\s+/i, "");
+}
+
 function VoicePanel({
-  providerInfo,
   samples,
   session,
   busy,
@@ -2082,7 +2104,6 @@ function VoicePanel({
   onProcess,
   onOpenSource,
 }: {
-  providerInfo: VoiceProviderInfo;
   samples: VoiceSample[];
   session: VoiceSession | null;
   busy: boolean;
@@ -2126,19 +2147,19 @@ function VoicePanel({
             {t("voice.title")}
           </h2>
         </div>
-        <Pill tone="blue">{providerInfo.provider_name}</Pill>
       </div>
       <p className="mt-3 rounded-xl border border-violet-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-violet-950">
         {t("voice.warning")}
       </p>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
-          {t("voice.provider")}: {providerInfo.model}
-        </span>
-        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 font-semibold">
-          {providerInfo.disclosure}
-        </span>
-      </div>
+      <details
+        className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-3 text-xs"
+        data-testid="voice-about-details"
+      >
+        <summary className="cursor-pointer font-semibold text-slate-700">
+          {t("voice.about")}
+        </summary>
+        <p className="mt-2 leading-5 text-slate-600">{t("voice.aboutBody")}</p>
+      </details>
       {error && (
         <p
           className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
@@ -2160,7 +2181,7 @@ function VoicePanel({
             >
               {samples.map((sample) => (
                 <option key={sample.sample_id} value={sample.sample_id}>
-                  {sample.label} · {sample.scope}
+                  {voiceSampleLabel(sample)}
                 </option>
               ))}
             </select>
@@ -2170,7 +2191,9 @@ function VoicePanel({
             controls
             preload="metadata"
             src={selectedSample.audio_url}
-            aria-label={t("voice.audioLabel", { label: selectedSample.label })}
+            aria-label={t("voice.audioLabel", {
+              label: voiceSampleLabel(selectedSample),
+            })}
             className="w-full"
             data-testid="voice-audio"
           />
@@ -2194,16 +2217,16 @@ function VoicePanel({
           data-testid="voice-session-result"
         >
           <p className="font-semibold text-slate-900">
-            {t("voice.status")}: {session.status}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {t("voice.provider")}: {session.asr_provider} · {session.asr_model}
+            {t("voice.status")}:{" "}
+            {session.status === "completed"
+              ? t("voice.ready")
+              : session.status.startsWith("failed")
+                ? t("voice.failed")
+                : t("voice.processingStatus")}
           </p>
           {session.status.startsWith("failed") ? (
             <p className="mt-3 text-rose-700" role="alert">
-              {t("voice.failed", {
-                code: session.error_code ?? "voice_failed",
-              })}
+              {t("voice.failed")}
             </p>
           ) : session.status !== "completed" ? (
             <p className="mt-3 text-slate-600" role="status">
@@ -2233,13 +2256,13 @@ function VoicePanel({
                     <span className="mt-1 block leading-6 text-slate-700">
                       {segment.text}
                     </span>
-                    <span className="mt-1 block text-xs text-slate-500">
-                      {segment.confidence === null
-                        ? t("voice.confidenceUnavailable")
-                        : t("voice.confidence", {
-                            confidence: segment.confidence.toFixed(2),
-                          })}
-                    </span>
+                    {segment.confidence !== null && (
+                      <span className="mt-1 block text-xs text-slate-500">
+                        {t("voice.confidence", {
+                          confidence: segment.confidence.toFixed(2),
+                        })}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -3234,7 +3257,6 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             patientId &&
             voiceSamples.length > 0 && (
               <VoicePanel
-                providerInfo={voiceProviderInfo}
                 samples={voiceSamples}
                 session={voiceSession}
                 busy={voiceBusy}
@@ -3313,7 +3335,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           </Pill>
                         </div>
                         <span className="text-xs font-semibold text-slate-400">
-                          P{item.display_priority}
+                          {t("top.priority", {
+                            priority: item.display_priority,
+                          })}
                         </span>
                       </div>
                       <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
@@ -3539,9 +3563,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                               )}
                             </h3>
                             {entry.entry_type.startsWith("ai_") && (
-                              <Pill tone="amber">
-                                Clinician review required
-                              </Pill>
+                              <Pill tone="amber">{t("ai.requiresReview")}</Pill>
                             )}
                           </div>
                           <p className="mt-1 text-xs text-slate-500">
@@ -3562,7 +3584,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             })}
                           </p>
                         </div>
-                        <Pill>v{entry.current_version}</Pill>
+                        <Pill>
+                          {t("timeline.version", {
+                            version: entry.current_version,
+                          })}
+                        </Pill>
                       </div>
                       {isEditing ? (
                         <div className="mt-4 space-y-2">

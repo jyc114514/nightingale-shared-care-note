@@ -5,7 +5,9 @@ from pathlib import Path
 
 
 VOICE_FIXTURES_ROOT = Path(__file__).resolve().parent.parent / "static" / "voice-fixtures"
-MOCK_DISCLOSURE = "Mock transcript fixture - local ASR unavailable in this environment."
+VOICE_SCOPE_DISCLOSURE = (
+    "Pre-recorded synthetic care conversation with a prepared timestamped transcript."
+)
 
 
 @dataclass(frozen=True)
@@ -32,7 +34,7 @@ class VoiceSample:
 
     @property
     def provider_disclosure(self) -> str:
-        return MOCK_DISCLOSURE
+        return VOICE_SCOPE_DISCLOSURE
 
 
 PATIENT_SAMPLE = VoiceSample(

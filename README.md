@@ -3,19 +3,16 @@
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
 collaboration product. The repository is at **Phase 9 / local release candidate**: Gate A-C
 authentication, clinic-scoped RBAC, immutable revisions, audit metadata, optimistic concurrency,
-Glance/timeline/provenance, bilingual UI chrome, safe one-click demo startup, mentions, internal
-assignments, and metadata-only near-real-time invalidation are implemented locally.
+Glance/timeline/source navigation, bilingual UI chrome, safe one-click demo startup, mentions,
+internal assignments, and metadata-only near-real-time invalidation are implemented locally.
 
-The local Gate C boundary is implemented and measured, and the Bonus adaptive-importance and
-hybrid hot/warm/cold context paths are implemented with clinic-scoped deterministic logic. The
-optional DeepSeek V4 Flash adapter is implemented behind the redaction boundary, while the
-deterministic fixture remains the default. The hosted Render evaluation deployment uses managed
-PostgreSQL 18, fixture AI, and the existing Level-C Voice fixture path; it is not a clinical
-production guarantee. Ambient Voice is limited to a clearly labelled Level-C path with
-prerecorded synthetic audio and mock transcript fixtures; local ASR inference was not achieved in
-this environment. The
-repository-root `requirements.txt` is the candidate brief, **not** a
-pip requirements file; never run `pip install -r requirements.txt`.
+The product path is designed around a simple review workflow: make the next step visible, keep the
+original record easy to verify, and preserve human review for every suggestion. The hosted Render
+evaluation uses synthetic data, managed PostgreSQL 18, fixture AI, and a pre-recorded Voice example
+with a prepared timestamped transcript. It is an evaluation prototype, not a clinical production
+guarantee. Technical provider, redaction, performance, and deployment boundaries are documented
+below and in the Technical Brief. The repository-root `requirements.txt` is the candidate brief,
+**not** a pip requirements file; never run `pip install -r requirements.txt`.
 
 ## Runtime and database
 

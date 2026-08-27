@@ -1,89 +1,68 @@
-# Nightingale 最终录制前 Demo State Prep
+# Nightingale 录制前 Demo State Prep
 
-更新时间：2026-08-27
-部署地址：`https://nightingale-shared-care-note.onrender.com`
-录制界面：English
-数据边界：只使用内置 synthetic data
+更新时间：2026-08-27  ·  部署地址：`https://nightingale-shared-care-note.onrender.com`
+录制界面：`English`  ·  数据边界：只使用内置 synthetic data
 
-这份文件是录制前的状态准备卡，不是产品功能说明。线上数据库已经被前几轮 synthetic
-rehearsal 修改，不是 pristine seed。录制前必须重新确认当前页面显示的版本和卡片状态，
-不能把下面的版本号当成永久不变的前提。
+这份文件是录制前的状态准备卡，不是永久状态声明。线上数据库已经经过 synthetic rehearsal
+修改，因此版本号、卡片状态、评论状态和 Voice result 必须在每次录制前现场确认。
 
 ## 推荐登录顺序
 
-1. **Staff A**：先打开 Sarah Tan 的页面，完成 Staff-first 的 Glance、source、Voice 展示和
-   协作入口。
-2. **Clinician A**：通过一次离镜头的账号切换，完成 Clinician section、History、Compare、
-   Revert 和历史上下文。
-3. **Sarah Patient**：通过第二次离镜头的账号切换，完成患者隐私投影和 patient Voice。
+1. **Staff A**：完成 Glance View、source、Voice 和协作入口。
+2. **Clinician A**：完成 Clinician section、History、Compare/Revert 和 Historical context。
+3. **Sarah Patient**：完成患者可见内容和 Patient Voice。
 
-录制时不要在镜头中输入密码。每次账号切换都用 `Sign out` 后切镜头，登录完成、页面稳定
-后再继续录制。当前已验证只需要这两次角色切换。
+账号切换使用镜头外 `Sign out` cut；密码框、自动填充和登录过程不出现在画面中。
 
-## 当前线上状态盘点
+## 已知的 rehearsal 基线
 
-以下是最终 Staff-first dry run 前的只读盘点结果：
+以下是上一轮 Staff-first dry run 记录的基线，只用于帮助准备，不得当作录制时的固定事实：
 
-- 患者：`Sarah Tan`；Staff 页显示 `Staff A` 和 `Staff view`；Clinician 页显示 `Clinician A`
-  和 `Clinician view`；Patient 页显示 `Sarah Patient` 和 `Patient view`。
-- 内部页面的 SSE 标签为 `Live updates: Connected`。
-- Staff note 当前为 **v3**；History 中可见 **v1、v2、v3**，其中两个 earlier version 有
+- Staff/Clinician/Patient 三个角色和 `Sarah Tan` 均已可用；内部页面预期显示 `Up to date`。
+- Staff note 和 Clinician section 已有多个版本；History 中通常可看到 earlier version、
   `Compare` 和 `Revert`。
-- Clinician section 当前为 **v3**；History 中可见 **v1、v2、v3**，其中两个 earlier
-  version 有 `Compare`，并可见 `Revert` 控件。
-- Glance 当前仍有 Suggested 项：`Unresolved cardiology referral` 和
-  `Documented symptom after dose change`。另有一个 `Conflict review` 项和多个 Accepted
-  项。录制时先找当前仍显示 `Suggested` 的卡片，不要硬编码某一张卡的状态。
-- Staff note 已有一条打开状态的内部评论：正文是 synthetic rehearsal comment，页面显示
-  `Mentions: @Clinician A`，并有 `Reply`、`Resolve`、`Assign task`。
-- 内部 Voice panel 只有 `Synthetic nurse follow-up · clinical`；切换到 Patient 后只有
-  `Synthetic patient follow-up · patient`。内部页面当前没有 Voice session result，之前的
-  Voice 结果已体现为时间线中的 system-authored AI-scribed 条目。
-- 时间线中可见 27 Aug 2026 的 patient-session/nurse-consult Voice-derived 条目，以及
-  25 Aug 的手工 Staff/Clinician 条目和更早的历史条目。
-- Historical context 显示 9 条 Hot canonical entries、0 条 Warm index older entries、
-  April 2025 的 derived summary、2 个 source pointers 和 2 个 `View original record` 按钮。
+- Glance 通常包含 `Needs review`、`Reviewed` 或其他可审查状态；录制前选择页面实际存在
+  的卡片，不写死名称或状态。
+- Staff note 的团队讨论、mention、`Reply`、`Resolve`/`Unresolve` 和 `Assign task` 可能
+  已存在；录制前按页面实际状态决定是否执行。
+- 内部 Voice 预期提供 clinical conversation，Patient 预期只提供 patient-facing conversation。
+  已有 result 时直接展示，不重复处理。
+- Historical context 预期包含 `Recent context`、`Earlier context` 和一个或多个
+  `Historical summary`；来源按钮为 `View original record`。
 
-## 录制前必须准备
+## 录制前必须确认
 
-1. 打开 Render 服务，等待页面显示 `Live updates: Connected`；先等待 free instance 唤醒。
-2. 选择 `English`，患者选择保持为 `Sarah Tan`。
-3. 关闭 `Guide`、DevTools、浏览器通知、密码管理器弹窗和任何系统提示。
-4. 确认没有 `Source`、`Comments`、`History` 或 `Task` drawer 残留；每个镜头开始前让
-   鼠标停在页面空白处。
-5. Staff 镜头先检查当前仍有可用的 Suggested 卡片；如果卡片状态已改变，使用当前仍显示
-   `Suggested` 的卡片，并同步修改口播中的项目名称。
-6. 如果需要展示 Voice 处理，Clinical sample 和 Patient sample 各最多点击一次
-   `Process sample`。如果当前已有 result，直接展示已有结果，不要再次处理。
-7. 录制前不要点击 `Accept`、`Reject`、`Save revision`、`Add comment`、`Resolve`、
-   `Unresolve`、`Pin` 或 `Revert`；这些按钮只在对应镜头中按脚本操作。
+1. 页面语言为 `English`，患者下拉框为 `Sarah Tan`。
+2. 关闭 `Guide`、`Source`、`Comments`、`History`、`Task` drawer、通知和 DevTools。
+3. Staff/Clinician 页面状态为 `Up to date`；如果显示连接中断，等待或镜头外刷新后再录。
+4. Glance 至少有一张适合展示的卡片；记录实际出现的 status、action、risk 和 priority。
+5. Voice 如需处理，clinical 与 patient sample 各最多点击一次 `Create care-note suggestion`。
+6. History 选择当前列表中的 earlier version，不假定 `v1 → v2`。
+7. 所有输入均为 synthetic rehearsal sentence；clinical note 原文不翻译、不改写。
 
-## 录制过程中会修改什么
+## 录制中会修改什么
 
-| 操作 | 是否修改线上 synthetic state | 录制要求 |
+| 操作 | 是否修改 synthetic state | 规则 |
 | --- | --- | --- |
-| `Open source` / `Close source` | 否，只修改当前视图和 query | 可重复；关闭后确认 `patient` 保留、`highlight` 消失 |
-| `Process sample` | 是，创建 Voice session、AI entry 和 source | 每个 fixture 最多一次 |
-| Staff `Save revision` | 是，增加 Staff note 版本 | 记录录制时实际版本，不写死 v1→v2 |
-| `Add comment` | 是，增加内部评论和 mention metadata | 只提交一次 synthetic comment |
-| `Resolve` / `Unresolve` | 是，切换评论状态并写 metadata | 只做一组切换 |
-| `Pin` / `Unpin` | 是，写 importance feedback metadata | 只做一组切换 |
-| Clinician `Save revision` | 是，增加 Clinician section 版本 | 只在正式镜头执行 |
-| `Revert` | 是，生成新的 revert version | 只点击一次；不要直接改数据库 |
-| `View original record`、History、Compare | 否 | 可重复；如实说明 context pointer 的行为 |
+| `Open source` / `Close source` | 否 | 可重复；关闭后检查 `patient` 保留、`highlight` 清除 |
+| `Create care-note suggestion` | 是 | 每个 Voice sample 最多一次 |
+| `Save revision` | 是 | Staff、Clinician 各按脚本执行一次 |
+| `Add comment` | 是 | 只提交一次 synthetic comment |
+| `Resolve` / `Unresolve` | 是 | 完成一组来回切换 |
+| `Pin` / `Unpin` | 是 | 完成一组来回切换 |
+| `Revert` | 是 | 只点击一次；不要直接修改数据库 |
+| `View original record`、History、Compare | 否 | 可重复；按实际画面描述 |
 
-## 不要点击
+## 不要点击或展示
 
-- 不要重置数据库、删除记录或运行 seed。
-- 不要打开环境变量、密码、API key、Render Environment、浏览器 storage 或 provider console。
-- 不要打开 microphone、upload、Whisper、DeepSeek live call 或任何外部模型配置。
-- 不要把当前 `v3`、Accepted 状态或某一张卡片名称写成永久保证；录制前重新观察。
-- 不要把 `View original record` 说成 exact-span provenance panel；当前实际行为是滚动到
-  canonical timeline entry。
+- 不打开环境变量、密码、API key、Render Environment、browser storage、Cookie、DevTools
+  或 provider console。
+- 不运行 reset、delete 或 seed 来恢复旧版本号。
+- 不把 `View original record` 说成精确来源面板；它的作用是导航到对应时间线位置。
+- 不把准备好的 Voice transcript 说成 ASR 质量证据。
 
-## 收尾检查
+## 收尾
 
-- 页面仍为 English，患者和角色范围正确。
-- 关闭所有 drawer；鼠标移到空白处后停录。
-- 账号切换和密码输入均不出现在画面中。
-- 最终视频完成前不更新 PDF、ZIP、MANIFEST，也不 push。
+- 页面保持 `English`，角色和患者范围正确，所有 drawer 关闭。
+- 视频完成后完整观看一次，再填写 [`DEMO_VIDEO_QA.md`](DEMO_VIDEO_QA.md)。
+- 视频通过 QA 前不更新 PDF、ZIP、MANIFEST，不 push，不发邮件。

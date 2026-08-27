@@ -1,30 +1,33 @@
 # Nightingale 双语录制 Cue Card
 
-目标：4:30 · 操作中文 · 网页标签 English · 口播/字幕 English
-放在第二块屏幕、平板或手机上；不要把它录进视频。
+目标：4:30 · 操作提示中文 · 网页标签 English · 口播/字幕 English。把这张卡放在第二块
+屏幕或手机上，不要录进视频。精确旁白以 [`DEMO_SCRIPT_SPOKEN_EN.md`](DEMO_SCRIPT_SPOKEN_EN.md)
+为准；下表只用于快速找动作。
 
-| 时间 | 中文操作提示 | 念的英文 | 下一步 |
+| 时间 | 中文操作提示 | 画面确认 | 下一步 |
 | --- | --- | --- | --- |
-| 00:00-00:23 | 【继续录制】Staff；确认 `English`、`Sarah Tan`、`Live updates: Connected`；鼠标移开。 | 【念】“Nightingale is a shared care note for synthetic data. It is a trust system, not an autonomous medical system.” | 继续 `Top Card` |
-| 00:23-01:04 | 【继续录制】【点击】查看 `Top Card`；指出 action/status/risk；当前 Suggested AI card → `Open source`；【等待】`Immutable source`。 | 【念】“The Top Card is designed for a fast glance. Ranking priority is not a medical risk score.” | source 保持打开 |
-| 01:04-01:42 | 【继续录制】【点击】确认 `Prerecorded synthetic audio only`、`Mock transcript fixture`；播放；必要时只点一次 `Process sample`；点击 8 秒 segment/source。 | 【念】“This optional prototype uses prerecorded synthetic audio and a mock timestamped transcript. It does not claim live ASR or diarization.” | Voice/source 保持 |
-| 01:42-02:06 | 【继续录制】【点击】`Staff note` → `Edit` → `Save revision`；`Comments` → `@clinician` → `@Clinician A · clinician` → `Add comment`。 | 【念】“Staff can edit the existing Staff note and add an internal comment. The mention is stored as metadata.” | 继续 collaboration |
-| 02:06-02:28 | 【继续录制】【点击】`Resolve` → `Unresolve`；`Pin` → `Unpin`；关 drawer；【停录】`Sign out`；【切换账号】Clinician。 | 【念】“Resolve and Unresolve are explicit collaboration states. Pin and Unpin provide feedback to the importance logic.” | Clinician 登录 |
-| 02:28-03:00 | 【不要显示密码】【继续录制】【点击】Clinician `Edit` → `Save revision`；`History`；选 available earlier version 的 `Compare`；【等待】Before/After；必要时 `Revert` 一次。 | 【念】“History keeps full snapshots. Revert creates a new version and restores the prior content.” | 继续 context |
-| 03:00-03:32 | 【继续录制】【点击】`Hot context`、`Warm index`、`Derived summary · not the original record`；点击 `View original record`；【等待】滚到 timeline；【念】UX-01。 | 【念】“The summary is labeled not the original record. An independent participant using the Simplified Chinese interface completed the glance task in approximately nine seconds without coaching.” | 【停录】切 Patient |
-| 03:32-04:00 | 【不要显示密码】【切换账号】Sarah Patient；确认 `Patient view`、`Internal Glance View is hidden`；唯一 Voice 选项 `Synthetic patient follow-up · patient`。 | 【念】“The patient session is a different server-side projection. No clinical sample or generated-source control is exposed.” | 继续收尾 |
-| 04:00-04:30 | 【继续录制】【点击】指向 synthetic-only disclosure；鼠标移开；【念】念完【停录】。 | 【念】“The deployed service uses HTTPS and PostgreSQL, and the demo data is synthetic. Voice remains Level C.” | 完整看视频 |
+| 00:00–00:24 | 镜头外登录 Staff，选 `Sarah Tan` 和 `English`；等待 `Up to date`；关闭 `Guide` 和 drawer。 | `Shared Care Note`、`Staff view`、共享工作区 | `Glance View` |
+| 00:24–01:06 | 在 `Glance View` 选择当前实际可用的 AI-assisted card；指出 action/status/item kind/risk/priority；展开 `Why is this here?`；点击 `Open source`。 | `Original source`、版本、高亮原文；`Technical details` 默认折叠 | 保持来源可见 |
+| 01:06–01:44 | 找到 `Voice note`；如无 result，播放音频后只点一次 `Create care-note suggestion`；等待 `Ready for review`；点 transcript segment 和 `View source`。 | 音频、时间戳文字记录、建议和来源链路 | 进入协作 |
+| 01:44–02:08 | `Staff note` → `Edit` → `Save revision`；`Comments` → `Comment body` → `@Clinician A` → `Add comment`。 | 新版本、团队讨论、mention | 状态切换 |
+| 02:08–02:30 | 按实际状态完成 `Resolve`/`Unresolve`、`Pin`/`Unpin`；关 drawer；停录后镜头外 `Sign out` 并登录 Clinician。 | 讨论状态和优先级反馈完成切换 | `Clinician view` |
+| 02:30–03:05 | `Clinician section` → `Edit` → `Save revision`；`History` → earlier version → `Compare`；看 `Before`/`After`；如可用 `Revert` 一次。 | 新版本和保留的历史 | `Historical context` |
+| 03:05–03:37 | 展开 `How historical context is organised`；指出 `Recent context`、`Earlier context`、`Historical summary`；点击 `View original record`。 | 摘要明确不是原始记录，页面滚到相关时间线 | 念 UX-01 evidence |
+| 03:37–04:10 | 停录切换 Sarah Patient；确认 `Patient view`、`Your care summary`；展示患者时间线和 `Voice note`。 | 仅患者可见内容，无内部协作控件 | 收尾 |
+| 04:10–04:30 | 关闭 drawer，指向 synthetic-only disclosure 和 source/review boundary，鼠标移开，念最后一段。 | HTTPS 应用页面稳定 | 停录并做 QA |
 
 ## 备用标记
 
-- 【备用】`Live updates: Connected` 未出现：等待；仍失败时刷新一次。
-- 【备用】当前卡片已 Accepted：选择另一张当前显示 `Suggested` 的 AI card。
-- 【备用】已有 Voice result：直接展示，不要再次点击 `Process sample`。
-- 【备用】没有 Suggested：删掉 `Accept`/`Reject` 镜头，不要声称 review。
-- 【备用】`View original record` 只滚动 timeline：按实际行为描述，不说 exact-span panel。
+- 当前卡片已是 `Reviewed`：换另一张仍显示 `Needs review` 的卡片；不要写死名称或版本。
+- 已有 Voice result：直接展示，不再次点击 `Create care-note suggestion`。
+- `Compare`/`Revert` 不可用：停在当前 `History`，按实际画面说明。
+- 页面状态不稳定：停录、镜头外刷新或重新准备，不把错误状态剪成成功。
 
 ## 安全标记
 
-- 【不要显示密码】账号切换、密码框、浏览器自动填充全部离镜头。
-- 不要显示 API key、数据库 URL、环境变量、Cookie、DevTools、Render Environment 或 provider console。
-- 最终视频完成并通过 QA 前，不生成 PDF、ZIP、MANIFEST，不 push，不发邮件。
+- 密码输入、账号切换、浏览器自动填充和地址栏敏感信息全部离镜头。
+- 不展示 API key、数据库 URL、环境变量、Cookie、browser storage、DevTools、Render
+  Environment 或 provider console。
+- 录制前后不修改 clinical note 原文，不把来源技术细节当作主旁白。
+- 视频通过 [`DEMO_VIDEO_QA.md`](DEMO_VIDEO_QA.md) 前，不生成最终 PDF/ZIP/MANIFEST，不 push，
+  不发邮件。

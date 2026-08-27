@@ -182,7 +182,7 @@ the final video and external submission remain open.
 | PHASE-8-BOUNDARY | MockTransport proves only typed redacted synthetic text and the JSON shape cross the HTTP boundary; source reference, IDs, names, phone/IC/ID, comments, tasks, cookies, keys, and raw response are excluded | passed | [`deepseek.py`](../backend/app/ai/deepseek.py), [`test_deepseek_provider.py`](../backend/tests/test_deepseek_provider.py), [`test_ai_processing.py`](../backend/tests/test_ai_processing.py) |
 | PHASE-8-OUTPUT | JSON schema, empty/truncated/invalid output, duplicate/missing quote, local Unicode span, HTTP error mapping, bounded retry, and no silent fixture fallback are tested | passed | [`schemas.py`](../backend/app/ai/schemas.py), [`deepseek.py`](../backend/app/ai/deepseek.py), [`test_deepseek_provider.py`](../backend/tests/test_deepseek_provider.py) |
 | PHASE-8-JOB | Mock DeepSeek success creates a suggested system entry/highlight, refreshes materialized state, emits metadata-only SSE, and patient projection remains private; failure creates no source | passed | [`ai_processing.py`](../backend/app/services/ai_processing.py), [`test_ai_processing.py`](../backend/tests/test_ai_processing.py) |
-| PHASE-8-UI | Staff/clinician-only AI Scribe Demo shows synthetic warning/provider badge and processing/completed/failed states; patient/admin do not receive the panel | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx) |
+| PHASE-8-UI | Staff/clinician-only AI Scribe Demo shows synthetic-data warning and processing/completed/failed states without provider details in the normal workflow; patient/admin do not receive the panel | passed | [`App.tsx`](../frontend/src/App.tsx), [`App.test.tsx`](../frontend/tests/App.test.tsx), [UI product-language audit](evidence/ui_product_language_audit.md) |
 | PHASE-8-LAUNCHER | Ignored `.nightingale-local.json`, Configure DeepSeek, Use Local Fixture, child-only key injection, safe runtime/log boundary, fixture launcher smoke | passed | [`demo_common.ps1`](../scripts/demo_common.ps1), [`start_demo.ps1`](../scripts/start_demo.ps1), [`README_DEMO_LAUNCHER.md`](../scripts/README_DEMO_LAUNCHER.md) |
 | PHASE-8-LIVE-SMOKE | One bounded official `deepseek-v4-flash` synthetic smoke returned `2xx`, valid schema, 1,342.11 ms, and 276 total tokens; no model-quality claim | recorded | [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md) |
 
@@ -203,7 +203,7 @@ external submission remain open. UX-01 and PRIV-04 were closed by later evidence
 | PHASE-9-SPOKEN-DEMO | English spoken script, English subtitles, and recording materials; no final video recorded | passed | [DEMO_SCRIPT_SPOKEN_EN.md](DEMO_SCRIPT_SPOKEN_EN.md), [DEMO_CUE_CARD_ZH_EN.md](DEMO_CUE_CARD_ZH_EN.md), [DEMO_SUBTITLES_EN.srt](DEMO_SUBTITLES_EN.srt) |
 | PHASE-9-PUBLIC-GATE | Private-until-2026-08-28 18:00 rule, final secret scan, visibility approval, and no scheduled visibility action documented | passed | [PUBLIC_RELEASE_CHECKLIST.md](PUBLIC_RELEASE_CHECKLIST.md) |
 
-Phase 9 local evidence is **86 backend tests / 88% coverage**, **27 Vitest tests**, **14 core
+Phase 9 local evidence is **85 backend tests / 88% coverage**, **28 Vitest tests**, **14 core
 Playwright tests**, and **4 isolated Voice Playwright tests**. GitHub Actions run
 `33032765274` passed the real PostgreSQL 18 migration/seed gate, and the existing Render service
 is Live on the Voice-enabled `e766fe9` deployment. The authenticated production Voice smoke is
@@ -250,6 +250,16 @@ unreproducible in the deployed rehearsal.
 | PHASE-9.4-UX-01 | An anonymous independent participant using the supported Simplified Chinese interface completed the defined glance task in approximately nine seconds without coaching; priority, action/state, risk-versus-ranking, and source affordance were correct | passed | [independent UX evidence](evidence/ux_01_independent_test.md), [UX test record](UX_10_SECOND_TEST.md) |
 | PHASE-9.4-DRY-RUN | Final deployed English dry run completed in Staff → Clinician → Patient order with two off-camera role cuts; no Voice was reprocessed and no new mutation was created | passed | [demo rehearsal](evidence/demo_rehearsal.md), [state prep](DEMO_STATE_PREP_ZH.md) |
 | PHASE-9.4-RUNBOOK | Chinese operator guidance, bilingual cue card, English narration/subtitles, and final recording QA were prepared without generating the final video or packaging artifacts | passed | [operator runbook](DEMO_OPERATOR_RUNBOOK_ZH.md), [bilingual cue card](DEMO_CUE_CARD_ZH_EN.md), [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [subtitles](DEMO_SUBTITLES_EN.srt), [recording checklist](DEMO_RECORDING_CHECKLIST.md), [video QA](DEMO_VIDEO_QA.md) |
+
+## Phase 9.5 / product-language audit - 2026-08-27
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-9.5-UI-LANGUAGE | Primary UI surfaces use product language for session status, Glance, source, context, AI, Voice, collaboration, conflicts, and Patient; technical identifiers remain in deliberate details/evidence | passed | [UI product-language audit](evidence/ui_product_language_audit.md), [App.tsx](../frontend/src/App.tsx), [English dictionary](../frontend/src/i18n/en.ts), [Chinese dictionary](../frontend/src/i18n/zh-CN.ts) |
+| PHASE-9.5-VISUAL-QA | Local desktop/mobile screenshots cover workspace, source, Voice, Patient, Comments, Task, History/conflict/context, Guide, and Preview; local Gate B/Voice E2E suites are green | passed | [UI product-language audit](evidence/ui_product_language_audit.md), [local artifacts](../artifacts/gate-b/) |
+
+Phase 9.5 is a local release-candidate change. It does not claim that the product-language update
+has reached Render until the separately authorized push/deploy is completed.
 
 ## Hard release gate
 

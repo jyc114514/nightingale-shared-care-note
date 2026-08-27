@@ -393,14 +393,14 @@ describe("Gate B shared care note", () => {
     fireEvent.click(screen.getByRole("button", { name: "简体中文" }));
     expect(screen.getByText("共享照护记录")).toBeInTheDocument();
     expect(screen.getByTestId("ai-scribe-panel")).toHaveTextContent(
-      "AI 记录演示",
+      "AI 辅助记录",
     );
     const localizedSourceButtons = await screen.findAllByRole("button", {
       name: "打开来源",
     });
     fireEvent.click(localizedSourceButtons[0]);
     expect(
-      await screen.findByRole("region", { name: "不可变来源" }),
+      await screen.findByRole("region", { name: "原始来源" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "关闭来源" }),
@@ -449,7 +449,7 @@ describe("Gate B shared care note", () => {
     );
   });
 
-  it("shows the internal AI Scribe panel, provider badge, and safe completed job", async () => {
+  it("shows the internal AI-assisted panel and a safe completed job", async () => {
     mockAuthenticatedApi(staffUser, {
       aiProviderResponse: {
         provider_name: "deepseek-v4-flash",
@@ -477,17 +477,21 @@ describe("Gate B shared care note", () => {
     });
     renderApp();
     const panel = await screen.findByTestId("ai-scribe-panel");
-    expect(panel).toHaveTextContent("AI Scribe Demo");
-    await waitFor(() => expect(panel).toHaveTextContent("DeepSeek V4 Flash"));
+    expect(panel).toHaveTextContent("AI-assisted note");
+    expect(panel).not.toHaveTextContent("DeepSeek V4 Flash");
     expect(panel).toHaveTextContent(
-      "Synthetic demo text only. Never enter real patient information.",
+      "Demo text only. Do not enter real patient information.",
+    );
+    expect(screen.getByTestId("ai-technical-details")).not.toHaveAttribute(
+      "open",
     );
     fireEvent.click(
-      within(panel).getByRole("button", { name: "Generate suggestion" }),
+      within(panel).getByRole("button", { name: "Create suggestion" }),
     );
     const result = await screen.findByTestId("ai-job-result");
-    expect(result).toHaveTextContent("deepseek-v4-flash");
-    expect(result).toHaveTextContent("Requires clinician review");
+    expect(result).toHaveTextContent("Ready for review");
+    expect(result).not.toHaveTextContent("deepseek-v4-flash");
+    expect(result).not.toHaveTextContent("DeepSeek");
     expect(result).not.toHaveTextContent("api-key");
     expect(result).not.toHaveTextContent(".txt");
   });
@@ -515,10 +519,10 @@ describe("Gate B shared care note", () => {
     renderApp();
     const panel = await screen.findByTestId("ai-scribe-panel");
     fireEvent.click(
-      within(panel).getByRole("button", { name: "Generate suggestion" }),
+      within(panel).getByRole("button", { name: "Create suggestion" }),
     );
     expect(await screen.findByTestId("ai-job-result")).toHaveTextContent(
-      "Provider job is processing...",
+      "In progress",
     );
 
     cleanup();
@@ -544,17 +548,18 @@ describe("Gate B shared care note", () => {
     renderApp();
     const failedPanel = await screen.findByTestId("ai-scribe-panel");
     fireEvent.click(
-      within(failedPanel).getByRole("button", { name: "Generate suggestion" }),
+      within(failedPanel).getByRole("button", { name: "Create suggestion" }),
     );
     const failedResult = await screen.findByTestId("ai-job-result");
     expect(failedResult).toHaveTextContent(
-      "Provider failed safely: provider_auth_failed",
+      "The suggestion could not be created. Your existing record was not changed.",
     );
+    expect(failedResult).not.toHaveTextContent("provider_auth_failed");
     expect(failedResult).not.toHaveTextContent(".nightingale-local.json");
     expect(failedResult).not.toHaveTextContent("api.txt");
   });
 
-  it("shows Level-C Voice fixture segments and generated source navigation", async () => {
+  it("shows a Voice note with segments and source navigation", async () => {
     mockAuthenticatedApi(staffUser, {
       voiceProviderResponse: {
         provider_name: "mock-transcript-fixture",
@@ -611,17 +616,30 @@ describe("Gate B shared care note", () => {
     });
     renderApp();
     const panel = await screen.findByTestId("voice-panel");
-    expect(panel).toHaveTextContent("Review prerecorded synthetic audio");
-    expect(panel).toHaveTextContent("Mock transcript fixture");
+    expect(panel).toHaveTextContent("Voice note");
+    expect(panel).toHaveTextContent("Review a pre-recorded care conversation");
+    expect(panel).not.toHaveTextContent("mock-transcript-fixture");
+    expect(panel).not.toHaveTextContent("Level-C");
+    expect(panel).not.toHaveTextContent("precomputed-v1");
+    expect(panel).not.toHaveTextContent("provider");
+    expect(panel).not.toHaveTextContent("ASR confidence");
+    const voiceAbout = screen.getByTestId("voice-about-details");
+    expect(voiceAbout).not.toHaveAttribute("open");
+    fireEvent.click(within(voiceAbout).getByText("About this example"));
+    expect(voiceAbout).toHaveTextContent(
+      "pre-recorded synthetic care conversation and a prepared timestamped transcript",
+    );
     fireEvent.click(
-      within(panel).getByRole("button", { name: "Process sample" }),
+      within(panel).getByRole("button", {
+        name: "Create care-note suggestion",
+      }),
     );
     const result = await screen.findByTestId("voice-session-result");
-    expect(result).toHaveTextContent("Voice session status: completed");
+    expect(result).toHaveTextContent("Suggestion status: Ready for review");
     expect(result).toHaveTextContent("This is a synthetic nurse follow-up.");
-    expect(result).toHaveTextContent("ASR confidence unavailable for fixture");
+    expect(result).not.toHaveTextContent("ASR confidence");
     fireEvent.click(
-      within(result).getByRole("button", { name: "Open generated source" }),
+      within(result).getByRole("button", { name: "View source" }),
     );
     expect(
       await screen.findByTestId("immutable-timeline-source"),
@@ -677,20 +695,20 @@ describe("Gate B shared care note", () => {
     });
     renderApp();
     const panel = await screen.findByTestId("voice-panel");
-    expect(panel).toHaveTextContent("Synthetic patient follow-up");
-    expect(panel).not.toHaveTextContent("Synthetic nurse follow-up");
+    expect(panel).toHaveTextContent("patient follow-up");
+    expect(panel).not.toHaveTextContent("nurse follow-up");
     expect(
       panel.querySelector("button[aria-label*='microphone' i]"),
     ).toBeNull();
     fireEvent.click(
-      within(panel).getByRole("button", { name: "Process sample" }),
+      within(panel).getByRole("button", {
+        name: "Create care-note suggestion",
+      }),
     );
     expect(await screen.findByTestId("voice-session-result")).toHaveTextContent(
-      "Voice session status: completed",
+      "Suggestion status: Ready for review",
     );
-    expect(
-      screen.queryByRole("button", { name: "Open generated source" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "View source" })).toBeNull();
   });
 
   it("restores saved locale while URL locale takes precedence", async () => {
@@ -746,9 +764,9 @@ describe("Gate B shared care note", () => {
     mockAuthenticatedApi(staffUser, { endOffset: 19 });
     renderApp();
     expect(
-      await screen.findByRole("region", { name: "不可变来源" }),
+      await screen.findByRole("region", { name: "原始来源" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("不可变来源范围")).toBeInTheDocument();
+    expect(screen.getByText("原始来源片段")).toBeInTheDocument();
     expect(
       within(screen.getByTestId("immutable-timeline-source")).getByTestId(
         "source-quote",
@@ -779,7 +797,7 @@ describe("Gate B shared care note", () => {
     });
     fireEvent.submit(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Invalid email or password",
+      "We couldn't sign you in. Check your details and try again.",
     );
   });
 
@@ -787,15 +805,56 @@ describe("Gate B shared care note", () => {
     mockAuthenticatedApi();
     renderApp();
     expect(
-      await screen.findByText(/6 active source-linked items · max 6/),
+      await screen.findByText(/6 items need attention/),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByText("AI-scribed · Nurse consult").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Nurse consultation").length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: "Open source" })).toHaveLength(
       6,
     );
     expect(screen.getAllByRole("button", { name: "Comments" }).length).toBe(2);
+  });
+
+  it("keeps implementation language out of the primary product surfaces", async () => {
+    mockAuthenticatedApi();
+    renderApp();
+    await screen.findByText(/6 items need attention/);
+    const top = await screen.findByTestId("top-card");
+    expect(top).toHaveTextContent("6 items need attention");
+    expect(top).toHaveTextContent("Priority 100");
+    expect(top).not.toHaveTextContent("P100");
+    expect(top).not.toHaveTextContent("source-linked");
+    expect(top).not.toHaveTextContent("No explicit risk tag");
+    expect(top).not.toHaveTextContent("No action label");
+
+    const aiPanel = screen.getByTestId("ai-scribe-panel");
+    expect(aiPanel).toHaveTextContent("AI-assisted note");
+    expect(aiPanel).not.toHaveTextContent("Active provider");
+    expect(aiPanel).not.toHaveTextContent("fixture-redacted-v1");
+    expect(aiPanel).not.toHaveTextContent("deterministic-local");
+
+    const historical = screen.getByTestId("historical-context");
+    expect(historical).toHaveTextContent(
+      "Recent context, earlier context, and historical summaries",
+    );
+    expect(historical).not.toHaveTextContent("Hot context");
+    expect(historical).not.toHaveTextContent("Warm index");
+    expect(historical).not.toHaveTextContent("policy gate-d-v1");
+
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: "Open source" }))[0],
+    );
+    const source = await screen.findByRole("region", {
+      name: "Original source",
+    });
+    const technicalDetails = screen.getByTestId("source-technical-details");
+    expect(technicalDetails).not.toHaveAttribute("open");
+    expect(screen.getByText("Python code point")).not.toBeVisible();
+    expect(
+      screen.getByText(/SHA-256 is stored with the highlight\./),
+    ).not.toBeVisible();
+    fireEvent.click(within(technicalDetails).getByText("Technical details"));
+    expect(technicalDetails).toHaveAttribute("open");
+    expect(source).toHaveTextContent("Exact span:");
   });
 
   it("shows bounded ranking contributions and sends pin feedback", async () => {
@@ -806,7 +865,7 @@ describe("Gate B shared care note", () => {
     expect(
       (
         await screen.findAllByText(
-          "Ranking priority, not a medical risk score.",
+          "Priority helps organise the view. It is not a medical risk score.",
         )
       ).length,
     ).toBeGreaterThan(0);
@@ -847,7 +906,7 @@ describe("Gate B shared care note", () => {
     expect(screen.getByTestId("comments-drawer")).toBeVisible();
     expect(screen.getByTestId("comments-loading")).toBeVisible();
     await waitFor(() =>
-      expect(screen.getByText("No comments yet.")).toBeVisible(),
+      expect(screen.getByText("No discussion yet.")).toBeVisible(),
     );
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(document.activeElement).toBe(commentsButton));
@@ -856,7 +915,7 @@ describe("Gate B shared care note", () => {
     fireEvent.click(commentsButton);
     expect(screen.getByTestId("comments-drawer")).toBeVisible();
     expect(await screen.findByTestId("comments-error")).toHaveTextContent(
-      "Comments request failed",
+      "We couldn't complete that action. Your existing record was not changed.",
     );
   });
 
@@ -937,7 +996,7 @@ describe("Gate B shared care note", () => {
       expect(screen.queryByTestId("comments-drawer")).not.toBeInTheDocument(),
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "This entry is no longer available",
+      "This record changed and the discussion was closed safely.",
     );
   });
 
@@ -952,7 +1011,7 @@ describe("Gate B shared care note", () => {
     )[0];
     fireEvent.click(sourceButton);
     expect(
-      await screen.findByRole("region", { name: "Immutable source" }),
+      await screen.findByRole("region", { name: "Original source" }),
     ).toBeInTheDocument();
     eventSource.emit("entry");
     await waitFor(() =>
@@ -963,7 +1022,7 @@ describe("Gate B shared care note", () => {
       ).toBeGreaterThan(1),
     );
     expect(
-      screen.getByRole("region", { name: "Immutable source" }),
+      screen.getByRole("region", { name: "Original source" }),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Close source" }));
@@ -1038,7 +1097,7 @@ describe("Gate B shared care note", () => {
       within(historical).getByTestId("derived-summary-label"),
     );
     expect(historical).toHaveTextContent(
-      "Derived summary · not the original record",
+      "Historical summary · not the original record",
     );
     expect(historical).toHaveTextContent("Staff note");
     expect(historical).toHaveTextContent("v1");
@@ -1066,7 +1125,7 @@ describe("Gate B shared care note", () => {
       await Promise.resolve();
     });
     expect(
-      screen.getByRole("region", { name: "Immutable source" }),
+      screen.getByRole("region", { name: "Original source" }),
     ).toBeInTheDocument();
     const renderedSource = screen.getByTestId("source-rendered-text");
     expect(renderedSource.textContent).toBe(
@@ -1088,7 +1147,7 @@ describe("Gate B shared care note", () => {
     ).toHaveTextContent("Pending renal panel");
     fireEvent.click(screen.getByRole("button", { name: "Close source" }));
     expect(
-      screen.queryByRole("region", { name: "Immutable source" }),
+      screen.queryByRole("region", { name: "Original source" }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByTestId("immutable-timeline-source"),
@@ -1109,8 +1168,10 @@ describe("Gate B shared care note", () => {
       name: "Open source",
     });
     fireEvent.click(sourceButtons[0]);
-    expect(await screen.findByText("Immutable source")).toBeInTheDocument();
-    expect(screen.getByText(/Exact span/)).toBeInTheDocument();
+    expect(await screen.findByText("Original source")).toBeInTheDocument();
+    const sourcePanel = screen.getByRole("region", { name: "Original source" });
+    fireEvent.click(within(sourcePanel).getByText("Technical details"));
+    expect(within(sourcePanel).getByText(/Exact span/)).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "Comments" })[0]);
     expect(
       await screen.findByRole("region", { name: "Comments" }),
@@ -1140,9 +1201,7 @@ describe("Gate B shared care note", () => {
   it("does not expose internal Glance or comments to a patient session", async () => {
     mockAuthenticatedApi(patientUser);
     renderApp();
-    expect(
-      await screen.findByText("Internal Glance View is hidden"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Your care summary")).toBeInTheDocument();
     expect(
       screen.queryByText("Top Card · Glance View"),
     ).not.toBeInTheDocument();

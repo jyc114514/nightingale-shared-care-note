@@ -79,21 +79,21 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   page,
 }, testInfo) => {
   await login(page, "clinician.a@clinic-a.test");
-  await expect(page.getByText("Top Card · Glance View")).toBeVisible();
+  await expect(page.getByText("Glance View")).toBeVisible();
   const doctorCard = page
     .getByTestId("glance-item")
     .filter({ hasText: "Doctor consult" })
     .first();
   await expect(doctorCard).toBeVisible();
   await expect(doctorCard).toContainText("Information");
-  await expect(doctorCard).toContainText(/Suggested|Accepted/);
-  await expect(doctorCard).toContainText("No explicit risk tag");
+  await expect(doctorCard).toContainText(/Needs review|Reviewed/);
+  await expect(doctorCard).toContainText("No risk flag");
   await expect(doctorCard.getByTestId("glance-action")).toContainText(
     "Review suggestion",
   );
   await doctorCard.getByTestId("ranking-details").click();
   await expect(doctorCard).toContainText(
-    "Ranking priority, not a medical risk score.",
+    "Priority helps organise the view. It is not a medical risk score.",
   );
 
   if (testInfo.project.name === "desktop-1440") {
@@ -106,7 +106,10 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   }
 
   await doctorCard.getByRole("button", { name: "Open source" }).click();
-  const source = page.getByRole("region", { name: "Immutable source" });
+  const source = page.getByRole("region", {
+    name: "Original source",
+    exact: true,
+  });
   await expect(source).toBeVisible();
   await expect(source).toHaveAttribute("data-source-version", "1");
   const quote = await source.getByTestId("source-quote").textContent();
@@ -137,7 +140,7 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   expect(highlightId).toBeTruthy();
   await page.reload();
   await expect(
-    page.getByRole("region", { name: "Immutable source" }),
+    page.getByRole("region", { name: "Original source", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
@@ -170,7 +173,7 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
   const patientId = await page.locator("#patient-select").inputValue();
   await page.getByRole("button", { name: "Close source" }).click();
   await expect(
-    page.getByRole("region", { name: "Immutable source" }),
+    page.getByRole("region", { name: "Original source", exact: true }),
   ).toHaveCount(0);
   await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
   const closedUrl = new URL(page.url());
@@ -189,7 +192,7 @@ test("Scenario A - clinician traces an AI item to an exact immutable source", as
           .getByTestId("glance-item")
           .filter({ hasText: "Doctor consult" })
           .first(),
-      ).toContainText("Accepted");
+      ).toContainText("Reviewed");
     }
     const nurseCard = page
       .getByTestId("glance-item")
@@ -226,7 +229,7 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   const staffCard = page.getByTestId("timeline-entry-" + entry.id);
   await expect(staffCard).toBeVisible();
   await staffCard.getByRole("button", { name: "History" }).click();
-  const history = staffCard.getByRole("region", { name: "Revision history" });
+  const history = staffCard.getByRole("region", { name: "History" });
   await expect(history).toBeVisible();
 
   const revisedContent =
@@ -240,13 +243,15 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
     staffCard.getByText(revisedContent, { exact: true }),
   ).toBeVisible();
   await expect(
-    staffCard.getByText("v" + (entry.currentVersion + 1), { exact: true }),
+    staffCard.getByText("Version " + (entry.currentVersion + 1), {
+      exact: true,
+    }),
   ).toBeVisible();
 
   const compare = history.getByRole("button", { name: "Compare" }).first();
   if (await compare.count()) {
     await compare.click();
-    await expect(history).toContainText("Diff v");
+    await expect(history).toContainText("Changes from version");
   }
   const revert = history
     .getByRole("button", { name: "Revert" })
@@ -256,8 +261,8 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
   await expect(
     staffCard.getByText(entry.content, { exact: true }),
   ).toBeVisible();
-  await expect(history).toContainText("v" + (entry.currentVersion + 2));
-  await expect(history).toContainText("v1");
+  await expect(history).toContainText("Version " + (entry.currentVersion + 2));
+  await expect(history).toContainText("Version 1");
 
   const staffSourceCard = page
     .getByTestId("glance-item")
@@ -296,7 +301,7 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
     secondPage.getByRole("region", { name: "Comments" }),
   ).toBeVisible();
   await expect(secondPage.getByTestId("realtime-status")).toContainText(
-    "Connected",
+    "Up to date",
   );
   const rootBody = "Root thread " + testInfo.project.name + " " + Date.now();
   await comments.getByLabel("Comment body").fill("@");
@@ -312,7 +317,7 @@ test("Scenario B - staff creates revisions, diff, revert, and a comment thread",
     .filter({ hasText: rootBody })
     .first();
   await expect(root).toBeVisible();
-  await expect(root).toContainText("Mentions");
+  await expect(root).toContainText("Mentioned teammates");
 
   await root.getByRole("button", { name: "Assign task" }).click();
   const taskTitle =
@@ -456,7 +461,7 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
   const historical = page.getByTestId("historical-context");
   await expect(historical).toBeVisible();
   await expect(historical).toContainText(
-    "Derived summary · not the original record",
+    "Historical summary · not the original record",
   );
   await expect(
     historical.getByRole("button", { name: "View original record" }).first(),
@@ -469,11 +474,13 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
   await staffCard.getByRole("button", { name: "History" }).click();
   const conflictPanel = page.getByTestId("conflict-panel");
   await expect(conflictPanel).toBeVisible();
-  await expect(conflictPanel).toContainText("Optimistic concurrency conflict");
+  await expect(conflictPanel).toContainText(
+    "This record changed while you were editing",
+  );
   await expect(conflictPanel).toContainText(winnerContent);
   await expect(conflictPanel).toContainText(staleContent);
   await expect(conflictPanel).toContainText(
-    "actual v" + (entry.currentVersion + 1),
+    "record is now version " + (entry.currentVersion + 1),
   );
   await page.screenshot({
     path: screenshotPath(testInfo.project.name, "scenario-c.png"),
@@ -483,14 +490,14 @@ test("Scenario C - stale write returns 409 and remains visible as an optimistic 
 
 test("Patient privacy - cookie patient sees only patient-facing entries and internal endpoint is denied", async ({
   page,
-}) => {
+}, testInfo) => {
   await login(page, "sarah.patient@clinic-a.test");
-  await expect(page.getByText("Internal Glance View is hidden")).toBeVisible();
+  await expect(page.getByText("Your care summary")).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Patient summary", exact: true }),
+    page.getByRole("heading", { name: "Patient care summary", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Patient instruction", exact: true }),
+    page.getByRole("heading", { name: "Care instruction", exact: true }),
   ).toBeVisible();
   await expect(page.getByTestId("historical-context")).toBeVisible();
   await expect(
@@ -500,6 +507,10 @@ test("Patient privacy - cookie patient sees only patient-facing entries and inte
     page.getByText("Internal follow-up: confirm the next appointment window."),
   ).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Comments" })).toHaveCount(0);
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "patient-privacy.png"),
+    fullPage: false,
+  });
 
   const patientId = await page.locator("#patient-select").inputValue();
   const internalGlance = await backendRequest(
@@ -536,7 +547,7 @@ test("Chinese chrome keeps source data and provenance controls usable", async ({
     .first()
     .getByRole("button", { name: "打开来源" });
   await sourceButton.click();
-  const source = page.getByRole("region", { name: "不可变来源" });
+  const source = page.getByRole("region", { name: "原始来源", exact: true });
   await expect(source).toBeVisible();
   await expect(source.getByTestId("source-quote")).toBeVisible();
   await page.waitForTimeout(3000);
@@ -545,7 +556,9 @@ test("Chinese chrome keeps source data and provenance controls usable", async ({
     page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
   ).toBeVisible();
   await page.getByRole("button", { name: "关闭来源" }).click();
-  await expect(page.getByRole("region", { name: "不可变来源" })).toHaveCount(0);
+  await expect(
+    page.getByRole("region", { name: "原始来源", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByTestId("immutable-timeline-source")).toHaveCount(0);
   expect(new URL(page.url()).searchParams.has("highlight")).toBe(false);
 });
@@ -554,6 +567,13 @@ test("Demo preview uses real internal viewports without recursive controls", asy
   page,
 }, testInfo) => {
   await login(page, "staff.a@clinic-a.test");
+  await page.getByRole("button", { name: "Guide" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "guide-open.png"),
+    fullPage: false,
+  });
+  await page.getByRole("button", { name: "Close guide" }).click();
   const previewSelect = page.getByTestId("demo-preview-select");
   await previewSelect.selectOption("mobile");
   await expect(page.getByTestId("preview-dimensions")).toContainText("390×844");
