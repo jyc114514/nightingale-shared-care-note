@@ -55,9 +55,10 @@ overlap/noise handling, multilingual clinical ASR, production PHI audio, or mode
 
 ## Render Level-C enablement
 
-The existing Render evaluation app enables `VOICE_PROVIDER=fixture` while keeping
-`LLM_PROVIDER=fixture`. The deployed flow was verified with an authenticated clinician and a
-synthetic patient view: prerecorded WAV playback, mock timestamped transcript, unavailable
-confidence, generated suggested source/provenance, and role-scoped sample visibility. No
-`faster-whisper` import, model download, network ASR, microphone capture, upload, or diarization
-is part of the deployed path. This is a **Partial Bonus / Level C** result, not full Ambient Voice.
+The existing Render evaluation app now enables `VOICE_PROVIDER=fixture` while keeping
+`LLM_PROVIDER=fixture`. The configuration deploy reached Live, and the final startup/health logs
+show no Voice dependency/model download or ASR error. The available authenticated browser session
+had expired before the online Voice flow could be rerun; local backend/frontend role/privacy tests
+remain the evidence for prerecorded WAV playback, mock transcript, confidence-unavailable state,
+source/provenance, and sample scoping. This is a **Partial Bonus / Level C** result, not full
+Ambient Voice, until a user-authenticated online smoke is completed.

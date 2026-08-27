@@ -199,7 +199,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 9 local application checkpoint, this suite reports **81 passed**. Reproducible coverage is **88%**
+At the Phase 9 local application checkpoint, this suite reports **86 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 
@@ -234,7 +234,7 @@ Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs 12 core checks at 1440x900 and
+real Uvicorn and Vite processes on clean local ports, and runs 14 core checks at 1440x900 and
 390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks at the same viewports. Scenario B
 covers revisions, nested comments, keyboard mention selection, contextual assignment drawer
 creation/completion, and a second browser receiving the metadata-only SSE invalidation. The

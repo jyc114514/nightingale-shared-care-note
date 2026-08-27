@@ -9,6 +9,8 @@ for the Render transport/database boundary, not a clinical compliance certificat
 - Postgres: `nightingale-shared-care-note-db`, Free, Singapore, PostgreSQL 18, 1 GB
 - Migration baseline deploy: `dep-da7ptlek1f9s73ch6910` (`d2a12cd`)
 - Comments fix deploy: `dep-da7s4v3l550s73cusqv0` (`8a46b96`)
+- Voice fixture Auto-Deploy: `dep-da7t9tjl550s73cvmhgg` (`e766fe9`), Live
+- Voice fixture Blueprint sync: `dep-da7t9u0chk0s73c7dbl0` (`e766fe9`), Live
 - URL: `https://nightingale-shared-care-note.onrender.com`
 
 ## Transport encryption
@@ -57,6 +59,9 @@ audit. The Free database is temporary and intended only for evaluation.
 - The live successful login/`Set-Cookie` path was not exercised because the seed password is a
   platform-generated secret that was intentionally not read or transmitted by this audit.
   Local secure-cookie fail-closed tests remain the evidence for that application control.
+- The final Voice fixture configuration is deployed, but the authenticated Voice UI flow was not
+  re-run because the available browser session had expired. Live Voice listing, playback,
+  processing, transcript, seeking, and source navigation therefore remain user-login evidence.
 
 ## Migration and seed evidence
 

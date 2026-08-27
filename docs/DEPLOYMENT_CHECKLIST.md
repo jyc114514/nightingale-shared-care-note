@@ -13,7 +13,8 @@ Status: **Render deployment live with synthetic evaluation limitations documente
       `0010_postgres_compat`, and runs synthetic seed only with `DEMO_SEED_ENABLED=true`.
 - [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=fixture`; no DeepSeek key or Voice model is in
       the Render production image/configuration.
-- [x] Successful deploy `dep-da7ptlek1f9s73ch6910` from commit `d2a12cd` is live at
+- [x] Successful Voice fixture deploys `dep-da7t9tjl550s73cvmhgg` (Auto-Deploy) and
+      `dep-da7t9u0chk0s73c7dbl0` (Blueprint sync) from commit `e766fe9` are Live at
       `https://nightingale-shared-care-note.onrender.com`.
 - [x] HTTP-to-HTTPS redirect, HTTPS `/health`, SPA root, unauthenticated `401`, migration/seed
       logs, and PostgreSQL schema evidence are recorded in
@@ -50,4 +51,6 @@ Official references: [Blueprint specification](https://render.com/docs/blueprint
 - [x] DeepSeek remains opt-in and local-only; it is not part of Render configuration.
 - [x] Redaction and schema validation remain server-side, with explicit provider failure behavior.
 - [x] Voice remains Level C fixture-only locally and is enabled on Render only through the fixture
-      provider.
+      provider; no ASR inference, microphone, upload, or diarization is deployed.
+- [ ] Complete authenticated online Voice smoke with both clinical and patient sessions; the
+      browser session available during this deployment audit had expired.

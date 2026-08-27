@@ -12,6 +12,8 @@ was created or performed.
 - Postgres: `nightingale-shared-care-note-db` (`dpg-da7p4gk9v7es73f7l6eg-a`), Free, Singapore
 - Successful migration deploy: `dep-da7ptlek1f9s73ch6910` from `d2a12cd`
 - Successful Comments fix deploy: `dep-da7s4v3l550s73cusqv0` from `8a46b96`
+- Voice fixture Auto-Deploy: `dep-da7t9tjl550s73cvmhgg` from `e766fe9`, Live
+- Voice fixture Blueprint sync: `dep-da7t9u0chk0s73c7dbl0` from `e766fe9`, Live
 - Service URL: `https://nightingale-shared-care-note.onrender.com`
 - GitHub repository: `jyc114514/nightingale-shared-care-note` (private)
 
@@ -64,7 +66,7 @@ steps through `0010_postgres_compat`, successful synthetic seed counts, `Applica
 complete`, Uvicorn listening on the Render port, and repeated `GET /health 200 OK` checks. The
 follow-up production Comments fix deploy `dep-da7s4v3l550s73cusqv0` from `8a46b96` is also Live.
 
-The logged seed counts were:
+The logged seed counts for the original migration deploy were:
 
 `clinics=2`, `patients=2`, `users=5`, `entries=7`, `comments=2`, `highlights=5`,
 `glance_items=5`, `archival_summaries=1`, `archival_sources=2`.
@@ -85,6 +87,20 @@ record.
   usable.
 - Render application logs showed the Comments request path `/entries/{entry_id}/comments` returning
   `200 OK`; no new `/patients/{patient_id}/events` connection appeared when the drawer opened.
+
+## Prompt A Voice fixture deployment
+
+The `e766fe9` Render deployment applied the Blueprint change from `VOICE_PROVIDER=disabled` to
+`VOICE_PROVIDER=fixture`. Both the source Auto-Deploy and the Blueprint sync reached Live on the
+same existing Web Service; no new resource was created. The final startup log showed Uvicorn and
+repeated health checks, with no Voice dependency/model download or ASR error.
+
+The authenticated browser session available for this check had expired: the exact existing
+Nightingale user tabs displayed the login screen. The platform-generated seed password was not
+read or printed. Therefore the following live Voice actions remain **requiring user login** and
+are not claimed as performed here: clinical/patient sample listing, WAV playback, processing,
+mock transcript display, segment seeking, and generated source navigation. Local role/privacy
+tests cover those paths.
 
 The production login flow was not exercised because `DEMO_SEED_PASSWORD` is a platform-generated
 secret and was intentionally neither read nor printed. `COOKIE_SECURE=true`, fixture LLM, and

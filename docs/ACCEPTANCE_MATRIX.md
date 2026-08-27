@@ -193,10 +193,10 @@ final video, and external submission remain open.
 | --- | --- | --- | --- |
 | PHASE-9-GITHUB | One private repository created under `jyc114514`; local `main` pushed with no password-file or token use; remote main matched local at push time | passed | [private repository evidence](evidence/github_private_repository.md) |
 | PHASE-9-RENDER-READINESS | Same-origin production API fallback, FastAPI static serving, Postgres psycopg URL normalization, secure production validation, Docker multi-stage image, and Free Web/Postgres Blueprint | passed | [Dockerfile](../Dockerfile), [render.yaml](../render.yaml), [production readiness tests](../backend/tests/test_production_readiness.py) |
-| PHASE-9-RENDER | Exactly one Free Web Service and one Free Postgres; CI-gated PostgreSQL migration recovery; deploy `8a46b96` is Live with fixture AI and Level-C Voice fixture | passed | [deployment checklist](DEPLOYMENT_CHECKLIST.md), [deployment evidence](evidence/deployment_attempt.md), [security evidence](evidence/deployment_security.md) |
+| PHASE-9-RENDER | Exactly one Free Web Service and one Free Postgres; CI-gated PostgreSQL migration recovery; deploy `e766fe9` is Live with fixture AI and Level-C Voice fixture | passed | [deployment checklist](DEPLOYMENT_CHECKLIST.md), [deployment evidence](evidence/deployment_attempt.md), [security evidence](evidence/deployment_security.md) |
 | PHASE-9-VOICE-CAPABILITY | GPU/ASR probe, isolated optional lock, package delta, honest Level-C decision; no functional Whisper transcript claim | passed | [voice capability probe](evidence/voice_capability_probe.md) |
 | PHASE-9-VOICE-APP | Two synthetic WAV fixtures, mock timestamped transcript, audio hash/duration, immutable segments, role/patient authorization, source linkage, safe failures, and fixture-first summary path | passed | [voice routes](../backend/app/api/routes/voice.py), [voice service](../backend/app/services/voice.py), [test_voice.py](../backend/tests/test_voice.py) |
-| PHASE-9-VOICE-UI | English/Chinese disclosure, audio preview, segment seek, confidence-unavailable label, no microphone, staff/clinician and patient privacy flows in local and deployed fixture paths | passed | [App.tsx](../frontend/src/App.tsx), [voice.spec.ts](../frontend/tests/e2e/voice.spec.ts), [voice capability probe](evidence/voice_capability_probe.md) |
+| PHASE-9-VOICE-UI | English/Chinese disclosure, audio preview, segment seek, confidence-unavailable label, no microphone, staff/clinician and patient privacy flows in the local fixture path | passed | [App.tsx](../frontend/src/App.tsx), [voice.spec.ts](../frontend/tests/e2e/voice.spec.ts), [voice capability probe](evidence/voice_capability_probe.md) |
 | PHASE-9-SPOKEN-DEMO | English spoken script, cue card, approximate subtitles, updated shot list; no final video recorded | passed | [DEMO_SCRIPT_SPOKEN_EN.md](DEMO_SCRIPT_SPOKEN_EN.md), [DEMO_CUE_CARD.md](DEMO_CUE_CARD.md), [DEMO_SUBTITLES_EN.srt](DEMO_SUBTITLES_EN.srt) |
 | PHASE-9-PUBLIC-GATE | Private-until-2026-08-28 18:00 rule, final secret scan, visibility approval, and no scheduled visibility action documented | passed | [PUBLIC_RELEASE_CHECKLIST.md](PUBLIC_RELEASE_CHECKLIST.md) |
 
@@ -222,10 +222,12 @@ human usability requirement and is not marked passed.
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
-| PHASE-9.2-VOICE-FIXTURE | Render accepts only `disabled` or `fixture` in production, keeps `local_whisper` and unknown providers fail-closed, and exposes the existing prerecorded synthetic clinical/patient samples with mock transcript provenance | passed | [config.py](../backend/app/config.py), [render.yaml](../render.yaml), [test_production_readiness.py](../backend/tests/test_production_readiness.py), [test_voice.py](../backend/tests/test_voice.py), [voice capability probe](evidence/voice_capability_probe.md), [deployment security evidence](evidence/deployment_security.md) |
+| PHASE-9.2-VOICE-FIXTURE | Render accepts only `disabled` or `fixture` in production, keeps `local_whisper` and unknown providers fail-closed, and has deployed the existing fixture configuration; authenticated online sample/provenance smoke remains pending | in progress | [config.py](../backend/app/config.py), [render.yaml](../render.yaml), [test_production_readiness.py](../backend/tests/test_production_readiness.py), [test_voice.py](../backend/tests/test_voice.py), [voice capability probe](evidence/voice_capability_probe.md), [deployment security evidence](evidence/deployment_security.md) |
 
-Phase 9.2 is **Partial Bonus / Level C** only. It does not mark full Ambient Voice passed: there is
-no ASR inference, Whisper model, diarization, microphone capture, upload, or real PHI audio.
+Phase 9.2 is **Partial Bonus / Level C** only. The Render fixture configuration is Live, but the
+authenticated clinical/patient online flow awaits user login. It does not mark full Ambient Voice
+passed: there is no ASR inference, Whisper model, diarization, microphone capture, upload, or real
+PHI audio.
 
 ## Hard release gate
 
