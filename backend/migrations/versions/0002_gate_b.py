@@ -40,9 +40,26 @@ def upgrade() -> None:
             "'ai_patient_session_summary') AND source_reference IS NULL"
         )
     )
-    with op.batch_alter_table("entries", recreate="always") as batch:
-        batch.alter_column("occurred_at", nullable=False)
-        batch.alter_column("source_kind", nullable=False)
+    if op.get_bind().dialect.name == "postgresql":
+        # PostgreSQL can alter these columns in place. Recreate-always would
+        # try to drop entries_pkey while entry_versions/comments/conflicts
+        # still reference it during a fresh deployment.
+        op.alter_column(
+            "entries",
+            "occurred_at",
+            existing_type=sa.DateTime(timezone=True),
+            nullable=False,
+        )
+        op.alter_column(
+            "entries",
+            "source_kind",
+            existing_type=sa.String(length=40),
+            nullable=False,
+        )
+    else:
+        with op.batch_alter_table("entries", recreate="always") as batch:
+            batch.alter_column("occurred_at", nullable=False)
+            batch.alter_column("source_kind", nullable=False)
 
     with op.batch_alter_table("comments", recreate="always") as batch:
         batch.add_column(sa.Column("parent_comment_id", sa.String(length=36), nullable=True))
