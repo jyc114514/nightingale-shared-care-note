@@ -1,8 +1,7 @@
 # Deployment checklist
 
-Status: **Render deployment blocked before resource creation**. The repository contains a Docker
-production image and a Render Blueprint, but Render requires a GitHub App permission approval that
-must be performed with the user present.
+Status: **Render deployment blocked after two meaningful attempts; no third attempt will be
+made in this phase.**
 
 ## Required before a hosted demo
 
@@ -23,20 +22,25 @@ must be performed with the user present.
 
 ## Render blueprint boundary
 
-- [x] One Docker web service named `nightingale-shared-care-note`, Free plan, Singapore region,
-      `/health` HTTP health check.
-- [x] One Free Render Postgres database, connected through the Blueprint `connectionString`.
-- [x] Production image builds the frontend and serves it from FastAPI on the Render `$PORT`.
+- [x] Exactly one Docker web service named `nightingale-shared-care-note`, Free plan, Singapore
+      region, `/health` HTTP health check was created.
+- [x] Exactly one Free Render Postgres database was created and connected through the Blueprint
+      `connectionString`.
+- [x] The production image build completed on the first deployment attempt and includes the
+      frontend build plus FastAPI static serving on the Render `$PORT`.
 - [x] Production startup validates secure settings, runs `alembic upgrade head`, and runs the
       synthetic seed only when `DEMO_SEED_ENABLED=true`.
-- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice model is
-      part of the production image.
-- [ ] Confirm actual Render service URL, deploy commit, migration/seed logs, HTTPS smoke, and
-      database encryption evidence in `docs/evidence/deployment_security.md` or
-      `docs/evidence/deployment_attempt.md`.
+- [x] `LLM_PROVIDER=fixture` and `VOICE_PROVIDER=disabled`; no DeepSeek key or Voice dependency is
+      part of the Render production configuration.
+- [ ] Confirm a healthy Render service URL, successful migration/seed, HTTPS smoke, secure cookie,
+      and database encryption evidence in `docs/evidence/deployment_security.md`.
+- [ ] Repair the PostgreSQL-specific `0002_gate_b` comments batch migration, then perform a future
+      bounded deployment attempt under an explicitly reopened deployment gate.
 
-The actual attempt is recorded in [`deployment_attempt.md`](evidence/deployment_attempt.md).
-No Web Service, Postgres database, public URL, deployment secret, or paid resource was created.
+The exact two-attempt outcome is recorded in
+[`deployment_attempt.md`](evidence/deployment_attempt.md). The reserved service address is
+`https://nightingale-shared-care-note.onrender.com`, but it is not reported as a working demo
+because both deployments failed before health.
 
 Render Free limitations must remain visible: free web services spin down after inactivity, the
 filesystem is ephemeral, and Free Postgres is limited to 1 GB and expires after 30 days. This is
@@ -56,11 +60,14 @@ Official references used for the readiness design: [Blueprint specification](htt
       reference, patient/clinic/user IDs, names, phones, IC/ID values, comments, or task metadata.
 - [x] Keep provider failures explicit; no silent fixture fallback.
 - [x] Record the one bounded synthetic smoke in [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md).
-- [ ] Perform a provider-specific data-processing/compliance review and production cost/latency evaluation.
+- [ ] Perform a provider-specific data-processing/compliance review and production cost/latency
+      evaluation.
 
-## Current local boundary
+## Current local and external boundary
 
-SQLite + real Uvicorn TCP is measured locally. PostgreSQL, TLS, encryption-at-rest, deployment
-backup, hosted operational controls, and external LLM quality remain unknown. The DeepSeek smoke
-proves one bounded request only; it does not establish provider compliance or production quality.
-`Start Nightingale Demo.cmd` is a local convenience wrapper, not deployment.
+SQLite + real Uvicorn TCP is measured locally. Render resources exist, but the application has not
+completed PostgreSQL migrations or reached a healthy service. Therefore PostgreSQL runtime,
+TLS, encryption-at-rest, deployment backup, hosted operational controls, and external LLM quality
+remain unverified. The DeepSeek smoke proves one bounded local request only; it does not establish
+provider compliance or production quality. `Start Nightingale Demo.cmd` is a local convenience
+wrapper, not deployment.
