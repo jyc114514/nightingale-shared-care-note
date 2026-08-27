@@ -5,9 +5,10 @@ Deployment: `https://nightingale-shared-care-note.onrender.com`
 Observed commit: `e766fe9`
 Result: **PASS WITH REPLACEMENTS**
 
-This is an authenticated synthetic-data browser rehearsal, not independent UX-01 evidence and
-not a final video. The browser used one claimed Chrome user tab with sequential manual role
-logins. No credentials, browser storage, raw logs, or configuration screens were captured.
+This is an authenticated synthetic-data browser rehearsal, separate from the independent UX-01
+participant evidence and not a final video. The browser used one claimed Chrome user tab with
+sequential manual role logins. No credentials, browser storage, raw logs, or configuration screens
+were captured.
 
 ## Executed checks
 
@@ -57,9 +58,26 @@ cycle, a Clinician plan edit followed by a revert-created version, and one accep
 The live database is therefore not a pristine seed after this rehearsal. This document records
 that fact so a future recording does not silently assume baseline version numbers.
 
+## Final reordered dry run
+
+The revised order was run after the read-only state inventory: **Staff → Clinician → Patient**.
+Role changes were two off-camera logout/login cuts. No Voice sample was reprocessed and no new
+database mutation was created during this final dry run.
+
+| Order | Role / target | Actual action and visible result | Time | Mutation / recording decision |
+| ---: | --- | --- | ---: | --- |
+| 1 | Staff A · Sarah Tan | `Top Card` showed action/ranking; `Open source` on the still-Suggested nurse card showed the exact mark and immutable source; `Close source` removed the panel; existing `Comments` drawer showed the `@Clinician A` metadata; Voice panel showed the clinical fixture disclosure. | ~7.4 s including waits | No mutation; repeatable. If Comments is stale, refresh once and repeat. |
+| 2 | Clinician A · Sarah Tan | `Clinician section` → `History`; two earlier `Compare` buttons were available; one Compare showed Before/After; two `Revert` controls were available but deliberately not clicked. `View original record` scrolled to the April 2025 Patient summary. | ~6.7 s | No mutation; repeatable. Select an available earlier version immediately before recording. |
+| 3 | Sarah Patient · Sarah Tan | `Patient view` and `Internal Glance View is hidden` were visible; only patient Voice sample was listed; no Top Card, internal controls, Clinical sample, or source result appeared. | ~61 ms DOM state check | No mutation; repeatable. Do not process Voice again if the result is already recorded. |
+
+The current state inventory before this dry run recorded Staff note v3, Clinician section v3, two
+remaining Suggested cards, one Conflict review card, existing `@Clinician A` comment metadata,
+two Voice-derived timeline entries, and two historical original-record buttons. The final dry run
+used those existing states rather than assuming a pristine seed.
+
 ## Video conclusion
 
 The planned short demo is reproducible with the documented fallbacks and covers the strongest
-deployed path. It does not close UX-01: a familiar PM performing this rehearsal is not an
-independent ten-second usability participant. It also does not claim full ambient Voice, ASR,
-diarization, clinical validation, or a final recorded video.
+deployed path. UX-01 is closed by the separate independent participant result; this browser
+rehearsal is not presented as a second participant study. It also does not claim full ambient Voice,
+ASR, diarization, clinical validation, or a final recorded video.

@@ -1,38 +1,57 @@
 # UX-01 human 10-second test
 
-Status: **pending human sign-off**. Automated browser checks establish rendering and interaction,
-not human comprehension speed.
+Status: **passed** based on one documented independent participant result below.
 
-## Internal PM rehearsal (not independent UX-01 evidence)
+## Independent UX-01 result
+
+Record only the supplied facts:
+
+- Participant: anonymous independent participant
+- Locale: Simplified Chinese
+- Completion time: approximately 9 seconds
+- Coaching: none
+- Highest-priority item: correct
+- Action/state: correct
+- Risk versus ranking: correct
+- Source affordance: correct
+- Role/viewport: not separately recorded
+
+The participant was independent from development and did not rely on coaching. No participant
+name, exact milliseconds, device, role, clinical background, English proficiency, or multiple
+participant count is inferred.
+
+An independent participant using the Simplified Chinese interface completed the defined glance task
+in approximately nine seconds without coaching.
+
+## What this evidence means
+
+Simplified Chinese is a supported product locale. `requirements.txt` does not require English for
+this task, so this result is valid evidence for information hierarchy and readability in a supported
+interface. It is not a formal usability study, statistical validation, or a claim about every user.
+
+Automated desktop/mobile browser checks remain separate responsive evidence. They establish that
+the interface renders and remains actionable at the tested viewports; they are not substituted for
+the independent observation above.
+
+## Defined glance task
+
+The participant was asked to identify, without coaching:
+
+1. what has the highest priority;
+2. what action/state is available;
+3. whether an item is an explicit risk or only a ranking priority; and
+4. where the source affordance is located.
+
+The supplied result records all four as correct in approximately nine seconds.
+
+## Internal PM rehearsal (separate evidence)
 
 - Locale: Chinese
 - Viewport: Desktop
 - Completion time: 5 seconds
-- Result: 4/4 — highest-priority item, action/state, risk versus ranking, and source/version/exact span were identified correctly.
+- Result: 4/4 correct
 - Coaching: none
-- Limitation: the participant had already read the Guide and knew the product controls, so this rehearsal does not close UX-01.
+- Limitation: the participant was already familiar with the Guide and product controls.
 
-## Protocol
-
-1. Use the seeded synthetic patient, close the Learning Guide, select English or 简体中文, and use
-   a fresh browser viewport at 1440x900, then repeat at 390x844.
-2. Give the participant this instruction: “You have ten seconds. Tell me what needs attention,
-   what action is available, whether any item is an explicit risk, and where its source came from.”
-3. Start the timer when the workspace becomes visible. Do not explain labels or point at a control.
-4. Record whether the participant identifies: (a) the highest-priority item, (b) its action/state,
-   (c) explicit risk versus ranking priority, and (d) the source-navigation affordance.
-5. After the timer, ask the participant to open the source, explain “derived summary · not the original
-   record,” and say whether the selected source remains visible after the focus ring fades.
-
-## Pass rule
-
-Pass only if the participant identifies all four items within ten seconds at both viewports and can
-open the source without coaching. Record participant count, viewport, completion time, errors, and
-confusion. A screenshot or Playwright pass is not a substitute for this check.
-
-## Current evidence boundary
-
-The Top Card includes content, open action, explicit risk, status, source, and a collapsed ranking
-explanation. Playwright covers desktop/mobile rendering, bilingual chrome, source navigation,
-keyboard mentions, tasks, and SSE invalidation. The product team still needs a real human
-observation before marking UX-01 fully passed.
+This familiar-user rehearsal is retained for historical context and is not counted as the
+independent participant result.

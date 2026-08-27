@@ -288,9 +288,10 @@ implement CRDT/OT.
 The Phase 8 application checkpoint is `7b1b05e`. Final local evidence is 71 backend tests,
 88% reproducible coverage, 19 Vitest tests, 12 Playwright tests, and a real-TCP warm-path P95 of
 67.823 ms on the SQLite approximation. The optional DeepSeek V4 Flash adapter has a bounded
-synthetic live smoke record. Hosted PostgreSQL, TLS/encryption-at-rest, production
-retention/deletion policy, human UX-01 sign-off, final video, GitHub upload, and email remain
-outside the local implementation boundary.
+synthetic live smoke record. Hosted PostgreSQL, TLS/encryption-at-rest, and production
+retention/deletion policy remain outside the local implementation boundary. An independent
+Simplified Chinese UX-01 result is now recorded as approximately nine seconds without coaching;
+final video, GitHub upload, and email remain outside this local implementation boundary.
 
 ## Phase 9 overnight record
 

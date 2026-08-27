@@ -24,7 +24,7 @@ observation into a claim of clinical validation.
 | `requirements.txt` lines | Brief requirement | Demo surface and observed evidence | Recording status |
 | --- | --- | --- | --- |
 | 3-4 | Fragmented notes become a shared, real-time longitudinal workspace | English workspace for Sarah Tan; internal sessions showed `Live updates: Connected`. A second-browser realtime demo was not reproducible in this session. | Online verified for workspace/SSE status; realtime multi-browser step removed |
-| 8-9 | Glance View with content, open actions, flags, and rapid readability | `Top Card` / `What needs attention now` showed six-or-fewer cards. Cards displayed content, status, item kind, action label/state, risk label, source, and the ranking disclaimer. | Online verified; UX-01 remains a human-test requirement |
+| 8-9 | Glance View with content, open actions, flags, and rapid readability | Staff-first `Top Card` / `What needs attention now` showed six-or-fewer cards. Cards displayed content, status, item kind, action label/state, risk label, source, and the ranking disclaimer. An independent Simplified Chinese participant completed the defined glance task in approximately nine seconds without coaching. | Online and independent UX evidence verified |
 | 10-13 | Continuous timeline and entry metadata | Timeline showed multiple dates, manual notes, AI-scribed entries, patient entries, timestamps, author and owner labels, versions, and source-linked entries. | Online verified |
 | 15 | Threaded collaboration with resolve/unresolve; optional mentions and assignments | Staff Comments drawer accepted a synthetic root comment, showed `@Clinician A · clinician` autocomplete and mention metadata, and toggled `Resolve` → `Unresolve`. The existing task drawer opened with the source entry and assignee context. | Online verified for comment/mention/toggle/drawer; task creation and reply omitted from the short script |
 | 17-19 | Full revision snapshots, compare, and revert | Clinician section was edited, History opened, `Compare` showed `Diff v1 → v2` with Before/After, and `Revert` created v3 while retaining v1 and v2. | Online verified |
@@ -38,11 +38,19 @@ observation into a claim of clinical validation.
 | 52 | Warm Glance P95 ≤ 300 ms | The measured warm-path benchmark remains in `docs/evidence/gate_c_warm_path.md`; the video does not invent a new performance number. | Local benchmark evidence |
 | 53 | Synthetic-only data, redaction boundary, TLS, encryption at rest | The app disclosed synthetic-only use. HTTPS and Render PostgreSQL evidence are documented separately; no credential or config screen is part of the recording. | Online deployment/security evidence; no live external LLM claim |
 | 56-72 | Required micro-tests and bonus test | The required backend test files and `test_self_learning_importance.py` remain the executable evidence. | Local evidence |
-| 74-85 | Repository, brief, attribution, and demo deliverables | Repository/docs/PDF/attribution already exist; this phase refreshes the nine video-planning documents. No final video is recorded here. | Documentation prepared; final video remains pending |
-| 87-89 | Scenario A: Glance and AI Scribe | Top Card → nurse AI card → `Open source` → exact immutable timeline span was rehearsed. | Online verified |
+| 74-85 | Repository, brief, attribution, and demo deliverables | Repository/docs/PDF/attribution already exist; this phase refreshes the final video-planning/operator documents. No final video is recorded here. | Documentation prepared; final video remains pending |
+| 87-89 | Scenario A: Glance and AI Scribe | Staff opens the Top Card → nurse AI card → `Open source` → exact immutable timeline span. | Online verified |
 | 90-93 | Scenario B: collaboration and audit trail | Exact “new note” and manual text-highlighting controls were not present. The script replaces them with Staff existing-note edit, comment mention/toggle, and Clinician history/diff/revert, all actually performed. | Replaced and documented honestly |
 | 94-97 | Scenario C: longitudinal context and bonus decay | April 2025 source entries, February 2026 AI entry, current entries, derived summary, and original-record navigation were shown. Pin feedback was exercised. | Online verified for visible path; data-decay explanation only |
 | 99-104 | Scoring dimensions | The script foregrounds glanceability, collaboration, provenance, privacy, and trade-offs. | Coverage mapped; no score claimed |
+
+## Independent UX-01 evidence
+
+The independent result is recorded in [ux_01_independent_test.md](evidence/ux_01_independent_test.md):
+anonymous independent participant, Simplified Chinese locale, approximately nine seconds, no
+coaching, and all four defined glance answers correct. Role and viewport were not separately
+recorded. The candidate brief does not require English for this task; automated desktop/mobile
+checks remain separate responsive evidence.
 
 ## Deliberately removed from the recording path
 

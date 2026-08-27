@@ -22,3 +22,10 @@ Artifact: [`Nightingale_Technical_Brief.pdf`](../../deliverables/Nightingale_Tec
 The PDF describes local synthetic evidence and explicitly separates measured behavior from
 unverified PostgreSQL, deployment TLS/encryption-at-rest, external-provider, final-video, and
 human UX sign-off claims.
+
+## Source update notice - 2026-08-27
+
+`docs/TECHNICAL_BRIEF.md` now records the independent Simplified Chinese UX-01 result and the
+Staff-first deployed rehearsal. The PDF above was intentionally not regenerated in this task, so
+its older UX wording and hash remain historical evidence; it must not be treated as the final PDF
+after the source update.

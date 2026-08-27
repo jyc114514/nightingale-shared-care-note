@@ -2,8 +2,8 @@
 
 ## A trust-centered longitudinal shared-care note
 
-Status: Phase 9 local release candidate with an optional DeepSeek adapter, Render readiness, and a
-Level-C Voice prototype, measured on 2026-08-27.
+Status: Phase 9 local release candidate with an optional DeepSeek adapter, Render readiness, a
+Level-C Voice prototype, and independent UX-01 evidence, measured on 2026-08-27.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic
@@ -109,10 +109,11 @@ production PHI audio, or ASR accuracy claim.
 The production readiness path uses a multi-stage Docker build, same-origin FastAPI static serving,
 Alembic-before-seed startup, secure production settings, one Free Render Web Service, and one Free
 Render Postgres database. Render is configured for `LLM_PROVIDER=fixture` and
-`VOICE_PROVIDER=fixture` for the deployed Level-C path. The external deployment now runs against Render PostgreSQL 18 at
-`https://nightingale-shared-care-note.onrender.com`; migration/seed, HTTPS, and provider
-encryption evidence are recorded separately. The platform-generated demo password was not read
-for this audit, so authenticated production login remains a follow-up.
+`VOICE_PROVIDER=fixture` for the deployed Level-C path. The external deployment now runs against
+Render PostgreSQL 18 at `https://nightingale-shared-care-note.onrender.com`; migration/seed,
+HTTPS, provider encryption, and authenticated Clinical/Staff/Patient browser evidence are recorded
+separately. The online Level-C Voice fixture passed for both Clinical and Patient projections
+without claiming full Ambient Voice.
 
 ## 5. Evidence, trade-offs, and remaining boundary
 
@@ -137,18 +138,30 @@ The central trade-off remains trust over automation. Materialized reads and the 
 make the default prototype reproducible; the optional adapter adds network, balance, provider-data
 processing, and latency dependencies. SSE is invalidation only, not simultaneous character editing;
 CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience, not
-deployment. Render PostgreSQL, HTTPS/TLS, and provider encryption-at-rest evidence are now
-recorded for the synthetic evaluation deployment. Model quality, production retention/deletion
-policy, an authenticated hosted login smoke, final video, and human UX-01 sign-off remain open.
+deployment. Render PostgreSQL, HTTPS/TLS, and provider encryption-at-rest evidence are now recorded
+for the synthetic evaluation deployment. Model quality and production retention/deletion policy
+remain outside this evaluation; independent UX-01 evidence is recorded separately, while the final
+video and external submission remain open.
+
+### Independent UX-01 evidence
+
+An anonymous independent participant using the supported Simplified Chinese interface completed the
+defined glance task in approximately nine seconds without coaching. The highest-priority item,
+action/state, risk-versus-ranking distinction, and source affordance were all correct. Role and
+viewport were not separately recorded. This is evidence of information hierarchy in a supported
+locale, not a formal usability study or a statistical claim.
 
 ## Demo scenarios
 
-Scenario A: switch English/中文 chrome, open a Glance source, inspect the exact immutable span,
-wait beyond the focus animation, and close the source without changing the clinical text.
+Scenario A: Staff opens the English workspace, reads the Glance card, opens an AI-scribed source,
+inspects the exact immutable span, and closes the source without changing clinical text. The
+independent Simplified Chinese UX result is recorded separately: approximately nine seconds,
+without coaching, with all four defined answers correct.
 
-Scenario B: staff edits/reverts a note, opens the contextual Comments drawer, types `@` and selects
-a clinic collaborator, opens the contextual task drawer, creates/completes an assigned task linked
-to the comment, while a second browser receives the metadata-only SSE invalidation.
+Scenario B: Staff edits the existing Staff note because the deployed UI has no new-note composer,
+opens the contextual Comments drawer, types `@` and selects a clinic collaborator, then Clinician
+reviews a plan revision with History, Compare, and Revert. Task creation and second-browser SSE
+are not part of the short deployed recording claim.
 
 Scenario C: two writes use one expected version; the stale write returns `409` and remains beside
 the winner. Historical context discloses a derived summary that is not the original record and

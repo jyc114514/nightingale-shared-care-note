@@ -1,31 +1,22 @@
-# Nightingale final demo shot list
+# Nightingale 最终录制 Shot List
 
-Target runtime: 4:20 · English UI · synthetic data only.
-The filenames below are recording targets, not files created by this phase. No final video or new
-screenshots are claimed.
+目标时长：4:30 · 页面 English · 操作提示中文 · 口播/字幕 English。以下是录制目标，不是
+本阶段已经生成的视频或截图文件。
 
-| Shot | Time | Role / profile | Visible action | Rehearsed result | Capture target |
+| 镜头 | 时间 | 角色 | 中文操作 / 真实按钮 | 应看到的结果 | 录制目标 |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | 00:00-00:30 | Clinician A / existing Chrome tab | Confirm `English`, `Sarah Tan`, `Live updates: Connected` | Shared Care Note, Clinician view and trust boundary visible | `01-opening.mp4` |
-| 2 | 00:30-01:08 | Clinician A / internal | Read `Top Card`; click `Open source` on `Unresolved cardiology referral` | Six-or-fewer card view; action/status/risk/ranking; immutable v1 source and exact mark | `02-glance-provenance.mp4` |
-| 3 | 01:08-01:45 | Clinician A / internal | Play clinical WAV; `Process sample` once; click 8-second segment; open generated source | 24-second fixture, mock transcript, three timestamps, confidence unavailable, exact source | `03-voice-level-c.mp4` |
-| 4 | 01:45-02:25 | Staff A / sequential session | `Staff note` → `Edit` → `Save revision`; `Comments`; `@clinician`; choose `@Clinician A · clinician`; `Add comment` | Staff revision and root comment with mention metadata | `04-staff-mention.mp4` |
-| 5 | 02:25-03:05 | Staff A then Clinician A | `Resolve` → `Unresolve`; `Pin` → `Unpin`; Clinician `History` → `Compare` → `Revert`; optional `Accept` | Collaboration toggle, feedback toggle, Before/After, new revert version, retained history | `05-review-history.mp4` |
-| 6 | 03:05-03:32 | Clinician A / internal | Show Hot/Warm/derived cold; click `View original record` | Scrolls to April 2025 canonical Patient summary; no false exact-span claim | `06-longitudinal-context.mp4` |
-| 7 | 03:32-04:00 | Sarah Patient / sequential session | Show `Internal Glance View is hidden`; show patient timeline and patient Voice sample | Internal controls and clinical sample absent; patient-safe fixture only | `07-patient-privacy.mp4` |
-| 8 | 04:00-04:20 | Clinician or Staff / English | End on synthetic disclosure and HTTPS app | Honest boundary: PostgreSQL, fixture providers, optional redacted adapter, no live call | `08-honest-close.mp4` |
+| 1 | 00:00-00:23 | `Staff A` | 确认 `English`、`Sarah Tan`、`Live updates: Connected`；鼠标移开。 | `Shared Care Note`、`Staff view`、trust boundary | `01-staff-opening.mp4` |
+| 2 | 00:23-01:04 | `Staff A` | 查看 `Top Card`；点击当前 Suggested AI card 的 `Open source`；【等待】`Immutable source`。 | 内容/action/status/risk/ranking、exact mark、immutable source | `02-staff-glance-source.mp4` |
+| 3 | 01:04-01:42 | `Staff A` | 检查 fixture disclosure；播放；必要时只点一次 `Process sample`；点 8 秒 segment/source。 | prerecorded WAV、mock transcript、timestamps、confidence unavailable、source | `03-staff-voice.mp4` |
+| 4 | 01:42-02:06 | `Staff A` | `Edit` → `Save revision`；`Comments` → `@clinician` → `@Clinician A · clinician` → `Add comment`。 | Staff revision、root comment、`Mentions: @Clinician A` | `04-staff-comment.mp4` |
+| 5 | 02:06-02:28 | `Staff A` → `Clinician A` | `Resolve` → `Unresolve`；`Pin` → `Unpin`；关闭 drawer；【停录】`Sign out`；【切换账号】。 | 状态切换完成；只发生一次角色 cut | `05-role-cut.mp4` |
+| 6 | 02:28-03:00 | `Clinician A` | `Edit` → `Save revision`；`History`；选 available earlier version 的 `Compare`；【等待】Before/After；必要时 `Revert` 一次。 | Before/After、new revert version、history 保留 | `06-clinician-review.mp4` |
+| 7 | 03:00-03:32 | `Clinician A` | 指向 `Hot context`、`Warm index`、`Derived summary · not the original record`；点击 `View original record`；念 UX-01。 | 滚到 canonical Patient summary；不虚构 exact-span panel | `07-history-context.mp4` |
+| 8 | 03:32-04:00 | `Sarah Patient` | 【停录】切换账号；【不要显示密码】；确认 `Patient view`、`Internal Glance View is hidden`；只显示 `Synthetic patient follow-up · patient`。 | 无 Top Card/internal controls/Clinical sample/source control | `08-patient-privacy.mp4` |
+| 9 | 04:00-04:30 | 任一稳定内部角色 | 指向 synthetic-only disclosure；鼠标移开；念完【停录】。 | HTTPS/PostgreSQL/fixture boundary，未打开配置页 | `09-honest-close.mp4` |
 
-## Captured evidence versus narration
+## 不能作为成功镜头录制
 
-The browser rehearsal directly verified shots 1-7's core visible states, including the Voice and
-patient flows. Render Deploys showed the existing service `Live` at `e766fe9`; the Render Logs
-surface was inspected without reproducing raw log lines. The recording should not show the
-dashboard unless the presenter wants a short security boundary cut.
-
-## Do not capture
-
-Do not capture password entry, API keys, database URLs, environment values, browser storage,
-provider consoles, raw Render log output, microphone permissions, file upload dialogs, live
-DeepSeek calls, or any real patient information. Do not add shots for a new-note composer, manual
-highlight selection, second-browser SSE, live 409 conflict, task completion, or Whisper/diarization
-claims; those steps were removed or replaced after rehearsal.
+不要录制新建 note、手动 phrase highlight、第二浏览器 SSE、live 409 conflict、task 完整
+生命周期、live DeepSeek、microphone、upload、Whisper inference、diarization 或 clinical
+validation。对应步骤已在 rehearsal 中移除或改写，详见 [demo_rehearsal.md](evidence/demo_rehearsal.md)。

@@ -4,7 +4,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 
 | ID | Requirement / risk | Class | Planned evidence | Current status |
 | --- | --- | --- | --- | --- |
-| UX-01 | Glance View readable and actionable in under 10 seconds | Mandatory | Six-or-fewer-item UI, timed demo script, usability screenshot/video | in progress |
+| UX-01 | Glance View readable and actionable in under 10 seconds | Mandatory | Independent Simplified Chinese participant result: approximately 9 seconds, no coaching, four defined answers correct | passed |
 | UX-02 | Top Card includes content, open actions, and explicit flags | Mandatory | Seed scenario plus explicit action/risk/status UI assertions | passed |
 | UX-03 | Continuous time-ordered longitudinal timeline | Mandatory | Timeline API ordering test and demo | passed |
 | DATA-01 | Manual, system, patient, clinician, and staff entry metadata | Mandatory | Current immutable-version author/owner assertions in [test_gate_b_api.py](../backend/tests/test_gate_b_api.py) | passed |
@@ -39,6 +39,9 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | passed |
 | DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | passed |
 | DEL-05 | Demo video covers Scenarios A–C | Deliverable | Script checklist and final playback | in progress |
+
+Current total: **Mandatory 25/25 passed**. Deliverables: **4/5 passed**; the remaining deliverable is
+the final video, which must be recorded and watched before packaging.
 
 ## Phase 0 recorded evidence — 2026-08-25
 
@@ -79,7 +82,7 @@ redaction/provider/performance or delivery gates are complete.
 | GATE-B-TRUST | Clinicians can review suggestions; staff are denied review; conflict-review status preserves the source and remains visible to internal users | passed | [test_highlight_provenance.py](../backend/tests/test_highlight_provenance.py), [App.tsx](../frontend/src/App.tsx) |
 | GATE-B-BROWSER | Real cookie login, `/auth/me`, patient list, source navigation, history/edit/comments, and patient privacy states pass at desktop and mobile viewports | passed | [App.test.tsx](../frontend/tests/App.test.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), ignored [gate-b screenshots](../artifacts/gate-b/) |
 | GATE-B-SECURITY | Production secure-cookie fail-closed validation and foreign-Origin write rejection pass; SQLite test pool releases temporary files | passed | [config.py](../backend/app/config.py), [dependencies.py](../backend/app/api/dependencies.py), [test_gate_b_api.py](../backend/tests/test_gate_b_api.py) |
-| GATE-B-UX | Human timed under-10-second checklist and final usability review are still pending | in progress | [gate-b README](../frontend/tests/e2e/README.md) |
+| GATE-B-UX | Human timed under-10-second checklist is closed by an independent Simplified Chinese participant result; automated desktop/mobile checks remain separate | passed | [UX-01 evidence](evidence/ux_01_independent_test.md), [UX test protocol](UX_10_SECOND_TEST.md) |
 
 The browser run completed `8 passed` using real Uvicorn, real Vite, a migrated file-backed SQLite
 database, and synthetic seed data at 1440x900 and 390x844. It covered exact source/deep-link/
@@ -168,8 +171,8 @@ tests**, and **10 Playwright tests**. Warm-path evidence is the real-TCP SQLite 
 | PHASE-7.1-REHEARSAL | PM/developer-familiar user completed Chinese desktop rehearsal in 5 seconds with 4/4 correct; not independent UX-01 evidence | recorded only | [`UX_10_SECOND_TEST.md`](UX_10_SECOND_TEST.md) |
 
 Phase 7.1 regression evidence is **51 backend tests**, **17 Vitest tests**, and **12 Playwright
-tests** across 1440x900 and 390x844. The independent UX-01 participant, deployment PRIV-04,
-final video, and external submission remain open.
+tests** across 1440x900 and 390x844. The independent UX-01 result was added later in Phase 9.4;
+the final video and external submission remain open.
 
 ## Phase 8 / optional DeepSeek provider evidence - 2026-08-26
 
@@ -184,8 +187,8 @@ final video, and external submission remain open.
 | PHASE-8-LIVE-SMOKE | One bounded official `deepseek-v4-flash` synthetic smoke returned `2xx`, valid schema, 1,342.11 ms, and 276 total tokens; no model-quality claim | recorded | [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md) |
 
 Phase 8 regression evidence is **71 backend tests / 88% coverage**, **19 Vitest tests**, and
-**12 Playwright tests**. The live path is opt-in and cost/network dependent; UX-01, PRIV-04,
-final video, and external submission remain open.
+**12 Playwright tests**. The live path is opt-in and cost/network dependent; the final video and
+external submission remain open. UX-01 and PRIV-04 were closed by later evidence.
 
 ## Phase 9 / private publication, Render readiness, and Level-C Voice - 2026-08-27
 
@@ -197,15 +200,15 @@ final video, and external submission remain open.
 | PHASE-9-VOICE-CAPABILITY | GPU/ASR probe, isolated optional lock, package delta, honest Level-C decision; no functional Whisper transcript claim | passed | [voice capability probe](evidence/voice_capability_probe.md) |
 | PHASE-9-VOICE-APP | Two synthetic WAV fixtures, mock timestamped transcript, audio hash/duration, immutable segments, role/patient authorization, source linkage, safe failures, and fixture-first summary path | passed | [voice routes](../backend/app/api/routes/voice.py), [voice service](../backend/app/services/voice.py), [test_voice.py](../backend/tests/test_voice.py) |
 | PHASE-9-VOICE-UI | English/Chinese disclosure, audio preview, segment seek, confidence-unavailable label, no microphone, staff/clinician and patient privacy flows in the local fixture path | passed | [App.tsx](../frontend/src/App.tsx), [voice.spec.ts](../frontend/tests/e2e/voice.spec.ts), [voice capability probe](evidence/voice_capability_probe.md) |
-| PHASE-9-SPOKEN-DEMO | English spoken script, cue card, approximate subtitles, updated shot list; no final video recorded | passed | [DEMO_SCRIPT_SPOKEN_EN.md](DEMO_SCRIPT_SPOKEN_EN.md), [DEMO_CUE_CARD.md](DEMO_CUE_CARD.md), [DEMO_SUBTITLES_EN.srt](DEMO_SUBTITLES_EN.srt) |
+| PHASE-9-SPOKEN-DEMO | English spoken script, English subtitles, and recording materials; no final video recorded | passed | [DEMO_SCRIPT_SPOKEN_EN.md](DEMO_SCRIPT_SPOKEN_EN.md), [DEMO_CUE_CARD_ZH_EN.md](DEMO_CUE_CARD_ZH_EN.md), [DEMO_SUBTITLES_EN.srt](DEMO_SUBTITLES_EN.srt) |
 | PHASE-9-PUBLIC-GATE | Private-until-2026-08-28 18:00 rule, final secret scan, visibility approval, and no scheduled visibility action documented | passed | [PUBLIC_RELEASE_CHECKLIST.md](PUBLIC_RELEASE_CHECKLIST.md) |
 
 Phase 9 local evidence is **86 backend tests / 88% coverage**, **27 Vitest tests**, **14 core
 Playwright tests**, and **4 isolated Voice Playwright tests**. GitHub Actions run
 `33032765274` passed the real PostgreSQL 18 migration/seed gate, and the existing Render service
 is Live on the Voice-enabled `e766fe9` deployment. The authenticated production Voice smoke is
-recorded in Phase 9.2/9.3. UX-01, final video, email submission, and public visibility remain
-open unless their separate evidence is completed.
+recorded in Phase 9.2/9.3. Final video, email submission, and public visibility remain open unless
+their separate evidence is completed.
 
 ## Phase 9.1 / production Comments drawer regression - 2026-08-27
 
@@ -215,8 +218,8 @@ open unless their separate evidence is completed.
 
 Phase 9.1 evidence is **27 Vitest tests**, **14 core Playwright tests**, and an authenticated
 production smoke on `8a46b96`: Comments remained visible for 5.5 seconds, an existing PostgreSQL
-comment rendered, and the drawer closed through the explicit control. UX-01 remains an independent
-human usability requirement and is not marked passed.
+comment rendered, and the drawer closed through the explicit control. The independent UX-01 result
+is recorded separately in Phase 9.4.
 
 ## Phase 9.2 / deployed Level-C Voice fixture - 2026-08-27
 
@@ -234,11 +237,19 @@ audio.
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
 | PHASE-9.3-DEMO-REHEARSAL | English deployed rehearsal covered Glance, exact provenance, Level-C Voice, Staff collaboration, historical context, Patient privacy, and Clinician revision review; failed/stale and unavailable steps were replaced or removed | passed | [demo rehearsal](evidence/demo_rehearsal.md), [traceability](DEMO_REQUIREMENT_TRACEABILITY.md) |
-| PHASE-9.3-DEMO-DOCS | Detailed English script, cue card, subtitles, shot list, recording checklist, video QA, and session setup were refreshed after actual rehearsal | passed | [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [cue card](DEMO_CUE_CARD.md), [subtitles](DEMO_SUBTITLES_EN.srt), [shot list](DEMO_SHOTLIST.md), [recording checklist](DEMO_RECORDING_CHECKLIST.md), [video QA](DEMO_VIDEO_QA.md), [session setup](DEMO_SESSION_SETUP.md) |
+| PHASE-9.3-DEMO-DOCS | Detailed English spoken script, English subtitles, and Chinese operator/session materials were refreshed after actual rehearsal | passed | [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [operator runbook](DEMO_OPERATOR_RUNBOOK_ZH.md), [bilingual cue card](DEMO_CUE_CARD_ZH_EN.md), [subtitles](DEMO_SUBTITLES_EN.srt), [shot list](DEMO_SHOTLIST.md), [recording checklist](DEMO_RECORDING_CHECKLIST.md), [video QA](DEMO_VIDEO_QA.md), [state prep](DEMO_STATE_PREP_ZH.md) |
 
-Prompt B deliberately does not mark the final video as recorded. UX-01 still requires an
-independent unfamiliar participant, and the exact new-note/manual-highlight/two-browser-conflict
-steps were not claimed because they were unavailable or unreproducible in the deployed rehearsal.
+Prompt B deliberately does not mark the final video as recorded. The exact new-note/manual-
+highlight/two-browser-conflict steps were not claimed because they were unavailable or
+unreproducible in the deployed rehearsal.
+
+## Phase 9.4 / independent UX-01 and Staff-first final rehearsal - 2026-08-27
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| PHASE-9.4-UX-01 | An anonymous independent participant using the supported Simplified Chinese interface completed the defined glance task in approximately nine seconds without coaching; priority, action/state, risk-versus-ranking, and source affordance were correct | passed | [independent UX evidence](evidence/ux_01_independent_test.md), [UX test record](UX_10_SECOND_TEST.md) |
+| PHASE-9.4-DRY-RUN | Final deployed English dry run completed in Staff → Clinician → Patient order with two off-camera role cuts; no Voice was reprocessed and no new mutation was created | passed | [demo rehearsal](evidence/demo_rehearsal.md), [state prep](DEMO_STATE_PREP_ZH.md) |
+| PHASE-9.4-RUNBOOK | Chinese operator guidance, bilingual cue card, English narration/subtitles, and final recording QA were prepared without generating the final video or packaging artifacts | passed | [operator runbook](DEMO_OPERATOR_RUNBOOK_ZH.md), [bilingual cue card](DEMO_CUE_CARD_ZH_EN.md), [spoken script](DEMO_SCRIPT_SPOKEN_EN.md), [subtitles](DEMO_SUBTITLES_EN.srt), [recording checklist](DEMO_RECORDING_CHECKLIST.md), [video QA](DEMO_VIDEO_QA.md) |
 
 ## Hard release gate
 

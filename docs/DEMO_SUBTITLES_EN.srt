@@ -1,78 +1,98 @@
 1
-00:00:00,000 --> 00:00:14,000
-Nightingale is a shared care note for synthetic data.
+00:00:00,000 --> 00:00:23,000
+Nightingale is a shared care note for synthetic data. It is a trust system, not an autonomous
+medical system. I start as Staff with one patient workspace and an English interface. The page
+keeps human notes, system suggestions, patient context, and review metadata separate.
 
 2
-00:00:14,000 --> 00:00:30,000
-It is a trust system, not an autonomous medical system.
-I use one patient workspace and an English interface.
+00:00:23,000 --> 00:00:50,000
+The Top Card is designed for a fast glance. It has no more than six source-linked items. Each
+item shows content, an action, a status, an item kind, and a risk label. The ranking explanation
+is clear: ranking priority is not a medical risk score.
 
 3
-00:00:30,000 --> 00:00:49,000
-The Top Card is designed for a fast glance.
-It has no more than six source-linked items.
-
-4
-00:00:49,000 --> 00:01:08,000
-Each card shows content, action, status, item kind, and risk.
-Ranking priority is not a medical risk score.
-
-5
-00:01:08,000 --> 00:01:28,000
-This nurse entry is an AI-scribed suggestion. Open source takes me to the exact timeline entry.
-The source panel names immutable version one and Python code-point offsets.
+00:00:50,000 --> 00:01:04,000
+This AI-scribed nurse entry is still a suggestion. Open source jumps to the exact timeline entry.
+The source panel names an immutable version, the source reference, and Python code-point offsets.
 The highlight is the stored quote.
 
+4
+00:01:04,000 --> 00:01:20,000
+This is a Level-C architecture and demo path. The audio is prerecorded synthetic signal data,
+and the timestamps are fixture timestamps.
+
+5
+00:01:20,000 --> 00:01:33,000
+The transcript is a mock fixture because local ASR was unavailable in this environment, so
+confidence is unavailable. This optional prototype uses prerecorded synthetic audio and a mock
+timestamped transcript.
+
 6
-00:01:28,000 --> 00:01:45,000
-This optional prototype uses prerecorded synthetic audio and a mock timestamped transcript.
+00:01:33,000 --> 00:01:42,000
 It demonstrates audio-to-summary provenance, but it does not claim live ASR or diarization.
+The suggestion remains system-authored and requires clinician review.
 
 7
-00:01:45,000 --> 00:02:04,000
-Now I switch to Staff.
-There is no new-note composer, so I edit the existing Staff note.
+00:01:42,000 --> 00:01:58,000
+Staff can edit the existing Staff note and add an internal comment. This deployed UI has no
+new-note composer, so I state that replacement directly.
 
 8
-00:02:04,000 --> 00:02:25,000
-I add an internal comment, choose Clinician A from the mention menu,
-and submit it. The mention is stored as metadata.
+00:01:58,000 --> 00:02:06,000
+I select Clinician A from the mention menu. The mention is stored as metadata, and the discussion
+remains inside the clinic scope.
 
 9
-00:02:25,000 --> 00:02:45,000
-Resolve and Unresolve are explicit collaboration states.
-Pin and Unpin provide feedback, but one click is not proof of learning.
+00:02:06,000 --> 00:02:22,000
+Resolve and Unresolve are explicit collaboration states. Pin and Unpin provide feedback to the
+importance logic, but one click is not proof of learning.
 
 10
-00:02:45,000 --> 00:03:05,000
-History keeps full snapshots. Compare shows before and after.
-Revert creates a new version and restores prior content.
+00:02:22,000 --> 00:02:28,000
+The next view uses a separate Clinician role, so the audit action is visible without sharing Staff
+authority.
 
 11
-00:03:05,000 --> 00:03:20,000
-Longitudinal context combines current entries with older history.
-It distinguishes Hot context, Warm index, and derived cold history.
+00:02:28,000 --> 00:02:44,000
+Now I switch to Clinician. I edit only the Clinician section. History keeps full snapshots. I
+choose an available earlier version and compare it with the current version.
 
 12
-00:03:20,000 --> 00:03:32,000
-The summary is labeled not the original record.
-View original record scrolls to the canonical Patient summary.
+00:02:44,000 --> 00:03:00,000
+Before and After make the change visible. Revert creates a new version and restores the prior
+content, while the earlier history stays. A review action can accept a suggestion without
+rewriting its source.
 
 13
-00:03:32,000 --> 00:03:47,000
-The patient session is a different server-side projection.
-Internal Glance, comments, tasks, and history controls are absent.
+00:03:00,000 --> 00:03:15,000
+Longitudinal context combines current entries with older history. Hot context, the Warm index,
+and the derived cold summary have different jobs.
 
 14
-00:03:47,000 --> 00:04:00,000
-Only patient-facing records and the patient Voice fixture appear.
-The transcript is mock data and no source control is exposed.
+00:03:15,000 --> 00:03:32,000
+The summary is labeled not the original record. View original record scrolls to the canonical
+Patient summary; it is not an exact-span panel. An independent participant using the Simplified Chinese interface completed the glance task in approximately nine seconds without coaching.
 
 15
-00:04:00,000 --> 00:04:10,000
-The deployed service uses HTTPS and PostgreSQL, and this demo remains synthetic.
+00:03:32,000 --> 00:03:46,000
+Finally, I switch to Patient. This is a different server-side projection. The internal Glance
+View, comments, tasks, and history controls are absent.
 
 16
-00:04:10,000 --> 00:04:20,000
-DeepSeek is only an optional redacted adapter.
-This prototype is designed for a ten-second glance, not independently proven.
+00:03:46,000 --> 00:04:00,000
+Only patient-facing records and the patient Voice fixture appear. The patient sample is
+prerecorded synthetic audio, with a mock timestamped transcript. No clinical sample or
+generated-source control is exposed.
+
+17
+00:04:00,000 --> 00:04:15,000
+The deployed service uses HTTPS and PostgreSQL, and the demo data is synthetic. The warm-path P95
+remains below three hundred milliseconds in the repository benchmark.
+
+18
+00:04:15,000 --> 00:04:25,000
+DeepSeek is only an optional redacted adapter; no live call is shown. Voice remains Level C.
+
+19
+00:04:25,000 --> 00:04:30,000
+This project makes no clinical compliance claim. The final video must be reviewed before packaging.

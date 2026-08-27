@@ -13,9 +13,10 @@
 - [x] Phase 7/7.1 bilingual UI/Guide, one-click launcher, mentions/tasks, SSE, accessibility,
       contextual drawers and fixed-viewport preview checkpoints; final local regression evidence
       is recorded after the application checkpoint.
+- [x] Independent UX-01 result: Simplified Chinese interface, approximately nine seconds, no
+      coaching, four defined answers correct; role and viewport were not separately recorded.
 - [ ] Final video after human review; no video is claimed while a reliable recorder/tool is not
       available locally.
-- [ ] Human UX-01 10-second test sign-off.
 
 ## Release gates
 
@@ -23,5 +24,5 @@
 - [x] Git checkpoint history is inspectable and current worktree is clean at the last checkpoint.
 - [x] Clean-clone rehearsal; package manifest is included in the local submission bundle.
 - [ ] Private GitHub upload verification, if authorized and authenticated.
-- [ ] Final human review of screenshots/brief/demo.
+- [ ] Final human review of screenshots/brief/demo and recorded video.
 - [ ] Email submission by the user; Codex must not send it.

@@ -1,7 +1,7 @@
 # Optional DeepSeek live smoke - 2026-08-26
 
 This is a bounded, opt-in smoke of the Phase 8 adapter. It is not a model-quality evaluation and
-does not close UX-01 or PRIV-04.
+is not the evidence for UX-01 or PRIV-04; those requirements are evidenced separately.
 
 | Field | Observed result |
 | --- | --- |
