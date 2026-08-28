@@ -1,11 +1,13 @@
 # Nightingale 视频 QA
 
+录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件只负责成片 QA。
+
 本文件用于最终视频导出后检查。视频完成前保持未勾选；只有完整观看成片并核对字幕后，才可
 把它标记为 ready for final packaging。
 
 ## 结构检查
 
-- [ ] 总时长在 4–5 分钟内，目标约 4:30。
+- [ ] 总时长在 4:40–4:55 内，目标约 4:55。
 - [ ] 英文口播约 105–120 words per minute，句子清晰、适合非英语母语者朗读。
 - [ ] 字幕使用 [`DEMO_SUBTITLES_EN.srt`](DEMO_SUBTITLES_EN.srt)，English only，cue 不重叠，
       时间与成片一致。
@@ -25,6 +27,16 @@
       不把 prepared transcript 称作 ASR 质量证据。
 - [ ] Staff `Edit`/`Save revision`、`Comments`、mention、`Resolve`/`Unresolve` 和
       Clinician `History`/`Compare`/`Revert` 的按钮标签与实际画面一致。
+- [ ] Staff 从 comment 的 `Assign task` 打开 Tasks，输入 `Review synthetic follow-up plan`，
+      选择 `Clinician A`，并且 `Create task` 只点击一次。
+- [ ] 新任务在 Glance 中显示 `Assigned task`、`Clinician A`、`Open` 和 `Open task`；
+      没有进入 top-six 时，视频按实际 fallback 说明，不声称它已进入 Glance。
+- [ ] Clinician 打开该 task，确认 `Open`，再改为 `In progress`；没有把它说成 Accept task。
+- [ ] 视频明确区分：Task `Open → In progress → Done`；AI suggestion `Accept / Reject`。
+- [ ] Clinician 对第一张实际可审核 AI suggestion 只点击一次 `Accept`，等待 `Reviewed`，
+      并确认 card 保留、source 不变。
+- [ ] Clinician 对第二张实际可审核 AI suggestion 只点击一次 `Reject`，等待 suggestion
+      退出 active Glance；没有声称删除原始 source。
 - [ ] Historical context 显示 `Recent context`、`Earlier context`、`Historical summary`，
       并用 `View original record` 导航到时间线。
 - [ ] Patient 画面显示 `Your care summary` 和患者可见内容；没有内部 Glance、团队讨论、
@@ -54,6 +66,9 @@
 ## 事实和安全检查
 
 - [ ] Staff → Clinician → Patient 顺序清楚，版本号和 suggestion 状态没有被错误写死。
+- [ ] 没有把 task 描述成 default accepted；没有把 task status 和 AI review status 混淆。
+- [ ] Create task 只点击一次；Accept 只用于 AI suggestion；Reject 只用于 AI suggestion。
+- [ ] 视频中没有明显测试标题或重复 Glance card。
 - [ ] 视频只口播已在脚本中保留的产品价值和已有部署事实；技术边界留在 Technical Brief
       或 evidence。
 - [ ] 没有把 Voice prepared transcript 说成 ASR、diarization 或模型质量证明。

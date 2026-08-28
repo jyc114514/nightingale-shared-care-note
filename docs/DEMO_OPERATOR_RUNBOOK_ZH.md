@@ -2,6 +2,8 @@
 
 录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为中文参考。
 
+目标时长：约 4:55（允许 4:40–4:55）；任务和 AI review 的逐步动作以 Master Runbook 为准。
+
 这是中文操作参考文件。所有操作提示均为中文；网页按钮、字段和状态保留实际 English
 label；需要念的内容以 Master Runbook 中的 English narration 和 SRT cue 为准。角色顺序固定
 为 **Staff → Clinician → Patient**。
@@ -52,27 +54,45 @@ label；需要念的内容以 Master Runbook 中的 English narration 和 SRT cu
 ### 4. Staff note、Comments 和 mention
 
 1. 关闭 Source，找到 `Staff note`，点击 `Edit`。
-2. 输入 synthetic rehearsal sentence，点击 `Save revision`，等待版本更新。
+2. 在原有内容末尾新增一行 synthetic rehearsal sentence，点击 `Save revision`，等待版本更新。
 3. 点击 `Comments`，等待 contextual drawer 立即出现。
-4. 在 `Comment body` 输入以 `@clinician` 开头的 synthetic comment。
-5. 从菜单选择 `@Clinician A`，点击 `Add comment`。
+4. 在 `Comment body` 输入 `@`，从可见菜单选择 `@Clinician A`。
+5. 在 mention 后输入 `Synthetic rehearsal: please review this follow-up.`，点击 `Add comment` 一次。
+6. 等待新增 root comment、`Mentioned teammates: @Clinician A` 和 `Reply`/`Resolve` 出现。
 
-只提交一次；不要输入隐藏 user ID。确认页面显示团队讨论和 mention 后再继续。
+只提交一次；不要输入隐藏 user ID。root comment 必须在下一节的 `Assign task` 前可见。
 
-### 5. 协作状态与第一次角色切换
+### 5. Discussion 和 Assigned task
 
-1. 根据当前按钮状态完成一次 `Resolve`/`Unresolve`。
-2. 在当前卡片根据状态完成一次 `Pin`/`Unpin`。
-3. 关闭 drawer，停录。
-4. 镜头外点击 `Sign out`，登录 Clinician；页面稳定后继续录制。
+1. 在刚才的 root comment 上按实际状态点击 `Resolve` 或 `Unresolve` 一次；等待 `Resolved` 或 `Open`。
+2. 点击该 comment 上的 `Assign task`，不要从其他 entry 重新创建。
+3. 等待 `Tasks` drawer 显示 comment/entry context、`Task title` 和 `Assign to`。
+4. 点击 `Task title`，输入 `Review synthetic follow-up plan`。
+5. 在 `Assign to` 中选择 `Clinician A · Clinician`。
+6. 确认 title 和 assignee 后点击 `Create task` 一次，等待 task card 出现。
+7. 点击 `Close tasks`，回到 `Glance View`，等待新 `Assigned task` 进入 top-six。
+8. 指向 `Clinician A`、`Open` 和 `Open task`；不要把通用 `Reviewed` presentation 说成 task acceptance。
+9. 关闭 drawer，停录；镜头外点击 `Sign out`，登录 Clinician。
 
-### 6. Clinician History、Compare 和 Revert
+Task 状态机是 `Open → In progress → Done`；不要说 `Accept task`、`Reject task` 或 task 默认已接受。
+这一节只能点击一次 `Create task`。如果 task 没有进入 top-six，不重复创建，只回到 Tasks drawer 展示并如实说明。
 
-1. 在 `Clinician plan` 点击 `Edit`，输入 synthetic plan sentence，点击 `Save revision`。
-2. 点击 `History`，选择列表中实际可见的 earlier version。
-3. 点击 `Compare`，等待 `Before` 和 `After`。
-4. 如果 `Revert` 可用，点击一次，确认新版本出现并且 earlier rows 仍保留。
-5. 只有页面确实显示 review 按钮时才执行 review；没有就跳过。
+### 6. Clinician task、AI review、History 和 Revert
+
+1. 页面稳定后确认 `Clinician A`、`Clinician view` 和 `Sarah Tan`。
+2. 在 `Glance View` 找到 `Review synthetic follow-up plan` 的 `Assigned task`，点击 `Open task`。
+3. 等待 `Tasks` drawer、assignee `Clinician A` 和当前 `Open` 出现。
+4. 将 `Status` 从 `Open` 改为 `In progress`，等待该状态真正显示；不要点击 `Done`。
+5. 关闭 Tasks，向下到 `Clinician plan`，点击 `Edit`，追加 synthetic plan sentence 并点击 `Save revision`。
+6. 点击 `History`，选择实际可见的 earlier version，点击 `Compare`，等待 `Before` 和 `After`。
+7. 如 `Revert` 可用且录制计划包含它，点击一次并确认新版本出现、旧 rows 保留；否则跳过。
+8. 关闭 History/Source，找到第一张实际显示 `Accept`/`Reject` 的 AI suggestion；录屏已开始且页面稳定后点击 `Accept` 一次。
+9. 等待 status 变为 `Reviewed`、按钮消失且 card 保留。
+10. 找到第二张仍显示 `Accept`/`Reject` 的 AI suggestion，点击 `Reject` 一次。
+11. 等待该 suggestion 离开 active `Glance`；确认原始 source 仍可查看，不说 source 被删除。
+
+Accept/Reject 只属于 AI-generated suggestion，且只在 Clinician 页面显示；Task 的 `Open → In progress → Done`
+不能和 AI review status 混用。每个写操作只点击一次；状态已变化时按实际候选录制，不改数据匹配旧台本。
 
 不要假设 `v1 → v2`，也不要直接修改数据库。
 
@@ -111,9 +131,13 @@ source/review boundary，念脚本镜头 9。不要打开配置、日志、PDF�
 | `Create care-note suggestion` | 每个 Voice sample 最多一次 |
 | `Save revision` | Staff 和 Clinician 各按脚本点击一次 |
 | `Add comment` | 只提交一次 synthetic comment |
-| `Resolve`/`Unresolve`、`Pin`/`Unpin` | 各完成一组来回切换 |
+| `Create task` | 只提交一次；title 为 `Review synthetic follow-up plan`；assignee 为 Clinician A |
+| Task `Open` → `In progress` | Clinician 只切换一次；`Done` 仅在明确计划时执行 |
+| AI suggestion `Accept` | Clinician 只点击一次；等待 `Reviewed`，card 保留、source 不变 |
+| AI suggestion `Reject` | Clinician 只点击一次；等待 suggestion 离开 active Glance，source 不删除 |
+| `Resolve`/`Unresolve` | 按当前状态完成一次；如有时间可展示来回切换 |
+| `Pin`/`Unpin` | 可选，不在本轮主路径；不为匹配旧台本重复写入 |
 | `Revert` | 只点击一次；保留所有历史 |
-| `Accept`/`Reject` | 只有页面确实显示时才录制 |
 
 ## 录制结束后
 

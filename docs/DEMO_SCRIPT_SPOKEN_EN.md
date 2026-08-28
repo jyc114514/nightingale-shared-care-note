@@ -2,7 +2,7 @@
 
 录制时以 [`DEMO_RECORDING_MASTER_ZH_EN.md`](DEMO_RECORDING_MASTER_ZH_EN.md) 为唯一操作主文件；本文件保留为逐镜头旁白参考。
 
-目标时长：**4:30**  · 目标语速：**105–120 words per minute**  · 页面：**English**
+目标时长：**约 4:55（允许 4:40–4:55）**  · 目标语速：**105–120 words per minute**  · 页面：**English**
 
 角色顺序固定为 **Staff → Clinician → Patient**。操作提示用中文；网页按钮、字段和状态保留
 实际 English label；需要念的内容只念每个镜头的英文旁白。全部内容使用 synthetic demo data。
@@ -79,42 +79,48 @@ URL、环境变量、浏览器 storage、DevTools 或外部服务控制台。页
   > discussion and mention Clinician A from the visible menu. The conversation stays attached to this
   > record, so follow-up context is available where the work happens.
 
-## 镜头 5：协作状态与角色切换
+## 镜头 5：协作状态、Assigned task 与角色切换
 
-- **时间：** 02:15–02:34
+- **时间：** 02:15–02:45
 - **角色：** Staff A，随后切换 Clinician A
-- **中文操作：** 在刚才的讨论中按页面实际状态完成一次 `Resolve`/`Unresolve`。在一张当前
-  卡片上按页面实际状态完成一次 `Pin`/`Unpin`。关闭 drawer，停录，镜头外点击 `Sign out`
-  并登录 Clinician。页面稳定后从 `Clinician view` 继续。
-- **应看到：** 讨论状态和优先级反馈都被明确切换；只出现一次镜头外角色切换。
+- **中文操作：** 在 root comment 上按页面实际状态完成一次 `Resolve`/`Unresolve`。点击该 comment
+  的 `Assign task`，在 `Task title` 输入 `Review synthetic follow-up plan`，在 `Assign to`
+  选择 `Clinician A`，点击 `Create task` 一次。等待 task card 出现，关闭 Tasks，回到
+  `Glance View`，指出 `Assigned task`、`Clinician A`、`Open` 和 `Open task`。停录，
+  镜头外点击 `Sign out` 并登录 Clinician。
+- **应看到：** 新 task 立即进入 active workflow 并显示 Open；不要把通用 `Reviewed` presentation
+  解释成 task acceptance。
 - **Requirement mapping：** `requirements.txt:15, 27–31, 90–93`。
 - **英文旁白：**
 
-  > Discussion states are explicit: Resolve and Unresolve show whether follow-up is complete. Pin and
-  > Unpin let the team provide feedback to prioritisation. These actions are recorded separately from
-  > clinical risk and source content.
+  > I assign this follow-up to Clinician A in the shared workflow, with clear ownership. The task
+  > becomes active immediately; Open status and ownership show in Glance.
 
-## 镜头 6：Clinician review、Compare 与 Revert
+## 镜头 6：Clinician task、AI review、Compare 与 Revert
 
-- **时间：** 02:34–03:10
+- **时间：** 02:45–03:42
 - **角色：** Clinician A
-- **中文操作：** 在 `Clinician plan` 点击 `Edit`，修改 synthetic plan sentence 并点击
-  `Save revision`。打开 `History`，选择一个页面实际可用的 earlier version，点击 `Compare`，
-  等待 `Before` 和 `After`。如 `Revert` 可用，点击一次并确认新版本出现；不写死版本号。
-- **应看到：** 变化前后内容、可继续查看的历史版本和新的恢复版本。只有页面确实显示 review
-  按钮时才执行该动作。
+- **中文操作：** 在 `Glance View` 找到刚创建的 `Assigned task`，点击 `Open task`，确认
+  assignee 为 `Clinician A`、状态为 `Open`，再改为 `In progress`。不要点击 `Done`。
+  关闭 Tasks，编辑 `Clinician plan` 并保存，打开 `History`，选择实际可见的 earlier version
+  点击 `Compare`，查看 `Before`/`After`。如 `Revert` 可用，点击一次并确认历史保留。
+  然后找到第一张实际显示 `Accept`/`Reject` 的 AI suggestion，点击 `Accept` 一次并等待
+  `Reviewed`；再对第二张仍可审核的 suggestion 点击 `Reject` 一次并等待它离开 active Glance。
+- **应看到：** Task 的 `Open → In progress → Done` 与 AI suggestion 的 `Accept / Reject` 分开；
+  Accept 后 card 保留且 source 不变，Reject 后 suggestion 离开 active Glance。
 - **Requirement mapping：** `requirements.txt:16–19, 41–44, 90–93`。
 - **英文旁白：**
 
-  > Now I switch to Clinician. Clinician authority is focused on review and care planning. I edit the
-  > Clinician plan, open History, and compare an earlier version with the current one. Before and
-  > After make the change visible. Revert restores earlier content by creating a new version, while
-  > the full history remains available. A review action can confirm a suggestion without rewriting
-  > its source.
+  > Now I switch to Clinician, and I open the assigned task for review. Assigned tasks become active
+  > immediately and move through Open, In progress, and Done. I edit the Clinician plan, save, and
+  > open History for safe review. I compare an earlier version with the current one before reviewing
+  > the change. Before and After show the change; Revert creates a new version and preserves history.
+  > I accept one AI suggestion; it becomes Reviewed, and its original source stays unchanged. I reject
+  > another AI suggestion; it leaves active Glance, while the original source remains available.
 
 ## 镜头 7：历史上下文与 UX-01 evidence
 
-- **时间：** 03:10–03:44
+- **时间：** 03:42–04:16
 - **角色：** Clinician A
 - **中文操作：** 关闭 History、Comments 和 Source。找到 `Historical context`，展开
   `How historical context is organised`，指出 `Recent context`、`Earlier context` 和
@@ -133,7 +139,7 @@ URL、环境变量、浏览器 storage、DevTools 或外部服务控制台。页
 
 ## 镜头 8：Patient privacy 与 Patient Voice
 
-- **时间：** 03:44–04:12
+- **时间：** 04:16–04:40
 - **角色：** Sarah Patient
 - **中文操作：** 停录，镜头外 `Sign out` 并登录 Patient。确认 `Patient view`、`Sarah Tan` 和
   `Your care summary`。展示患者可见时间线和 `Voice note`；如需要处理，播放 patient audio
@@ -151,7 +157,7 @@ URL、环境变量、浏览器 storage、DevTools 或外部服务控制台。页
 
 ## 镜头 9：收尾
 
-- **时间：** 04:12–04:30
+- **时间：** 04:40–04:55
 - **角色：** 任一稳定的内部角色
 - **中文操作：** 关闭所有 drawer，停在稳定的 English workspace；不要打开配置页。指向页面的
   synthetic-only disclosure 和 source/review boundary，鼠标移到空白处后念完旁白。

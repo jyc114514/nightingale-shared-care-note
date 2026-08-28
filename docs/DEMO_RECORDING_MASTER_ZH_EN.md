@@ -5,7 +5,7 @@
 DEMO_SUBTITLES_EN.srt 仍然保留，作为剪辑软件导入文件；其他 Runbook、Script、Cue Card、
 Shotlist、State Prep 和 QA 文件都是参考或审计材料。
 
-目标成片：4:30 · 40 个 recording beats · 40 个 subtitle cues · 105–120 words per minute
+目标成片：约 4:55 · 42 个 recording beats · 42 个 subtitle cues · 105–120 words per minute
 页面语言：English · 患者：Sarah Tan · 角色顺序：Staff → Clinician → Patient
 数据边界：只使用内置 synthetic data；clinical note 原文不翻译、不改写。
 
@@ -38,6 +38,8 @@ Shotlist、State Prep 和 QA 文件都是参考或审计材料。
       reconnecting，镜头外等待或刷新后再开始。
 - [ ] 关闭 Guide、Source、Comments、History、Task drawer，以及任何临时错误提示。
 - [ ] 现场确认 Glance 的当前 card、status、action、risk 和 Priority；不写死卡片名称。
+- [ ] 清理检查通过：Glance 仍最多六项；没有明显测试标题或无区分价值的重复 card；至少有两张
+      Clinician 可审核的 AI suggestion，供后续一次 Accept 和一次 Reject。
 - [ ] 现场确认 Voice 是否已有 result、History 中可用的 earlier version、Comments 中是否已有
       root discussion；已有 result 就只展示，不重复提交。
 - [ ] 预先准备两个镜头外角色切换点：Staff → Clinician、Clinician → Patient。
@@ -50,7 +52,7 @@ Shotlist、State Prep 和 QA 文件都是参考或审计材料。
 - Staff revision：Synthetic staff rehearsal: review the pending follow-up.
 - Clinician revision：Synthetic clinician rehearsal: confirm the next follow-up plan.
 - Comment after selecting the visible mention：@Clinician A Synthetic rehearsal: please review this follow-up.
-- Optional task title（默认短片只打开 drawer，不创建 task）：Synthetic follow-up task。
+- Task title：Review synthetic follow-up plan（正式录制只创建一次，并分配给 Clinician A）。
 
 这些句子不含真实姓名、号码或其他 PHI；如果页面已有相同或更好的 synthetic 内容，按状态分支
 展示，不要再次保存。
@@ -63,11 +65,11 @@ Shotlist、State Prep 和 QA 文件都是参考或审计材料。
 | 2 Glance + source | 00:26–01:10 / 05–11 | Staff A | 顶部向下到 Glance View | Why is this here? → Open source → Close source | Original source、timeline exact highlight | Staff starts with Glance | Source 关闭且 patient query 保留，进入 Voice |
 | 3 Voice note | 01:10–01:47 / 12–16 | Staff A | 向下到 Voice note | 播放、Create care-note suggestion、transcript、View source | 音频 ready、Ready for review、View source | Here is a Voice note | Voice source 可见，进入 Staff note |
 | 4 Staff note + Comments | 01:47–02:15 / 17–20 | Staff A | Source 关闭，Timeline 的 Staff note | Edit → Save revision → Comments → Add comment | textarea、saved version、Team discussion、mention | Back in Staff | comment 和 mention 可见，进入协作状态 |
-| 5 Collaboration | 02:15–02:34 / 21–23 | Staff A | Comments drawer 或 Staff/Glance | Resolve/Unresolve → Assign task → Pin/Unpin | Resolved/Open、Tasks、Unpin/Pin | Resolve and Unresolve | 所有 drawer 关闭，停录切换 Clinician |
-| 6 Clinician review | 02:34–03:10 / 24–28 | Clinician A | Clinician view 顶部 | Edit → Save revision → History → Compare | Current、Before/After；Revert 若可用 | Now I switch to Clinician | History 结果稳定，进入 context |
-| 7 Historical context | 03:10–03:44 / 29–33 | Clinician A | Historical context | 展开 details → View original record | Recent/Earlier/Historical summary、原始 timeline | Historical context brings | UX-01 事实念完，停录切换 Patient |
-| 8 Patient privacy | 03:44–04:12 / 34–37 | Sarah Patient | Patient view 顶部 | 无；必要时只点一次 Voice processing | Your care summary、patient Voice、无内部控件 | Finally, I switch to Patient | 患者页面稳定，进入收尾 |
-| 9 Product close | 04:12–04:30 / 38–40 | 任一稳定内部角色 | 所有 drawer 关闭 | 无 | English workspace 稳定 | Across the workspace | 念完 cue 40 后停止录制 |
+| 5 Collaboration + task | 02:15–02:45 / 21–23 | Staff A | Comments drawer → Glance View | Resolve/Unresolve → Assign task → Task title → Clinician A → Create task | Tasks context、new task、Open、Open task | Resolve and Unresolve | 新 task card 可见，停录切换 Clinician |
+| 6 Clinician task + AI review | 02:45–03:42 / 24–30 | Clinician A | Clinician view → Glance View | Open task → Open → In progress → History/Compare → Accept → Reject | In progress、Before/After、Reviewed、second card disappears | Now I switch to Clinician | AI review 结果稳定，进入 context |
+| 7 Historical context | 03:42–04:16 / 31–35 | Clinician A | Historical context | 展开 details → View original record | Recent/Earlier/Historical summary、原始 timeline | Historical context brings | UX-01 事实念完，停录切换 Patient |
+| 8 Patient privacy | 04:16–04:40 / 36–39 | Sarah Patient | Patient view 顶部 | 无；必要时只点一次 Voice processing | Your care summary、patient Voice、无内部控件 | Finally, I switch to Patient | 患者页面稳定，进入收尾 |
+| 9 Product close | 04:40–04:55 / 40–42 | 任一稳定内部角色 | 所有 drawer 关闭 | 无 | English workspace 稳定 | The next step is visible | 念完 cue 42 后停止录制 |
 
 ## C. 完整逐拍录制台本
 
@@ -143,9 +145,9 @@ Shotlist、State Prep 和 QA 文件都是参考或审计材料。
   - 必须看见共享工作区标题和至少一个内容区。
   - 不应看见技术配置、原始日志或空白 loading 区。
 - 现在念：
-  > The page separates notes, suggestions, actions, and review history.
+  > The page clearly separates notes, suggestions, actions, and review history.
 - Subtitle cue：03 · 00:00:14,000–00:00:20,000
-- 英文字幕：The page separates notes, suggestions, actions, and review history.
+- 英文字幕：The page clearly separates notes, suggestions, actions, and review history.
 - 说话与动作关系：先滚动并等待稳定，再念。
 - 本段优势：把产品的 information architecture 说清楚，帮助评委理解后续动作。
 - Requirement mapping：requirements.txt:3–5, 10–13
@@ -200,9 +202,9 @@ medical risk。
   - 必须看见 Glance View 和至少一张 card。
   - 不应看见 loading、错误 alert 或 Patient view。
 - 现在念：
-  > Staff starts with Glance View, where items are visible together at once.
+  > Staff starts with Glance View, where key items are visible together at once.
 - Subtitle cue：05 · 00:00:26,000–00:00:32,000
-- 英文字幕：Staff starts with Glance View, where items are visible together at once.
+- 英文字幕：Staff starts with Glance View, where key items are visible together at once.
 - 说话与动作关系：滚动完成并稳定后再念。
 - 本段优势：直接对应 brief 的 Glance View 和快速第一读。
 - Requirement mapping：requirements.txt:8–9
@@ -279,9 +281,9 @@ medical risk。
   - 必须看见 Original source、记录类型、日期或版本信息。
   - 不应看见错误 alert、空白 Source 或登录页。
 - 现在念：
-  > I open the source of an AI-assisted note for careful team review.
+  > I open the original source of an AI-assisted note for careful team review.
 - Subtitle cue：08 · 00:00:45,000–00:00:50,000
-- 英文字幕：I open the source of an AI-assisted note for careful team review.
+- 英文字幕：I open the original source of an AI-assisted note for careful team review.
 - 说话与动作关系：先点击，等 panel 出现后再念。
 - 本段优势：把 Glance 的排序结果连接到可核验的 original record。
 - Requirement mapping：requirements.txt:42–44, 87–89
@@ -305,9 +307,9 @@ medical risk。
   - 必须看见对应 entry、Original source excerpt 和高亮文字。
   - 不应把当前 entry 的普通文本误称为 source panel。
 - 现在念：
-  > The page takes me to the matching timeline entry for team verification.
+  > The page takes me smoothly to the matching timeline entry for team verification.
 - Subtitle cue：09 · 00:00:50,000–00:00:56,000
-- 英文字幕：The page takes me to the matching timeline entry for team verification.
+- 英文字幕：The page takes me smoothly to the matching timeline entry for team verification.
 - 说话与动作关系：先等平滑滚动完成，再念。
 - 本段优势：证明 source navigation 是可用的 workflow，不是静态 badge。
 - Requirement mapping：requirements.txt:10–13, 42–44
@@ -413,9 +415,9 @@ medical risk。
   - 必须看见音频正在或已经播放过。
   - 不应出现 microphone、upload 或 error 文案。
 - 现在念：
-  > I follow the prepared timestamped transcript at every step.
+  > I follow the prepared timestamped transcript at every step for clear timing.
 - Subtitle cue：13 · 00:01:17,000–00:01:23,000
-- 英文字幕：I follow the prepared timestamped transcript at every step.
+- 英文字幕：I follow the prepared timestamped transcript at every step for clear timing.
 - 说话与动作关系：先让播放进度前进，再念；不要边点击边讲话。
 - 本段优势：说明页面同时提供可听的 synthetic conversation 和可读的时间信息。
 - Requirement mapping：requirements.txt:21–26, 45–48
@@ -431,7 +433,7 @@ medical risk。
 - 页面起点：Voice panel 的音频下方。
 - 中文操作：
   1. 如果已有 Voice result，直接滚到 result；不要点击 Create care-note suggestion。
-  2. 如果没有 result，点击 Create care-note suggestion 一次。
+  2. 如果没有 result，确认录屏已经开始且页面稳定，再点击 Create care-note suggestion 一次。
   3. 鼠标移到空白处，等待结果。
 - 等待：
   - 等待 Suggestion status: Ready for review、Transcript 和 timestamped segments 出现。
@@ -491,9 +493,9 @@ medical risk。
   - 必须看见 suggestion、timestamped transcript 和 source link。
   - 不应出现 ASR accuracy、microphone、upload 或 unsupported production claim。
 - 现在念：
-  > The suggestion is ready for clinician review today.
+  > The suggestion is ready for clinician review today and supports safe follow-up.
 - Subtitle cue：16 · 00:01:38,000–00:01:47,000
-- 英文字幕：The suggestion is ready for clinician review today.
+- 英文字幕：The suggestion is ready for clinician review today and supports safe follow-up.
 - 说话与动作关系：等待画面稳定后念；念完再关闭 source。
 - 本段优势：用一个完整 hold 证明 Voice 结果不是瞬时 toast。
 - Requirement mapping：requirements.txt:21–26, 42–44
@@ -540,16 +542,16 @@ medical risk。
 - 中文操作：
   1. 点击 textarea 末尾，不删除现有文字。
   2. 按 Enter 新增一行，输入 Synthetic staff rehearsal: review the pending follow-up.
-  3. 点击 Save revision 一次；鼠标移到空白处。
+  3. 确认录屏已经开始且页面稳定，点击 Save revision 一次；鼠标移到空白处。
 - 等待：
   - 等待 textarea 关闭、保存后的文本出现、Version N 增加或 Record status: Up to date 恢复。
 - 画面确认：
   - 必须看见新的 synthetic sentence 和保存后的普通 entry。
   - 不应看见空文本、重复版本提交或 error alert。
 - 现在念：
-  > I wait for the saved state before continuing on screen for this recording.
+  > I wait for the saved state before continuing with patient care.
 - Subtitle cue：18 · 00:01:54,000–00:01:59,000
-- 英文字幕：I wait for the saved state before continuing on screen for this recording.
+- 英文字幕：I wait for the saved state before continuing with patient care.
 - 说话与动作关系：先输入并保存，等保存结果出现后念。
 - 本段优势：说明 revision 是显式保存的，不是静默覆盖。
 - Requirement mapping：requirements.txt:17–19, 41–44
@@ -600,9 +602,9 @@ medical risk。
   - 必须看见 comment body、Mentioned teammates 和明确的 Open/Resolved 状态。
   - 不应看见真实患者信息或错误 stack trace。
 - 现在念：
-  > The discussion stays with the record, keeping follow-up context available.
+  > The discussion stays with the record; staff can follow up in context.
 - Subtitle cue：20 · 00:02:06,000–00:02:15,000
-- 英文字幕：The discussion stays with the record, keeping follow-up context available.
+- 英文字幕：The discussion stays with the record; staff can follow up in context.
 - 说话与动作关系：先 Add comment 并等 root comment 出现，再念。
 - 本段优势：展示 threaded collaboration 的 root entry 和 mention metadata。
 - Requirement mapping：requirements.txt:15, 90–93
@@ -610,9 +612,10 @@ medical risk。
 - 如果状态不同：若页面已有相同 synthetic comment，直接展示并不重复提交；若 Add comment 失败，
   停止 take，不刷新后再次发送。
 
-### 镜头 5 — Resolve、Assign task 和 Pin（02:15–02:34）
+### 镜头 5 — Resolve、Assign task 和 active task（02:15–02:45）
 
-目标：展示协作状态和 priority feedback；task 默认只开 drawer，避免无必要的线上写入。
+目标：展示 discussion、assignment 和 active task。Task status ≠ AI review；task 的状态机是
+Open → In progress → Done，不能把 task 说成被 Accept。
 
 #### Beat 21 — Toggle the discussion state
 
@@ -622,7 +625,7 @@ medical risk。
 - 页面起点：Comments drawer 中的 root comment。
 - 中文操作：
   1. 读取当前按钮是 Resolve 还是 Unresolve。
-  2. 点击当前可用的状态按钮一次，等待 Resolved 或 Open 出现。
+  2. 确认录屏已经开始且页面稳定，点击当前可用的状态按钮一次，等待 Resolved 或 Open 出现。
   3. 如仍有时间，再点击相反按钮一次展示来回状态；否则保留第一次结果。
 - 等待：
   - 每次点击后等待状态文字更新，不要连续双击。
@@ -640,123 +643,155 @@ medical risk。
 - 如果状态不同：若当前已经 Resolved，只点击 Unresolve；若按钮不可用，保留现状并按实际画面
   说明，不重复点击。
 
-#### Beat 22 — Open Assign task and show Pin feedback
+#### Beat 22 — Create and assign the synthetic task
 
-- 时间：02:21–02:28
+- 时间：02:21–02:34
 - 当前角色：Staff A
 - 录制状态：继续录制
-- 页面起点：Comments drawer 可关闭；Staff note 和 Glance View 可定位。
+- 页面起点：Comments drawer 中新增的 synthetic root comment 已显示。
 - 中文操作：
-  1. 点击 Comments 的 Close，等待 drawer 消失。
-  2. 在 Staff note 下点击 Assign task 一次。
-  3. 等待 Tasks、Creating a task for: Staff note 和 Task title 出现；默认不填写、不点击 Create task。
-  4. 点击 Close tasks。
-  5. 回到 Glance View，按当前状态点击 Pin 或 Unpin 一次，再点击相反按钮一次；每次等待标签变化。
+  1. 确认 root comment 的 body 和 Mentioned teammates: @Clinician A 已显示。
+  2. 确认录屏已经开始且页面稳定，点击该 comment 上的 Assign task 一次，不从别的 entry 重新打开 composer。
+  3. 等待 Tasks drawer、Creating a task for: Staff note 和 From: Staff note vN 出现。
+  4. 点击 Task title 字段。
+  5. 输入 Review synthetic follow-up plan。
+  6. 在 Assign to 下拉框中选择 Clinician A · Clinician。
+  7. 确认录屏已经开始、页面稳定、assignee 和 title 正确后，只点击 Create task 一次；鼠标移到空白处。
 - 等待：
-  - Task drawer 要先稳定显示；Pin/Unpin 要在每次状态更新后再继续。
+  - 等待 Tasks drawer 显示 comment/entry context、Task title 和 Assign to。
+  - 点击 Create task 后，等待 Review synthetic follow-up plan 的 task card 出现。
 - 画面确认：
-  - 必须看见 Tasks、Task title、Pin/Unpin 的真实 labels。
-  - 不应为了展示而创建重复 task。
+  - 必须看见 Tasks、Review synthetic follow-up plan、Clinician A 和 Create task。
+  - 不应点击 Accept、Reject 或把 task 说成已接受。
 - 现在念：
-  > Pin and Unpin guide prioritisation; Assign task opens follow-up work when needed.
-- Subtitle cue：22 · 00:02:21,000–00:02:28,000
-- 英文字幕：Pin and Unpin guide prioritisation; Assign task opens follow-up work when needed.
-- 说话与动作关系：先打开并关闭 Tasks，再完成 Pin/Unpin；所有状态稳定后念。
-- 本段优势：同时覆盖 assignment entry point 和 team feedback，而不制造多余线上状态。
-- Requirement mapping：requirements.txt:15, 28–31
-- 退出条件：Task drawer 关闭，Glance card 回到原 Pin/Unpin 状态。
-- 如果状态不同：若已有 task，只展示 source entry 和 assignee；若按钮初始是 Unpin，执行
-  Unpin → Pin；若 Assign task 不可见，跳过 task drawer，不伪造成功。
-- 可选 task 分支（不属于默认短片）：若必须展示完整创建流程，打开 drawer 后输入
-  Synthetic follow-up task，Assign to 选择 Clinician A，点击 Create task 一次，等待 task card
-  出现后立即停止该分支；这会修改 synthetic state，必须在 state prep 中记录。
+  > I assign this follow-up to Clinician A with clear ownership in this workflow.
+- Subtitle cue：22 · 00:02:21,000–00:02:34,000
+- 英文字幕：I assign this follow-up to Clinician A with clear ownership in this workflow.
+- 说话与动作关系：先完成 title、assignee 和 Create task，再等 task card 出现后念。
+- 本段优势：把 optional assignment 变成可核验的 owner/task relationship。
+- Requirement mapping：requirements.txt:15, 90–93
+- 退出条件：该 task 已创建一次，Tasks drawer 中可见 title、assignee 和 status。
+- 如果状态不同：若 drawer 已有同名 task，停止输入并直接使用已存在的 task；若 Create task
+  disabled，检查 title/assignee 是否缺失后只修复字段，不重复提交；若 API 失败，停止 take。
 
-#### Beat 23 — Finish the Staff take
+#### Beat 23 — Return to Glance with the active task
 
-- 时间：02:28–02:34
+- 时间：02:34–02:45
 - 当前角色：Staff A
 - 录制状态：继续录制；cue 念完后暂停录制
-- 页面起点：Comments、Tasks、History、Source 均关闭。
+- 页面起点：Tasks drawer 中的新增 task 已显示。
 - 中文操作：
-  1. 确认页面回到普通 Staff timeline/Glance。
-  2. 鼠标移到空白处。
-  3. 念完 cue 23 后点击录屏软件的 Pause recording。
+  1. 点击 Close tasks，等待 Tasks drawer 消失。
+  2. 向上滚动回 Glance View。
+  3. 等待新 task card 进入 top-six；鼠标依次指向 Assigned task、Clinician A、Open 和 Open task。
+  4. 念完 cue 23 后点击录屏软件的 Pause recording。
 - 等待：
-  - 等待所有 drawer 完全退出；不需要额外网络等待。
+  - 等待 Glance View 重新加载并显示新的 task card；不要重复 Create task。
 - 画面确认：
-  - 必须保持 Staff view 和 synthetic workspace。
-  - 不应把 Sign out 或密码页录入。
+  - 必须看见 Assigned task、Review synthetic follow-up plan、Clinician A、Open 和 Open task。
+  - 不要把 card 顶部通用的 Reviewed presentation 解释成 task acceptance；Task status 与 AI review 不同。
 - 现在念：
-  > These collaboration actions stay separate from clinical risk and source content.
-- Subtitle cue：23 · 00:02:28,000–00:02:34,000
-- 英文字幕：These collaboration actions stay separate from clinical risk and source content.
-- 说话与动作关系：状态稳定后念；念完才暂停录制。
-- 本段优势：总结 collaboration、risk 和 source 的边界，并给角色切换留干净剪辑点。
-- Requirement mapping：requirements.txt:14–19, 28–31, 90–93
-- 退出条件：录屏暂停，进入 Cut A。
-- 如果状态不同：若有 drawer 未关闭，先关闭；若状态有 pending request，镜头外等完成，
-  不把半完成状态带入 Clinician。
+  > The task becomes active immediately; Open status and ownership show in Glance.
+- Subtitle cue：23 · 00:02:34,000–00:02:45,000
+- 英文字幕：The task becomes active immediately; Open status and ownership show in Glance.
+- 说话与动作关系：先确认 task card 的字段和 Open task 可见，再念；念完才暂停录制。
+- 本段优势：证明 Create task 后任务立即进入 active workflow，而不是等待另一个 approval。
+- Requirement mapping：requirements.txt:15, 28–31, 90–93
+- 退出条件：录屏暂停，进入 Cut A；线上不要再创建第二个同名 task。
+- 如果状态不同：若 task 没有进入 top-six，回到 Tasks drawer 展示已创建 task，但不要声称它在 Glance；
+  若 card 显示 Done，则停止并重新准备，不把 Done 说成 Open。
 
 ### Cut A — Staff → Clinician（镜头外）
 
-- 在 cue 23 结束后暂停录制。
+- 在 cue 23（02:45）结束后暂停录制。
 - 镜头外点击 Sign out；手动登录 Clinician A；密码框、自动填充和 Sign in 页面不录。
 - 打开现有 HTTPS 地址或保留已登录页面；选择 Sarah Tan、English。
 - 等待 Clinician A、Clinician view、Record status: Up to date 和 workspace 稳定。
 - 重新开始录制后，从 Beat 24 的稳定 Clinician 页面开始。
-- 剪辑衔接：上一句是 “These collaboration actions stay separate from clinical risk and source
-  content.”；下一句是 “Now I switch to Clinician, whose authority is focused on review and care
-  planning.” 两句语义连续，不要把密码页插入中间。
+- 剪辑衔接：上一句是 “The task becomes active immediately; Open status and ownership show in
+  Glance.”；下一句是 “Now I switch to Clinician, and I open the assigned task for review.” 两句
+  语义连续，不要把密码页插入中间。
 
-### 镜头 6 — Clinician review、History、Compare、Revert（02:34–03:10）
+### 镜头 6 — Clinician task、AI review、History、Compare、Revert（02:45–03:42）
 
 目标：展示 clinician review authority、immutable history 和可追踪的 revision 操作。
 
-#### Beat 24 — Resume in Clinician view
+#### Beat 24 — Open the assigned task as Clinician
 
-- 时间：02:34–02:42
+- 时间：02:45–02:52
 - 当前角色：Clinician A
 - 录制状态：开始录制（Cut A 后）
 - 页面起点：镜头外登录完成后的稳定 Clinician workspace 顶部。
 - 中文操作：
   1. 点击录屏软件的 Resume/Start recording。
   2. 确认右上角 Clinician A、Clinician view、Sarah Tan。
-  3. 鼠标移到空白处。
+  3. 向下滚动到 Glance View，找到 Review synthetic follow-up plan 的 Assigned task card。
+  4. 点击该 card 的 Open task 一次。
+  5. 鼠标移到空白处。
 - 等待：
-  - 等待 Record status: Up to date；若页面 reconnecting，镜头外等待。
+  - 等待 Record status: Up to date；再等待 Tasks drawer、任务标题、Clinician A 和 Open 出现。
 - 画面确认：
-  - 必须看见 Clinician view 和 workspace。
-  - 不应看见 Staff view、Patient view 或登录页。
+  - 必须看见 Clinician view、Assigned task、Review synthetic follow-up plan、Clinician A 和 Open。
+  - 不应看见登录页，也不应把 Open task 说成 AI review action。
 - 现在念：
-  > Now I switch to Clinician, whose authority is focused on review and care planning.
-- Subtitle cue：24 · 00:02:34,000–00:02:42,000
-- 英文字幕：Now I switch to Clinician, whose authority is focused on review and care planning.
-- 说话与动作关系：先确认角色和状态，再念。
-- 本段优势：明确 clinician 是确认与 care planning 的 authority。
-- Requirement mapping：requirements.txt:16–19, 34–40, 51
-- 退出条件：Clinician 页面稳定。
-- 如果状态不同：若仍是 Staff，停止并重新完成镜头外切换；若显示 stale page，等待或刷新后再录。
+  > Now I switch to Clinician, and I open the assigned task for review in context.
+- Subtitle cue：24 · 00:02:45,000–00:02:52,000
+- 英文字幕：Now I switch to Clinician, and I open the assigned task for review in context.
+- 说话与动作关系：先确认角色、task card 和 drawer 稳定，再念。
+- 本段优势：把任务交给正确 owner，并明确这是 task lifecycle 的入口。
+- Requirement mapping：requirements.txt:15, 34–40, 90–93
+- 退出条件：Tasks drawer 中显示正确任务、assignee 和 Open。
+- 如果状态不同：若 task 没有进入 top-six，停止录制并回到 Staff Tasks drawer 展示已创建任务；
+  不声称它已进入 Glance，也不重复 Create task。
 
-#### Beat 25 — Edit the Clinician plan
+#### Beat 25 — Move the task from Open to In progress
 
-- 时间：02:42–02:50
+- 时间：02:52–03:00
 - 当前角色：Clinician A
 - 录制状态：继续录制
-- 页面起点：向下滚动到 Longitudinal timeline 中标题为 Clinician plan 的 entry。
+- 页面起点：Tasks drawer，Review synthetic follow-up plan、Clinician A 和 Open 已显示。
 - 中文操作：
-  1. 向下滚动到 Clinician plan；确认右上角当前 Version N，不念固定数字。
-  2. 点击 entry 下方的 Edit。
-  3. 在 textarea 末尾新增一行，输入 Synthetic clinician rehearsal: confirm the next follow-up plan.
-  4. 点击 Save revision 一次，鼠标移到空白处。
+  1. 确认 Status 当前为 Open。
+  2. 确认录屏已经开始且页面稳定，只切换一次 Status 下拉框，选择 In progress。
+  3. 等待 In progress 真正显示；不要点击 Done。
+  4. 鼠标移到空白处。
+- 等待：
+  - 等待任务 card 和 Glance projection 都显示 In progress。
+- 画面确认：
+  - 必须看见 Open → In progress 的真实变化。
+  - 不应把任务状态说成 AI review，也不应把 Reviewed 解读为 task acceptance。
+- 现在念：
+  > Assigned tasks become active immediately and move through Open, In progress, and Done.
+- Subtitle cue：25 · 00:02:52,000–00:03:00,000
+- 英文字幕：Assigned tasks become active immediately and move through Open, In progress, and Done.
+- 说话与动作关系：先完成状态选择并等待 In progress，再念。
+- 本段优势：明确 assignment 与 AI review 是两套不同状态机。
+- Requirement mapping：requirements.txt:15, 28–31
+- 退出条件：In progress 稳定显示，Tasks drawer 保持可关闭。
+- 如果状态不同：若任务已经 In progress，直接展示并跳过选择；若已 Done，不把它改回 Open；
+  若 Status 不可用，停止 take，不把未完成状态剪成成功。
+
+#### Beat 26 — Edit the Clinician plan
+
+- 时间：03:00–03:08
+- 当前角色：Clinician A
+- 录制状态：继续录制
+- 页面起点：关闭 Tasks drawer 后，向下滚动到 Longitudinal timeline 的 Clinician plan。
+- 中文操作：
+  1. 点击 Close tasks，等待 drawer 消失。
+  2. 向下滚动到 Clinician plan；确认当前 Version N，不念固定数字。
+  3. 点击 entry 下方的 Edit。
+  4. 在 textarea 末尾新增一行，输入 Synthetic clinician rehearsal: confirm the next follow-up plan.
+  5. 确认录屏已经开始且页面稳定，点击 Save revision 一次，鼠标移到空白处。
 - 等待：
   - 等待 textarea 关闭、保存文本出现和新的版本状态恢复。
 - 画面确认：
   - 必须看见 Clinician plan 和保存后的 synthetic sentence。
   - 不应编辑 Staff note 或删除原有 content。
 - 现在念：
-  > I edit the Clinician plan, save, then open History for safe review carefully.
-- Subtitle cue：25 · 00:02:42,000–00:02:50,000
-- 英文字幕：I edit the Clinician plan, save, then open History for safe review carefully.
+  > I edit the Clinician plan, save, and open History for careful team review.
+- Subtitle cue：26 · 00:03:00,000–00:03:08,000
+- 英文字幕：I edit the Clinician plan, save, and open History for careful team review.
 - 说话与动作关系：先保存并等成功，再念；念完再点 History。
 - 本段优势：演示 clinician-only revision path，并保留原有历史。
 - Requirement mapping：requirements.txt:16–19, 41–44
@@ -764,9 +799,9 @@ medical risk。
 - 如果状态不同：若当前 Clinician plan 已有同一 synthetic sentence，直接跳过保存；若出现
   conflict，停止并按页面提示 review both versions，不重复 Save。
 
-#### Beat 26 — Open History and Compare an earlier version
+#### Beat 27 — Open History and Compare an earlier version
 
-- 时间：02:50–02:59
+- 时间：03:08–03:17
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：Clinician plan entry，History 按钮可见。
@@ -780,25 +815,25 @@ medical risk。
   - 必须看见 Current row、earlier row、Compare、Before 和 After。
   - 不应在旁白中硬编码当前版本号。
 - 现在念：
-  > I compare an earlier version with the current one.
-- Subtitle cue：26 · 00:02:50,000–00:02:59,000
-- 英文字幕：I compare an earlier version with the current one.
+  > I compare an earlier version with the current one before reviewing the change.
+- Subtitle cue：27 · 00:03:08,000–00:03:17,000
+- 英文字幕：I compare an earlier version with the current one before reviewing the change.
 - 说话与动作关系：先完成 Compare 并等待 Before/After，再念。
 - 本段优势：把 revision history 转成评委可以直接看懂的 before/after。
 - Requirement mapping：requirements.txt:17–19, 41–44
 - 退出条件：Before/After 对照稳定可读。
 - 如果状态不同：若只有一个 earlier row，就使用它；若没有 Compare，保留 History 画面并跳到
-  Beat 28，不重复点击。
+  Beat 29，不重复点击。
 
-#### Beat 27 — Revert only when the real button is available
+#### Beat 28 — Revert without deleting history
 
-- 时间：02:59–03:05
+- 时间：03:17–03:24
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：History region 和 Compare result。
 - 中文操作：
   1. 检查 earlier row 是否有 Revert。
-  2. 只有按钮可用且计划要展示时，点击 Revert 一次；否则不点击。
+  2. 只有按钮可用、录屏已经开始且页面稳定时，点击 Revert 一次；否则不点击。
   3. 若已点击，等待新的 current version 出现并确认 earlier rows 仍在。
 - 等待：
   - 等待新版本或明确的保存状态；不要用刷新制造新版本。
@@ -806,51 +841,81 @@ medical risk。
   - 必须看见历史仍保留；若执行 Revert，必须看见新版本。
   - 不应声称删除了旧历史。
 - 现在念：
-  > Before and After show the change; Revert creates a new version for review.
-- Subtitle cue：27 · 00:02:59,000–00:03:05,000
-- 英文字幕：Before and After show the change; Revert creates a new version for review.
+  > Before and After show the change; Revert creates a version and preserves history.
+- Subtitle cue：28 · 00:03:17,000–00:03:24,000
+- 英文字幕：Before and After show the change; Revert creates a version and preserves history.
 - 说话与动作关系：若执行 Revert，先等新版本出现再念；若不执行，按 conditional narration
   念并保持 History 画面。
 - 本段优势：说明 revert 是 additive revision，而不是删除历史。
 - Requirement mapping：requirements.txt:17–19, 41–44
-- 退出条件：History 画面稳定，或 conditional branch 已记录。
+- 退出条件：History 画面稳定，准备进行 AI review。
 - 如果状态不同：若 Revert 不可用、权限不足或页面正在保存，跳过该动作；不要为了匹配脚本
   改权限或重复点击。
 
-#### Beat 28 — Keep human review explicit
+#### Beat 29 — Accept one AI suggestion
 
-- 时间：03:05–03:10
+- 时间：03:24–03:33
 - 当前角色：Clinician A
-- 录制状态：继续录制
-- 页面起点：History 稳定；必要时向上回到 Glance card。
+- 录制状态：继续录制；这是不可重复的 synthetic-state 写操作
+- 页面起点：History 已关闭，回到 Glance View。
 - 中文操作：
-  1. 只有页面实际显示 Accept 或 Reject 时，才指向该 review control。
-  2. 默认不点击；若已在本轮 state prep 中决定 review，最多点击一次并等待状态。
-  3. 鼠标移到空白处。
+  1. 关闭 History、Source 和其他 drawer。
+  2. 找到第一张实际显示 Accept 和 Reject 的 AI suggestion；不要使用已是 Reviewed 的 card。
+  3. 如需展示 provenance，点击 Open source，等待 Original source 和 exact highlight，再点击
+     Close source。
+  4. 确认录屏已经开始、页面稳定、鼠标移开后，只点击 Accept 一次。
+  5. 等待 card 变为 Reviewed，确认 Accept/Reject 消失且 card 仍留在 Glance。
 - 等待：
-  - 等待当前 review/status 完成；没有按钮则不需要等待。
+  - 等待 Reviewed 和 source unchanged 的可见结果；不要连续点击。
 - 画面确认：
-  - 必须让 suggestion 保持 reviewable，且 source 没有被覆盖。
-  - 不应把 Accept 说成修改原始 record。
+  - 必须看见 AI suggestion、Accept、Reviewed 和未改变的 source path。
+  - 不应把 Accept 说成 task action，也不应说它覆盖原始 note。
 - 现在念：
-  > History stays available; review confirms suggestions; the source remains unchanged.
-- Subtitle cue：28 · 00:03:05,000–00:03:10,000
-- 英文字幕：History stays available; review confirms suggestions; the source remains unchanged.
-- 说话与动作关系：先确认实际状态，再念；不为旁白强行点击。
-- 本段优势：收束 clinician authority、history 和 suggestion review boundary。
-- Requirement mapping：requirements.txt:17–19, 42–44, 51
-- 退出条件：可以进入 Historical context。
-- 如果状态不同：若没有 Accept/Reject，保持 History/Compare 的已验证画面；若 status 已 Reviewed，
-  不把它说成仍待确认。
+  > I accept one AI suggestion; it becomes Reviewed, and its source stays unchanged.
+- Subtitle cue：29 · 00:03:24,000–00:03:33,000
+- 英文字幕：I accept one AI suggestion; it becomes Reviewed, and its source stays unchanged.
+- 说话与动作关系：先点击 Accept 并等待 Reviewed，再念。
+- 本段优势：实际证明 Clinician 可以确认 AI suggestion，同时保留 source 和 Glance card。
+- Requirement mapping：requirements.txt:31, 42–44
+- 退出条件：第一张 suggestion 已显示 Reviewed，按钮消失，卡片仍可见。
+- 如果状态不同：若没有 Accept/Reject，停止并使用 state prep 中另一张候选；若已经 Reviewed，
+  不重复点击；若请求失败，保留失败证据并重录，不伪造成功。
 
-### 镜头 7 — Historical context 与 UX-01（03:10–03:44）
+#### Beat 30 — Reject another AI suggestion
+
+- 时间：03:33–03:42
+- 当前角色：Clinician A
+- 录制状态：继续录制；这是不可重复的 synthetic-state 写操作
+- 页面起点：Glance View 中第一张已 Reviewed，第二张仍显示 Accept/Reject。
+- 中文操作：
+  1. 找到第二张实际仍可审核的 AI suggestion；不要点击第一张已 Reviewed card。
+  2. 确认录屏已经开始、页面稳定、鼠标移开后，只点击 Reject 一次。
+  3. 等待该 suggestion 从 active Glance 消失；不要重复点击或刷新制造结果。
+  4. 若需要说明 provenance，只通过原有 source 入口确认原始记录仍可查看。
+- 等待：
+  - 等待 card 从 Glance 移除，并确认其他 card 和 source path 仍然存在。
+- 画面确认：
+  - 必须看见 Reject 后该 suggestion 不再出现在 active Glance。
+  - 不应说 Reject 删除了原始 source，也不应把它说成任务动作。
+- 现在念：
+  > I reject another AI suggestion; it leaves active Glance; its source remains.
+- Subtitle cue：30 · 00:03:33,000–00:03:42,000
+- 英文字幕：I reject another AI suggestion; it leaves active Glance; its source remains.
+- 说话与动作关系：先点击 Reject 并等待 card 消失，再念。
+- 本段优势：同时展示 AI review 的两种结果：Reviewed 留在 Glance，rejected item 离开 active view。
+- Requirement mapping：requirements.txt:31, 42–44
+- 退出条件：Accept/Reject 结果稳定，进入 Historical context。
+- 如果状态不同：若第二张已被其他测试改变，选择当前实际仍显示 Accept/Reject 的候选；
+  若没有第二张，停止该 take，不重复创建或改写其他状态。
+
+### 镜头 7 — Historical context 与 UX-01（03:42–04:16）
 
 目标：展示 recent/earlier/historical summary 到 original record 的导航，并准确记录独立 UX-01
 事实。
 
-#### Beat 29 — Find Historical context
+#### Beat 31 — Find Historical context
 
-- 时间：03:10–03:16
+- 时间：03:42–03:49
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：History、Comments、Source 已关闭；向下滚动到 Historical context。
@@ -864,7 +929,7 @@ medical risk。
   - 不应看见旧式技术命名或配置说明。
 - 现在念：
   > Historical context brings recent and earlier summaries together for review.
-- Subtitle cue：29 · 00:03:10,000–00:03:16,000
+- Subtitle cue：31 · 00:03:42,000–00:03:49,000
 - 英文字幕：Historical context brings recent and earlier summaries together for review.
 - 说话与动作关系：先滚动到 section 并等待，再念。
 - 本段优势：说明 longitudinal context 不只是一条当前记录。
@@ -872,9 +937,9 @@ medical risk。
 - 退出条件：Historical context section 可读。
 - 如果状态不同：若没有 summary，保留 Recent/Earlier context 画面；不要编造 historical summary。
 
-#### Beat 30 — Expand the organisation details
+#### Beat 32 — Expand the organisation details
 
-- 时间：03:16–03:22
+- 时间：03:49–03:56
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：Historical context section。
@@ -889,7 +954,7 @@ medical risk。
   - 不应把 summary 说成原始医疗记录。
 - 现在念：
   > Each summary is labelled clearly and links to original records for team verification.
-- Subtitle cue：30 · 00:03:16,000–00:03:22,000
+- Subtitle cue：32 · 00:03:49,000–00:03:56,000
 - 英文字幕：Each summary is labelled clearly and links to original records for team verification.
 - 说话与动作关系：先展开并等待，再念。
 - 本段优势：清楚区分快速阅读的 summary 和可核验的 original record。
@@ -898,9 +963,9 @@ medical risk。
 - 如果状态不同：若 details 已经展开，不重复点击；若只有部分 labels，按实际可见内容念，
   不补写不存在的分类。
 
-#### Beat 31 — View original record
+#### Beat 33 — View original record
 
-- 时间：03:22–03:29
+- 时间：03:56–04:03
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：Historical summary details 展开。
@@ -915,7 +980,7 @@ medical risk。
   - 不应把此导航说成 Voice source 或手动 highlight。
 - 现在念：
   > I open an original record and reach the relevant timeline point when needed.
-- Subtitle cue：31 · 00:03:22,000–00:03:29,000
+- Subtitle cue：33 · 00:03:56,000–00:04:03,000
 - 英文字幕：I open an original record and reach the relevant timeline point when needed.
 - 说话与动作关系：先点击并等平滑滚动完成，再念。
 - 本段优势：证明 summary 仍然能回到 detail。
@@ -924,9 +989,9 @@ medical risk。
 - 如果状态不同：若第一条按钮目标不明显，选择有清楚日期和类型的可见按钮；若滚动失败，
   停止并重录本 beat，不手动滚到别的记录冒充结果。
 
-#### Beat 32 — Explain the verification relationship
+#### Beat 34 — Explain the verification relationship
 
-- 时间：03:29–03:38
+- 时间：04:03–04:10
 - 当前角色：Clinician A
 - 录制状态：继续录制
 - 页面起点：原始 timeline entry 已可见；鼠标移到空白处。
@@ -940,7 +1005,7 @@ medical risk。
   - 不应添加代码或内部数据解释。
 - 现在念：
   > An independent participant used Simplified Chinese; the glance task had no coaching.
-- Subtitle cue：32 · 00:03:29,000–00:03:38,000
+- Subtitle cue：34 · 00:04:03,000–00:04:10,000
 - 英文字幕：An independent participant used Simplified Chinese; the glance task had no coaching.
 - 说话与动作关系：先让页面稳定，再念；不要把 UX-01 句子说成当前录制者结果。
 - 本段优势：把独立 UX evidence 的语言和 coaching 边界准确说出。
@@ -949,22 +1014,22 @@ medical risk。
 - 如果状态不同：若当前页面没有 summary，仍可念独立 UX 事实但不要指向错误记录；不得补写
   participant name、role、viewport 或背景。
 
-#### Beat 33 — Complete the independent UX result
+#### Beat 35 — Complete the independent UX result
 
-- 时间：03:38–03:44
+- 时间：04:10–04:16
 - 当前角色：Clinician A
 - 录制状态：继续录制；cue 念完后暂停录制
 - 页面起点：Historical context 或原始 timeline 稳定画面。
 - 中文操作：
   1. 保持鼠标移开。
-  2. 念完 cue 33 后点击录屏软件的 Pause recording。
+  2. 念完 cue 35 后点击录屏软件的 Pause recording。
 - 等待：
   - 不需要网络等待；只确认录音没有被系统提示打断。
 - 画面确认：
   - 不应把一次独立测试包装成统计研究或所有用户结论。
 - 现在念：
   > The result was approximately nine seconds, with all four observations correct.
-- Subtitle cue：33 · 00:03:38,000–00:03:44,000
+- Subtitle cue：35 · 00:04:10,000–00:04:16,000
 - 英文字幕：The result was approximately nine seconds, with all four observations correct.
 - 说话与动作关系：稳定后念，念完才暂停；Cut B 在暂停后完成。
 - 本段优势：保留 UX-01 的真实事实，同时不夸大样本。
@@ -974,21 +1039,21 @@ medical risk。
 
 ### Cut B — Clinician → Patient（镜头外）
 
-- 在 cue 33 结束后暂停录制。
+- 在 cue 35（04:16）结束后暂停录制。
 - 镜头外点击 Sign out；手动登录 Sarah Patient；密码框、自动填充和 Sign in 页面不录。
 - 选择 English、Sarah Tan；等待 Patient view 和 workspace 稳定。
-- 重新开始录制后，从 Beat 34 的 Patient view 顶部开始。
+- 重新开始录制后，从 Beat 36 的 Patient view 顶部开始。
 - 剪辑衔接：上一句是 “The result was approximately nine seconds, with all four observations correct.”
   下一句是 “Finally, I switch to Patient; the patient view contains only shared information.”
 - 如果 Patient 页面仍在 loading，保留镜头外等待；不要用内部 Staff 页面代替 Patient privacy 证据。
 
-### 镜头 8 — Patient privacy 与 Patient Voice（03:44–04:12）
+### 镜头 8 — Patient privacy 与 Patient Voice（04:16–04:40）
 
 目标：证明患者收到的是 server-side patient-facing projection，而不是内部 workspace 的缩小版。
 
-#### Beat 34 — Resume in Patient view
+#### Beat 36 — Resume in Patient view
 
-- 时间：03:44–03:51
+- 时间：04:16–04:22
 - 当前角色：Sarah Patient
 - 录制状态：开始录制（Cut B 后）
 - 页面起点：镜头外登录完成后的 Patient workspace 顶部。
@@ -1003,7 +1068,7 @@ medical risk。
   - 不应看见 Staff view、Clinician view 或登录页。
 - 现在念：
   > Finally, I switch to Patient; the patient view contains only shared information.
-- Subtitle cue：34 · 00:03:44,000–00:03:51,000
+- Subtitle cue：36 · 00:04:16,000–00:04:22,000
 - 英文字幕：Finally, I switch to Patient; the patient view contains only shared information.
 - 说话与动作关系：先确认角色和页面稳定，再念。
 - 本段优势：把最后一次角色切换明确为 privacy proof，而不是普通导航。
@@ -1011,9 +1076,9 @@ medical risk。
 - 退出条件：Patient view 稳定，进入 Your care summary。
 - 如果状态不同：若仍为 Clinician，停止并重新镜头外切换；若页面提示失效，镜头外等待或刷新。
 
-#### Beat 35 — Show Your care summary
+#### Beat 37 — Show Your care summary
 
-- 时间：03:51–03:58
+- 时间：04:22–04:28
 - 当前角色：Sarah Patient
 - 录制状态：继续录制
 - 页面起点：Patient view 顶部。
@@ -1028,7 +1093,7 @@ medical risk。
   - 不应看见 Glance View、Comments、Tasks 或临床 review controls。
 - 现在念：
   > It shows care summaries, instructions, and patient conversation.
-- Subtitle cue：35 · 00:03:51,000–00:03:58,000
+- Subtitle cue：37 · 00:04:22,000–00:04:28,000
 - 英文字幕：It shows care summaries, instructions, and patient conversation.
 - 说话与动作关系：先滚动到 summary 并等待，再念。
 - 本段优势：说明患者看到的是 shared care context，而不是内部编辑界面。
@@ -1036,9 +1101,9 @@ medical risk。
 - 退出条件：Your care summary 稳定可读。
 - 如果状态不同：若 summary 文字略有变化，按实际页面说明；不要把内部 entry 名称念给患者。
 
-#### Beat 36 — Confirm internal controls are absent
+#### Beat 38 — Confirm internal controls are absent
 
-- 时间：03:58–04:05
+- 时间：04:28–04:34
 - 当前角色：Sarah Patient
 - 录制状态：继续录制
 - 页面起点：向下到 patient timeline。
@@ -1053,7 +1118,7 @@ medical risk。
   - 不应出现内部 discussions、tasks、clinical review 或 raw care-note suggestion text。
 - 现在念：
   > Internal items, team discussions, tasks, and clinician-only controls stay out.
-- Subtitle cue：36 · 00:03:58,000–00:04:05,000
+- Subtitle cue：38 · 00:04:28,000–00:04:34,000
 - 英文字幕：Internal items, team discussions, tasks, and clinician-only controls stay out.
 - 说话与动作关系：先把 privacy projection 放稳，再念。
 - 本段优势：把 privacy boundary 变成评委可观察的 UI absence。
@@ -1061,9 +1126,9 @@ medical risk。
 - 退出条件：Patient timeline 和 absence evidence 可读。
 - 如果状态不同：若任何内部控件出现，停止录制并记录；不要通过 CSS 或前端隐藏来补救。
 
-#### Beat 37 — Show Patient Voice without overclaiming
+#### Beat 39 — Show Patient Voice without overclaiming
 
-- 时间：04:05–04:12
+- 时间：04:34–04:40
 - 当前角色：Sarah Patient
 - 录制状态：继续录制
 - 页面起点：Patient Voice note。
@@ -1080,7 +1145,7 @@ medical risk。
   - 不应出现 View source、clinical sample、microphone 或 upload。
 - 现在念：
   > Patient Voice follows this path: audio, timestamped transcript, and care context.
-- Subtitle cue：37 · 00:04:05,000–00:04:12,000
+- Subtitle cue：39 · 00:04:34,000–00:04:40,000
 - 英文字幕：Patient Voice follows this path: audio, timestamped transcript, and care context.
 - 说话与动作关系：先确认 Patient Voice 当前状态，再念；不要在旁白中描述未出现的 result。
 - 本段优势：展示同一 traceable interaction 在 Patient projection 下仍尊重隐私。
@@ -1089,13 +1154,13 @@ medical risk。
 - 如果状态不同：若没有 patient result，展示 audio metadata 并删掉 transcript 相关画面；
   若 processing 失败，停止该镜头，不重试。
 
-### 镜头 9 — Product close（04:12–04:30）
+### 镜头 9 — Product close（04:40–04:55）
 
 目标：用稳定画面收束产品价值、human review 和 synthetic/HTTPS 边界。
 
-#### Beat 38 — Return to a clean workspace
+#### Beat 40 — Return to a clean workspace
 
-- 时间：04:12–04:18
+- 时间：04:40–04:45
 - 当前角色：任一稳定内部角色；若保留 Patient，则不指向内部 controls。
 - 录制状态：继续录制
 - 页面起点：所有 drawer 已关闭，页面处于最清楚的 English workspace。
@@ -1109,18 +1174,18 @@ medical risk。
   - 必须看见清晰的 workspace 和 synthetic-data disclosure。
   - 不应看见密码、配置、日志、Render dashboard 或错误状态。
 - 现在念：
-  > Next steps stay visible; the original record stays verifiable.
-- Subtitle cue：38 · 00:04:12,000–00:04:18,000
-- 英文字幕：Next steps stay visible; the original record stays verifiable.
+  > Next steps stay visible; the original record stays verifiable for everyone.
+- Subtitle cue：40 · 00:04:40,000–00:04:45,000
+- 英文字幕：Next steps stay visible; the original record stays verifiable for everyone.
 - 说话与动作关系：先清理画面并等待，再念。
 - 本段优势：把 Glance、source 和 timeline 的主线重新汇总。
 - Requirement mapping：requirements.txt:8–13, 42–44
 - 退出条件：稳定的收尾画面已经建立。
 - 如果状态不同：若 drawer 意外打开，先关闭再念；不要用回退键改变状态。
 
-#### Beat 39 — Point to the review boundary
+#### Beat 41 — Point to the review boundary
 
-- 时间：04:18–04:23
+- 时间：04:45–04:50
 - 当前角色：保持上一 beat 的角色。
 - 录制状态：继续录制
 - 页面起点：稳定 workspace。
@@ -1133,18 +1198,18 @@ medical risk。
   - 必须看见 synthetic data 和 human review boundary。
   - 不应出现内部实现名词或未验证指标。
 - 现在念：
-  > Human review remains at every suggestion boundary throughout.
-- Subtitle cue：39 · 00:04:18,000–00:04:23,000
-- 英文字幕：Human review remains at every suggestion boundary throughout.
+  > Human review remains at every suggestion boundary in this workflow.
+- Subtitle cue：41 · 00:04:45,000–00:04:50,000
+- 英文字幕：Human review remains at every suggestion boundary in this workflow.
 - 说话与动作关系：先指向文字，再念；念完移开鼠标。
 - 本段优势：把 AI suggestion 的核心 trust principle 留给评委。
 - Requirement mapping：requirements.txt:21–26, 42–44, 50–54
 - 退出条件：最后一句旁白准备开始。
 - 如果状态不同：若 disclosure 在当前角色不可见，保持稳定 workspace，不补说页面未显示的细节。
 
-#### Beat 40 — Final line and stop
+#### Beat 42 — Final line and stop
 
-- 时间：04:23–04:30
+- 时间：04:50–04:55
 - 当前角色：保持上一 beat 的角色。
 - 录制状态：继续录制；cue 念完后停止录制
 - 页面起点：稳定 English workspace。
@@ -1159,7 +1224,7 @@ medical risk。
   - 不应把录制软件控制台、文件路径或后续登录动作录进去。
 - 现在念：
   > The demo uses synthetic data and a hosted HTTPS workspace for a traceable workflow.
-- Subtitle cue：40 · 00:04:23,000–00:04:30,000
+- Subtitle cue：42 · 00:04:50,000–00:04:55,000
 - 英文字幕：The demo uses synthetic data and a hosted HTTPS workspace for a traceable workflow.
 - 说话与动作关系：先念完整句子，停一秒后停止录制。
 - 本段优势：诚实收束 hosted demo 的价值和限制。
@@ -1194,11 +1259,11 @@ medical risk。
 
 | 剪辑点 | 前一 take 的最后一句 | 后一 take 的第一句 | 必须剪掉 |
 | --- | --- | --- | --- |
-| Cut A | These collaboration actions stay separate from clinical risk and source content. | Now I switch to Clinician, whose authority is focused on review and care planning. | Staff Pause、Sign out、密码输入、Clinician 登录和加载等待 |
+| Cut A | The task becomes active immediately; Open status and ownership show in Glance. | Now I switch to Clinician, and I open the assigned task for review. | Staff Pause、Sign out、密码输入、Clinician 登录和加载等待 |
 | Cut B | The result was approximately nine seconds, with all four observations correct. | Finally, I switch to Patient; the patient view contains only shared information. | Clinician Pause、Sign out、密码输入、Patient 登录和加载等待 |
 
-保留的等待：Glance 的 source navigation、Voice 的 ready/result、Comments drawer、Save revision、
-History Compare、Patient privacy projection。
+保留的等待：Glance 的 source navigation、Voice 的 ready/result、Comments drawer、Create task、
+Open → In progress、Save revision、History Compare、Accept/Reject 结果和 Patient privacy projection。
 应剪掉的等待：free instance 唤醒、登录、角色切换、长 loading、录屏软件控制操作。
 
 ### 停止录制后
@@ -1206,7 +1271,7 @@ History Compare、Patient privacy projection。
 1. 立即确认视频文件存在，不要先修改线上页面。
 2. 用 DEMO_SUBTITLES_EN.srt 导入剪辑软件；不要手动重打字幕。
 3. 完整观看一次，逐项填写 DEMO_VIDEO_QA.md。
-4. 检查成片约 4:30、口播清晰、字幕同步、三角色顺序正确、没有敏感信息。
+4. 检查成片约 4:55（允许 4:40–4:55）、口播清晰、字幕同步、三角色顺序正确、没有敏感信息。
 5. 视频通过 QA 前，不生成最终 PDF、ZIP 或 MANIFEST，不 push，不发邮件。
 
 ## F. 对照文件

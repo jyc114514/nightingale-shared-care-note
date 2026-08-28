@@ -11,6 +11,12 @@
 - [ ] Staff/Clinician 等待状态显示 `Up to date`。
 - [ ] 关闭 `Guide`、`Source`、`Comments`、`History`、`Task` drawer、通知和 DevTools。
 - [ ] 阅读 [`DEMO_STATE_PREP_ZH.md`](DEMO_STATE_PREP_ZH.md)，现场确认版本、卡片状态和 Voice result。
+- [ ] Glance 保持最多 6 项；不修改 six-item cap，不添加 Show more。
+- [ ] 没有明显测试标题（例如 `啊啊啊`、`12345`）或无区分价值的重复 item；已有 active task
+      必须显示 `Done`，不能为了录制删除它。
+- [ ] Clinician 页面至少有两张实际可审核的 AI suggestion；第一张留给 `Accept`，第二张留给
+      `Reject`。录制前不要点击它们。
+- [ ] 新 task title 固定为 `Review synthetic follow-up plan`，assignee 为 `Clinician A`。
 - [ ] 确认 Voice 需要时只使用内置 synthetic sample；已有 result 时不重复提交。
 
 ## 录制中
@@ -23,14 +29,20 @@
       说成 ASR 质量证据。
 - [ ] `@Clinician A` 只通过可见 mention menu 选择；不输入隐藏 user ID。
 - [ ] `Compare` 使用页面当前可见的 earlier version；不假定固定版本号。
-- [ ] 只有当前确实显示 `Accept`/`Reject` 时才录制 review 动作。
+- [ ] Staff 只创建一次 task：`Assign task` → `Task title` → `Assign to: Clinician A` →
+      `Create task`；回到 Glance 确认 `Open task`。
+- [ ] Clinician 将任务从 `Open` 改为 `In progress`；不要称为 Accept task，也不要点击 `Done`
+      除非录制计划明确需要展示完成。
+- [ ] 统一用词：Task `Open → In progress → Done`；AI suggestion `Accept / Reject`。
+- [ ] Accept/Reject 只针对 Clinician 页面上的 AI suggestion；Accept 后 `Reviewed` 且 card 保留，
+      Reject 后 suggestion 离开 active Glance，source 不被删除。
 - [ ] `View original record` 如实描述为导航到原始时间线位置。
 - [ ] 每个镜头念旁白前让目标结果可见；旁白中鼠标移到空白处。
 
 ## 录制后
 
 - [ ] 完整观看视频一次。
-- [ ] 检查时长为 4–5 分钟，目标 4:30；口播约 105–120 wpm。
+- [ ] 检查时长为 4:40–4:55，目标约 4:55；口播约 105–120 wpm。
 - [ ] 检查字幕与 Staff-first 顺序完全匹配，并包含独立中文 UX-01 结果。
 - [ ] 确认没有错误版本号、错误 suggestion 状态或未验证按钮被剪进视频。
 - [ ] 确认三类角色、患者隐私、Voice scope 和 HTTPS 边界均按事实呈现。

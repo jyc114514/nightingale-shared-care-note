@@ -10,8 +10,8 @@ for the workspace to settle.
 
 3
 00:00:14,000 --> 00:00:20,000
-The page separates notes, suggestions,
-actions, and review history.
+The page clearly separates notes,
+suggestions, actions, and review history.
 
 4
 00:00:20,000 --> 00:00:26,000
@@ -20,7 +20,7 @@ and why right now for everyone.
 
 5
 00:00:26,000 --> 00:00:32,000
-Staff starts with Glance View, where
+Staff starts with Glance View, where key
 items are visible together at once.
 
 6
@@ -35,12 +35,12 @@ medical risk score to guide review.
 
 8
 00:00:45,000 --> 00:00:50,000
-I open the source of an AI-assisted note
-for careful team review.
+I open the original source of an
+AI-assisted note for careful team review.
 
 9
 00:00:50,000 --> 00:00:56,000
-The page takes me to the matching
+The page takes me smoothly to the matching
 timeline entry for team verification.
 
 10
@@ -61,7 +61,7 @@ synthetic care conversation with audio.
 13
 00:01:17,000 --> 00:01:23,000
 I follow the prepared timestamped
-transcript at every step.
+transcript at every step for clear timing.
 
 14
 00:01:23,000 --> 00:01:30,000
@@ -76,7 +76,7 @@ keep the exact highlighted path.
 16
 00:01:38,000 --> 00:01:47,000
 The suggestion is ready for clinician
-review today.
+review today and supports safe follow-up.
 
 17
 00:01:47,000 --> 00:01:54,000
@@ -86,7 +86,7 @@ note and save a new revision for review.
 18
 00:01:54,000 --> 00:01:59,000
 I wait for the saved state before
-continuing on screen for this recording.
+continuing with patient care.
 
 19
 00:01:59,000 --> 00:02:06,000
@@ -95,8 +95,8 @@ Clinician A from the visible menu.
 
 20
 00:02:06,000 --> 00:02:15,000
-The discussion stays with the record,
-keeping follow-up context available.
+The discussion stays with the record;
+staff can follow up in context.
 
 21
 00:02:15,000 --> 00:02:21,000
@@ -104,96 +104,106 @@ Resolve and Unresolve make discussion
 status explicit for the whole team.
 
 22
-00:02:21,000 --> 00:02:28,000
-Pin and Unpin guide prioritisation; Assign
-task opens follow-up work when needed.
+00:02:21,000 --> 00:02:34,000
+I assign this follow-up to Clinician A
+with clear ownership in this workflow.
 
 23
-00:02:28,000 --> 00:02:34,000
-These collaboration actions stay separate
-from clinical risk and source content.
+00:02:34,000 --> 00:02:45,000
+The task becomes active immediately;
+Open status and ownership show in Glance.
 
 24
-00:02:34,000 --> 00:02:42,000
-Now I switch to Clinician, whose authority
-is focused on review and care planning.
+00:02:45,000 --> 00:02:52,000
+Now I switch to Clinician, and I open
+the assigned task for review in context.
 
 25
-00:02:42,000 --> 00:02:50,000
-I edit the Clinician plan, save, then open
-History for safe review carefully.
+00:02:52,000 --> 00:03:00,000
+Assigned tasks become active immediately
+and move through Open, In progress, and Done.
 
 26
-00:02:50,000 --> 00:02:59,000
-I compare an earlier version with the
-current one.
+00:03:00,000 --> 00:03:08,000
+I edit the Clinician plan, save, and open
+History for careful team review.
 
 27
-00:02:59,000 --> 00:03:05,000
-Before and After show the change; Revert
-creates a new version for review.
+00:03:08,000 --> 00:03:17,000
+I compare an earlier version with the
+current one before reviewing the change.
 
 28
-00:03:05,000 --> 00:03:10,000
-History stays available; review confirms
-suggestions; the source remains unchanged.
+00:03:17,000 --> 00:03:24,000
+Before and After show the change; Revert
+creates a version and preserves history.
 
 29
-00:03:10,000 --> 00:03:16,000
+00:03:24,000 --> 00:03:33,000
+I accept one AI suggestion; it becomes
+Reviewed, and its source stays unchanged.
+
+30
+00:03:33,000 --> 00:03:42,000
+I reject another AI suggestion; it leaves
+active Glance; its source remains.
+
+31
+00:03:42,000 --> 00:03:49,000
 Historical context brings recent and
 earlier summaries together for review.
 
-30
-00:03:16,000 --> 00:03:22,000
+32
+00:03:49,000 --> 00:03:56,000
 Each summary is labelled clearly and links
 to original records for team verification.
 
-31
-00:03:22,000 --> 00:03:29,000
+33
+00:03:56,000 --> 00:04:03,000
 I open an original record and reach the
 relevant timeline point when needed.
 
-32
-00:03:29,000 --> 00:03:38,000
+34
+00:04:03,000 --> 00:04:10,000
 An independent participant used Simplified
 Chinese; the glance task had no coaching.
 
-33
-00:03:38,000 --> 00:03:44,000
+35
+00:04:10,000 --> 00:04:16,000
 The result was approximately nine seconds,
 with all four observations correct.
 
-34
-00:03:44,000 --> 00:03:51,000
+36
+00:04:16,000 --> 00:04:22,000
 Finally, I switch to Patient; the patient
 view contains only shared information.
 
-35
-00:03:51,000 --> 00:03:58,000
+37
+00:04:22,000 --> 00:04:28,000
 It shows care summaries, instructions, and
 patient conversation.
 
-36
-00:03:58,000 --> 00:04:05,000
+38
+00:04:28,000 --> 00:04:34,000
 Internal items, team discussions, tasks,
 and clinician-only controls stay out.
 
-37
-00:04:05,000 --> 00:04:12,000
+39
+00:04:34,000 --> 00:04:40,000
 Patient Voice follows this path: audio,
 timestamped transcript, and care context.
 
-38
-00:04:12,000 --> 00:04:18,000
-Next steps stay visible; the original
-record stays verifiable.
-
-39
-00:04:18,000 --> 00:04:23,000
-Human review remains at every suggestion
-boundary throughout.
-
 40
-00:04:23,000 --> 00:04:30,000
+00:04:40,000 --> 00:04:45,000
+Next steps stay visible; the original
+record stays verifiable for everyone.
+
+41
+00:04:45,000 --> 00:04:50,000
+Human review remains at every suggestion
+boundary in this workflow.
+
+42
+00:04:50,000 --> 00:04:55,000
 The demo uses synthetic data and a hosted
 HTTPS workspace for a traceable workflow.

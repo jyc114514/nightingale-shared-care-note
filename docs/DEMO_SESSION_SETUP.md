@@ -9,6 +9,7 @@
 - 页面语言：`English`
 - 患者：`Sarah Tan`
 - 数据：只使用内置 synthetic data
+- 目标时长：约 4:55（允许 4:40–4:55）
 - 操作提示用中文；网页标签保留真实 English label；口播和字幕使用 English
 
 最终视频不得展示密码、API key、数据库 URL、环境变量、Cookie、browser storage、DevTools
@@ -18,8 +19,8 @@
 
 | 顺序 | 角色 | 页面起点 | 录制内容 |
 | --- | --- | --- | --- |
-| 1 | `Staff A` | `Staff view`、`Sarah Tan` | Glance View、source、Voice、Staff note、Comments、mention、Resolve/Unresolve、Pin/Unpin |
-| 2 | `Clinician A` | `Clinician view`、`Sarah Tan` | Clinician plan、History、Compare/Revert、Historical context |
+| 1 | `Staff A` | `Staff view`、`Sarah Tan` | Glance View、source、Voice、Staff note、Comments、mention、Resolve/Unresolve、Assign task、Create task |
+| 2 | `Clinician A` | `Clinician view`、`Sarah Tan` | Assigned task、Open → In progress、Clinician plan、History、Compare/Revert、AI Accept/Reject、Historical context |
 | 3 | `Sarah Patient` | `Patient view`、`Sarah Tan` | Your care summary、Patient Voice、患者可见内容 |
 
 ## 每个 session 开始前
@@ -45,9 +46,14 @@
 
 - 当前仍显示 `Needs review` 的卡片才用于 review 说明；如果已经 `Reviewed`，按页面实际状态
   选择另一张，不要写死卡片名称。
+- Glance 始终最多 6 项；清理时不改 six-item cap，不添加 Show more。正式录制前不应有明显测试
+  task title 或无区分价值的重复 item。
 - History 中选择页面实际可见的 earlier version，不要写死 `v1 → v2`。
 - Voice 已有 result 时直接展示；没有 result 时每个 sample 最多点击一次
   `Create care-note suggestion`。
+- 至少准备两张 Clinician 页面实际仍显示 `Accept`/`Reject` 的 AI suggestion；不要在录制前消耗。
+- 新 task title 固定为 `Review synthetic follow-up plan`，assignee 为 `Clinician A`，并只创建一次。
+- Task 状态按 `Open → In progress → Done`；AI suggestion review 按 `Accept / Reject`。两者不能混淆。
 - 不为了恢复旧编号而 reset、delete 或重新 seed 数据。
 
 ## 会修改 synthetic state 的动作
@@ -58,10 +64,12 @@
 | `Create care-note suggestion` | 创建 Voice session/建议/来源 | 每个 sample 最多一次 |
 | `Save revision` | 增加 note version | Staff、Clinician 各按脚本执行一次 |
 | `Add comment` | 增加团队讨论和 mention | 只提交一次 synthetic comment |
+| `Create task` | 创建 active assigned task | title 固定；assignee 为 Clinician A；只点击一次 |
+| Task `Open` → `In progress` | 更新任务生命周期 | Clinician 只切换一次；不要称为 Accept task |
+| AI suggestion `Accept` / `Reject` | 更新 AI review 状态 | 各只点击一次；Accept 后 Reviewed 留在 Glance，Reject 后离开 active Glance |
 | `Resolve`/`Unresolve` | 切换讨论状态 | 完成一组来回切换 |
-| `Pin`/`Unpin` | 写入优先级反馈 | 完成一组来回切换 |
+| `Pin`/`Unpin` | 写入优先级反馈 | 可选，不在本轮主路径；不为匹配旧台本重复写入 |
 | `Revert` | 创建新的恢复版本 | 只点击一次；保留历史 |
-| `Accept`/`Reject` | 修改 suggestion 状态 | 只有页面确实显示时才执行 |
 
 ## 不要点击或展示
 
