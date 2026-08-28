@@ -103,3 +103,11 @@ timeline records and patient Voice only; internal buttons and raw suggestion tex
 The final online evidence and screenshot paths are recorded in
 [`docs/evidence/demo_rehearsal.md`](evidence/demo_rehearsal.md) and
 [`docs/evidence/deployment_security.md`](evidence/deployment_security.md).
+
+## Final candidate-brief audit - 2026-08-28
+
+The complete line-by-line audit is recorded in
+[`FINAL_REQUIREMENTS_AUDIT.md`](FINAL_REQUIREMENTS_AUDIT.md). It finds no failed or unproven
+non-Voice Mandatory requirement. The deployed UI's unavailable new-note/manual-highlight steps
+remain `recommended substep not shown`, not a Mandatory blocker. The final MP4 is user-supplied;
+the user explicitly waived further content QA, so no Codex full-playback claim is made.

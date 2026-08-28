@@ -1,6 +1,7 @@
 # Nightingale acceptance matrix
 
-Status values: `verified requirement`, `planned`, `in progress`, `passed`, `deferred`, `dropped`.
+Status values: `verified requirement`, `planned`, `in progress`, `passed`,
+`passed with disclosed prototype boundary`, `deferred`, `dropped`.
 
 | ID | Requirement / risk | Class | Planned evidence | Current status |
 | --- | --- | --- | --- | --- |
@@ -38,11 +39,11 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | passed |
 | DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | passed |
 | DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | passed |
-| DEL-05 | Demo video covers Scenarios A–C | Deliverable | [Final video QA](evidence/final_demo_video_qa.md): original MP4 machine checks recorded; complete content playback still pending | in progress |
+| DEL-05 | Demo video covers Scenarios A–C | Deliverable | [Final video QA](evidence/final_demo_video_qa.md): user-supplied original MP4; content QA explicitly waived by the user in the final release pass | passed with disclosed prototype boundary |
 
-Current total: **Mandatory 25/25 passed**. Deliverables: **4/5 passed**; the remaining deliverable is
-the final video's human content QA. The original MP4 is present locally, but its machine checks do
-not replace complete playback and safety review.
+Current total: **Mandatory 25/25 passed**. Deliverables: **5/5 present**, with DEL-05 marked
+`passed with disclosed prototype boundary`: the original MP4 was supplied by the user and its
+content QA was explicitly waived for this pass. This is not a claim that Codex watched the video.
 
 ## Phase 0 recorded evidence — 2026-08-25
 
@@ -294,7 +295,7 @@ section records the newer release-candidate deployment.
 | FINAL-REGRESSION | Backend 85 passed / 88% coverage, Ruff, format, mypy, pip check, Alembic `0010_postgres_compat`, stable twice-run seed, frontend 37 Vitest, lint, Prettier, type-check, build, Gate B 14 Playwright, Voice 4 Playwright | passed | [final run record](evidence/final_release_regression.md) |
 | FINAL-WARM-PATH | Real Uvicorn TCP warm path: 1,000 requests, concurrency 10, zero errors, P95 56.053 ms | passed | [warm-path evidence](evidence/gate_c_warm_path.md) |
 | FINAL-BRIEF | Technical Brief source/HTML refreshed; final PDF is 3-page A4 and passed text/raster QA | passed | [PDF QA](evidence/technical_brief_qa.md), [PDF](../deliverables/Nightingale_Technical_Brief.pdf) |
-| FINAL-VIDEO | Original MP4 machine metadata/full decode recorded; complete content playback and safety review were not completed in this pass | in progress | [final video QA](evidence/final_demo_video_qa.md) |
+| FINAL-VIDEO | Original MP4 supplied by the user; file metadata/hash are recorded and content QA is explicitly waived by the user; no Codex full-watch claim | passed with disclosed prototype boundary | [final video QA](evidence/final_demo_video_qa.md) |
 | FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | in progress | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
 | FINAL-PACKAGING | Source ZIP, submission ZIP, manifest, and explicit exclusion checks | pending | `deliverables/submission/` |
 

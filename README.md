@@ -164,6 +164,7 @@ For judge entry points, use [`JUDGE_ACCESS.md`](JUDGE_ACCESS.md). The final reco
 `新标签页 - Google Chrome 2026-08-28 11-37-05.mp4`; it is included only in the final submission ZIP,
 not in the GitHub repository. The editable brief is [`docs/TECHNICAL_BRIEF.md`](docs/TECHNICAL_BRIEF.md),
 and the rendered brief is [`deliverables/Nightingale_Technical_Brief.pdf`](deliverables/Nightingale_Technical_Brief.pdf).
+The final candidate-brief audit is [`docs/FINAL_REQUIREMENTS_AUDIT.md`](docs/FINAL_REQUIREMENTS_AUDIT.md).
 The demo password is supplied separately in the submission email.
 
 The Voice section is intentionally not continuous ambient capture. It plays two small, prerecorded
