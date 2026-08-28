@@ -1,7 +1,7 @@
 # Nightingale
 
 Nightingale is a synthetic-data prototype for a clinic-scoped longitudinal care-note
-collaboration product. The repository is at **Phase 9 / local release candidate**: Gate A-C
+collaboration product. The repository is at **Phase 9 / final release candidate**: Gate A-C
 authentication, clinic-scoped RBAC, immutable revisions, audit metadata, optimistic concurrency,
 Glance/timeline/source navigation, bilingual UI chrome, safe one-click demo startup, mentions,
 internal assignments, and metadata-only near-real-time invalidation are implemented locally.
@@ -11,7 +11,9 @@ original record easy to verify, and preserve human review for every suggestion. 
 evaluation uses synthetic data, managed PostgreSQL 18, fixture AI, and a pre-recorded Voice example
 with a prepared timestamped transcript. It is an evaluation prototype, not a clinical production
 guarantee. Technical provider, redaction, performance, and deployment boundaries are documented
-below and in the Technical Brief. The repository-root `requirements.txt` is the candidate brief,
+below and in the Technical Brief. Judge entry points are collected in [`JUDGE_ACCESS.md`](JUDGE_ACCESS.md),
+and the final recording artifact is kept outside GitHub and included only in the submission bundle.
+The repository-root `requirements.txt` is the candidate brief,
 **not** a pip requirements file; never run `pip install -r requirements.txt`.
 
 ## Runtime and database
@@ -152,16 +154,22 @@ evaluation or production compliance claim.
 The Phase 7.1/8 delivery set includes the editable and rendered Technical Brief, attribution audit,
 demo script/shot list, UX timing protocol, deployment checklist, launcher smoke evidence, and
 synthetic browser screenshots. Phase 9 adds a Docker/Render production-readiness path and a
-Level-C Ambient Voice prototype. Render enables only `VOICE_PROVIDER=fixture` and keeps
+bounded prerecorded Voice fixture. Render enables only `VOICE_PROVIDER=fixture` and keeps
 `LLM_PROVIDER=fixture`; the Docker image still does not install Voice dependencies or model
 weights.
-There is no final video claim while a reliable local recorder/codec is unavailable.
+The original final recording is a local submission artifact; it is not tracked or uploaded to
+GitHub. Its content QA remains a separate human-review gate.
 
-The Ambient Voice section is intentionally not continuous ambient capture. It plays two small,
-pre-recorded synthetic WAV fixtures, displays precomputed timestamped transcripts, and labels
-confidence as unavailable. The current achieved status is: “Partial Bonus / Level C: deployed
-prerecorded synthetic audio with mock transcript fixture and segment provenance; no ASR inference,
-diarization, or microphone capture.”
+For judge entry points, use [`JUDGE_ACCESS.md`](JUDGE_ACCESS.md). The final recording filename is
+`新标签页 - Google Chrome 2026-08-28 11-37-05.mp4`; it is included only in the final submission ZIP,
+not in the GitHub repository. The editable brief is [`docs/TECHNICAL_BRIEF.md`](docs/TECHNICAL_BRIEF.md),
+and the rendered brief is [`deliverables/Nightingale_Technical_Brief.pdf`](deliverables/Nightingale_Technical_Brief.pdf).
+The demo password is supplied separately in the submission email.
+
+The Voice section is intentionally not continuous ambient capture. It plays two small, prerecorded
+synthetic WAV fixtures, displays prepared timestamped transcript segments, and labels confidence as
+unavailable. The achieved status is: “Bounded prerecorded synthetic audio with prepared transcript
+and segment provenance; no ASR inference, diarization, or microphone capture.”
 
 ## Bonus importance logic
 
@@ -196,7 +204,7 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Phase 9 local application checkpoint, this suite reports **86 passed**. Reproducible coverage is **88%**
+At the final release-candidate application checkpoint, this suite reports **85 passed**. Reproducible coverage is **88%**
 when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
 are not exercised by the application suite.
 
@@ -232,7 +240,8 @@ Pop-Location
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
 real Uvicorn and Vite processes on clean local ports, and runs 14 core checks at 1440x900 and
-390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks at the same viewports. Scenario B
+390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks at the same viewports. The final
+run therefore reports 18 browser checks. Scenario B
 covers revisions, nested comments, keyboard mention selection, contextual assignment drawer
 creation/completion, and a second browser receiving the metadata-only SSE invalidation. The
 dedicated preview check verifies real internal 1440x900/390x844 iframe viewports, query
@@ -250,8 +259,8 @@ Pop-Location
 
 This uses a fresh migrated file-backed SQLite database, 26 synthetic patients, 208 benchmark
 entries/highlights, real Uvicorn TCP HTTP, 50 warm-up requests, 1,000 measured requests, and
-10-way concurrency. On feature-freeze commit `3129da3`, the result was P50 49.774 ms, P95
-67.823 ms, P99 80.593 ms, max 86.835 ms, and zero errors. The current evidence is
+10-way concurrency. The 2026-08-28 release-candidate run reports P50 44.283 ms, P95
+56.053 ms, P99 81.509 ms, max 89.495 ms, and zero errors. The current evidence is
 [`gate_c_warm_path.md`](docs/evidence/gate_c_warm_path.md). It is a local approximation, not a
 hosted PostgreSQL production benchmark.
 
@@ -266,11 +275,12 @@ hosted PostgreSQL production benchmark.
   separate fields.
 - No external LLM key is committed or required. The optional DeepSeek path is explicitly selected,
   redaction-gated, and cost/network dependent; the fixture path remains deterministic by default.
-  The Render synthetic evaluation uses managed PostgreSQL, HTTPS/TLS, and the Level-C Voice
-  fixture; these are evaluation evidence, not clinical compliance evidence. Final video and
-  external submission remain explicit delivery gates. The local Technical Brief PDF is local
-  evidence, not hosted compliance evidence.
-- Ambient Voice is Level C only: pre-recorded synthetic audio and mock transcript fixtures. There
-  is no microphone capture, local Whisper success claim, diarization, or production PHI audio path.
+  The Render synthetic evaluation uses managed PostgreSQL, HTTPS/TLS, and the bounded prerecorded
+  Voice fixture; these are evaluation evidence, not clinical compliance evidence. The original
+  final video is not uploaded to GitHub, and the test password is supplied separately in the
+  submission email. The local Technical Brief PDF is delivery evidence, not hosted compliance
+  evidence.
+- Voice is prerecorded synthetic audio with a prepared transcript fixture. There is no microphone
+  capture, local Whisper success claim, diarization, or production PHI audio path.
 - The local redaction/provider boundary and materialized warm path/P95 are implemented and
   evidenced, but do not establish hosted production guarantees.

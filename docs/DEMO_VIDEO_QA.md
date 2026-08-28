@@ -5,6 +5,13 @@
 本文件用于最终视频导出后检查。视频完成前保持未勾选；只有完整观看成片并核对字幕后，才可
 把它标记为 ready for final packaging。
 
+## 当前最终视频状态（2026-08-28）
+
+原始 MP4 已存在，但本轮只完成了只读媒体检查：时长 00:10:39.00、2560x1380、H.264 Main、
+AAC-LC stereo 48 kHz；完整解码返回成功。由于本轮停止了进一步视频内容检查，下面所有内容
+QA 仍保持未勾选，不能把本文件当作 DEL-05 已通过的证据。机器证据和人工待确认项见
+[`final_demo_video_qa.md`](evidence/final_demo_video_qa.md)。
+
 ## 结构检查
 
 - [ ] 总时长在 4:40–4:55 内，目标约 4:55。
@@ -76,6 +83,6 @@
 
 ## 通过标准
 
-完整观看视频、字幕同步、三角色顺序、真实按钮、产品文案和安全边界全部正确后，才将视频
-标记为 `ready for final packaging`。通过前不生成最终 PDF、ZIP 或 MANIFEST，不 push，不发
-邮件。
+只有完整观看视频并确认字幕同步、三角色顺序、真实按钮、产品文案和安全边界全部正确后，才将
+视频标记为 `ready for final packaging`。本轮可以继续准备其他交付物，但在人工内容 QA 完成
+前，不得把最终状态报告为 video passed 或 `FINAL SUBMISSION PACKAGE READY`。

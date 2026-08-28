@@ -30,7 +30,7 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | PRIV-02 | Names, IC/ID, phones redacted before external LLM | Mandatory | [test_redaction.py](../backend/tests/test_redaction.py), provider spy, and fail-closed job test | passed |
 | PRIV-03 | Clean logs; raw note content absent | Mandatory | [test_ai_processing.py](../backend/tests/test_ai_processing.py) caplog/audit/job safety assertions | passed |
 | PRIV-04 | TLS in transit and encryption at rest | Mandatory | Render HTTPS redirect/health smoke, managed TLS documentation, and Render Postgres AES-256-at-rest documentation in [deployment_security.md](evidence/deployment_security.md) | passed |
-| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) on feature-freeze `3129da3` reports P95 67.823 ms; local SQLite approximation limitation documented | passed |
+| PERF-01 | Warm Glance View P95 <= 300 ms | Mandatory | [Gate C real-TCP benchmark](evidence/gate_c_warm_path.md) release-candidate run reports P95 56.053 ms; local SQLite approximation limitation documented | passed |
 | BONUS-01 | Feedback increases priority of similar future content | Bonus | `test_self_learning_importance.py` with before/after scores | passed |
 | BONUS-02 | Hybrid hot/warm/cold retrieval with source preservation | Bonus | Schema, policy, fixture, and architecture demo | passed |
 | BONUS-03 | Ambient patient/clinical voice capture | Bonus | Level-C prerecorded synthetic audio and mock transcript evidence; full capture remains out of scope | in progress |
@@ -38,10 +38,11 @@ Status values: `verified requirement`, `planned`, `in progress`, `passed`, `defe
 | DEL-02 | README setup/run/security/redaction explanation | Deliverable | Clean-machine rehearsal | passed |
 | DEL-03 | 2–3 page technical brief with diagram/schema/trade-offs | Deliverable | PDF render and visual inspection | passed |
 | DEL-04 | `ATTRIBUTION.txt` with libraries/models/licenses | Deliverable | Dependency/license audit | passed |
-| DEL-05 | Demo video covers Scenarios A–C | Deliverable | Script checklist and final playback | in progress |
+| DEL-05 | Demo video covers Scenarios A–C | Deliverable | [Final video QA](evidence/final_demo_video_qa.md): original MP4 machine checks recorded; complete content playback still pending | in progress |
 
 Current total: **Mandatory 25/25 passed**. Deliverables: **4/5 passed**; the remaining deliverable is
-the final video, which must be recorded and watched before packaging.
+the final video's human content QA. The original MP4 is present locally, but its machine checks do
+not replace complete playback and safety review.
 
 ## Phase 0 recorded evidence — 2026-08-25
 
@@ -203,7 +204,7 @@ external submission remain open. UX-01 and PRIV-04 were closed by later evidence
 | PHASE-9-SPOKEN-DEMO | English spoken script, English subtitles, and recording materials; no final video recorded | passed | [DEMO_SCRIPT_SPOKEN_EN.md](DEMO_SCRIPT_SPOKEN_EN.md), [DEMO_CUE_CARD_ZH_EN.md](DEMO_CUE_CARD_ZH_EN.md), [DEMO_SUBTITLES_EN.srt](DEMO_SUBTITLES_EN.srt) |
 | PHASE-9-PUBLIC-GATE | Private-until-2026-08-28 18:00 rule, final secret scan, visibility approval, and no scheduled visibility action documented | passed | [PUBLIC_RELEASE_CHECKLIST.md](PUBLIC_RELEASE_CHECKLIST.md) |
 
-Phase 9 local evidence is **85 backend tests / 88% coverage**, **28 Vitest tests**, **14 core
+Phase 9 local evidence is **85 backend tests / 88% coverage**, **37 Vitest tests**, **14 core
 Playwright tests**, and **4 isolated Voice Playwright tests**. GitHub Actions run
 `33032765274` passed the real PostgreSQL 18 migration/seed gate, and the existing Render service
 is Live on the Voice-enabled `e766fe9` deployment. The authenticated production Voice smoke is
@@ -285,6 +286,17 @@ Phase 9.7 confirms the final deployed synthetic evaluation path. It does not cla
 ASR inference, diarization, ambient microphone support, clinical production readiness, or a final
 recorded video. The earlier Phase 9 rows retain their historical commit-specific evidence; this
 section records the newer release-candidate deployment.
+
+## Final release-candidate audit - 2026-08-28
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| FINAL-REGRESSION | Backend 85 passed / 88% coverage, Ruff, format, mypy, pip check, Alembic `0010_postgres_compat`, stable twice-run seed, frontend 37 Vitest, lint, Prettier, type-check, build, Gate B 14 Playwright, Voice 4 Playwright | passed | [final run record](evidence/final_release_regression.md) |
+| FINAL-WARM-PATH | Real Uvicorn TCP warm path: 1,000 requests, concurrency 10, zero errors, P95 56.053 ms | passed | [warm-path evidence](evidence/gate_c_warm_path.md) |
+| FINAL-BRIEF | Technical Brief source/HTML refreshed; final PDF is 3-page A4 and passed text/raster QA | passed | [PDF QA](evidence/technical_brief_qa.md), [PDF](../deliverables/Nightingale_Technical_Brief.pdf) |
+| FINAL-VIDEO | Original MP4 machine metadata/full decode recorded; complete content playback and safety review were not completed in this pass | in progress | [final video QA](evidence/final_demo_video_qa.md) |
+| FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | pending | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
+| FINAL-PACKAGING | Source ZIP, submission ZIP, manifest, and explicit exclusion checks | pending | `deliverables/submission/` |
 
 ## Hard release gate
 

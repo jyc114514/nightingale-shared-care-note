@@ -1,5 +1,8 @@
 # Technical Brief PDF QA - 2026-08-26
 
+The first section below is retained as historical evidence. The final release-candidate QA is
+recorded after it and supersedes the old PDF metrics and hash.
+
 Artifact: [`Nightingale_Technical_Brief.pdf`](../../deliverables/Nightingale_Technical_Brief.pdf)
 
 - Source HTML: [`technical_brief.html`](../../deliverables/technical_brief.html)
@@ -29,3 +32,22 @@ human UX sign-off claims.
 Staff-first deployed rehearsal. The PDF above was intentionally not regenerated in this task, so
 its older UX wording and hash remain historical evidence; it must not be treated as the final PDF
 after the source update.
+
+## Final release-candidate PDF QA - 2026-08-28
+
+- Source HTML: [`technical_brief.html`](../../deliverables/technical_brief.html)
+- Editable source: [`TECHNICAL_BRIEF.md`](../TECHNICAL_BRIEF.md)
+- PDF page count: **3** A4 pages.
+- Text extraction check: all three pages contain non-empty text; page text lengths were **1,539**,
+  **1,732**, and **2,581** characters. The extracted text contains the current 85-backend-test,
+  37-Vitest, 18-Playwright, and 56.053 ms metrics, and contains no `Level-C`/`Level C` wording or
+  superseded 81/86-test and 67.823 ms metrics.
+- Raster render check: all three pages were rendered with the bundled Poppler `pdftoppm` binary
+  and visually inspected. Diagrams, cards, tables, footers, page numbers, and text margins are
+  legible with no clipping, overlap, or footer collision.
+- Final PDF SHA-256: `F6AA0C764D949B016FA460ED0CFFD7ABBEDEE82AE5A662CA76F2560084C7EFA0`.
+
+The final brief accurately describes prerecorded synthetic audio with a prepared timestamped
+transcript, the optional DeepSeek boundary, Render PostgreSQL/HTTPS evidence, and the current
+local regression results. It does not claim ASR inference, microphone capture, model quality,
+clinical production readiness, or complete final-video content QA.

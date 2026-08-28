@@ -1,20 +1,20 @@
 {
-  "commit": "3129da3",
+  "commit": "a13e718",
   "database": "file-backed SQLite local approximation",
   "dataset": {
     "benchmark_entries": 208,
     "benchmark_highlights": 208,
     "patients": 26,
-    "target_patient_id": "7a1ae742-a542-413b-a581-917389318cae"
+    "target_patient_id": "7fa50430-7325-4b63-80ef-4786a07185c1"
   },
-  "generated_at": "2026-08-26T06:34:11.857246+00:00",
+  "generated_at": "2026-08-28T04:04:57.543580+00:00",
   "metrics": {
     "concurrency": 10,
     "error_count": 0,
-    "max_ms": 86.835,
-    "p50_ms": 49.774,
-    "p95_ms": 67.823,
-    "p99_ms": 80.593,
+    "max_ms": 89.495,
+    "p50_ms": 44.283,
+    "p95_ms": 56.053,
+    "p99_ms": 81.509,
     "request_count": 1000,
     "response_item_count": 6,
     "warmup_error_count": 0,

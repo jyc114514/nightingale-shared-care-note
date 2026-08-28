@@ -2,8 +2,8 @@
 
 ## A trust-centered longitudinal shared-care note
 
-Status: Phase 9 local release candidate with an optional DeepSeek adapter, Render readiness, a
-Level-C Voice prototype, and independent UX-01 evidence, measured on 2026-08-27.
+Status: Phase 9 final release candidate with an optional DeepSeek adapter, a live Render evaluation,
+bounded prerecorded Voice fixtures, and independent UX-01 evidence, measured on 2026-08-28.
 
 Nightingale is a clinic-scoped collaboration layer for the moment when a care team needs to
 understand what changed and what needs action quickly. It is not an EHR replacement, diagnostic
@@ -95,44 +95,45 @@ starting Vite, and writes no key or key-file path to logs, runtime metadata, bro
 artifacts. The bounded synthetic live smoke is recorded in
 [`deepseek_live_smoke.md`](evidence/deepseek_live_smoke.md); it is not a quality evaluation.
 
-## 4. Level-C Voice and Render boundary
+## 4. Prerecorded Voice and Render boundary
 
 The local Voice path is intentionally fixture-first. It contains two small, prerecorded synthetic
-WAV signal fixtures, immutable precomputed transcript segments, timestamp links, audio hashes,
-safe role/patient scope, and the existing redaction-gated fixture/DeepSeek summary path. The UI
-labels the achieved state as: “Architecture/demo only: prerecorded synthetic audio with mock
-transcript fixture; ASR inference unavailable in this environment.” The optional faster-whisper
-adapter is lazy and injection-testable, but the Turbo model download did not complete and no model
-weights are committed or packaged. There is no microphone, diarization, continuous ambient capture,
-production PHI audio, or ASR accuracy claim.
+WAV signal fixtures, immutable prepared timestamped transcript segments, timestamp links, audio
+hashes, safe role/patient scope, and the existing redaction-gated fixture/DeepSeek summary path.
+The UI labels the achieved state as: “Architecture/demo only: prerecorded synthetic audio with
+prepared timestamped transcript; ASR inference unavailable in this environment.” The optional
+faster-whisper adapter is lazy and injection-testable, but the Turbo model download did not
+complete and no model weights are committed or packaged. There is no microphone, diarization,
+continuous ambient capture, production PHI audio, or ASR accuracy claim.
 
 The production readiness path uses a multi-stage Docker build, same-origin FastAPI static serving,
 Alembic-before-seed startup, secure production settings, one Free Render Web Service, and one Free
 Render Postgres database. Render is configured for `LLM_PROVIDER=fixture` and
-`VOICE_PROVIDER=fixture` for the deployed Level-C path. The external deployment now runs against
+`VOICE_PROVIDER=fixture` for the deployed prerecorded fixture path. The external deployment now runs against
 Render PostgreSQL 18 at `https://nightingale-shared-care-note.onrender.com`; migration/seed,
 HTTPS, provider encryption, and authenticated Clinical/Staff/Patient browser evidence are recorded
-separately. The online Level-C Voice fixture passed for both Clinical and Patient projections
+separately. The online prerecorded Voice fixture passed for both Clinical and Patient projections
 without claiming full Ambient Voice.
 
 ## 5. Evidence, trade-offs, and remaining boundary
 
 Implemented and independently checked at the Phase 9 local checkpoint:
 
-- Backend: **86 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
+- Backend: **85 passed**, actual coverage recorded after the Voice addition, Ruff, mypy, pip check;
   Alembic head `0010_postgres_compat`, including fresh, legacy, downgrade/re-upgrade, and
   `alembic check`. A real PostgreSQL 18 GitHub Actions gate also passed the full migration chain,
   schema/FK assertions, seed idempotency, and the backend suite.
-- Frontend: **27 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
+- Frontend: **37 Vitest tests**, ESLint, Prettier, TypeScript, and Vite production build.
 - Browser: **18 Playwright checks** at 1440x900 and 390x844, including Chinese chrome, exact
   provenance persistence, distinguishable original-record rows, contextual comments/tasks,
   Desktop/Mobile preview, mentions, assignments, two-browser SSE invalidation, conflict handling,
   patient privacy, Voice sample scope, timestamp seeking, and source navigation.
-- Clean clone: the prior clean-clone rehearsal from `3129da3` passed the Phase 7 baseline; no
-  Phase 8 clean-clone rehearsal or hosted-provider guarantee is claimed in this local run.
+- Clean clone: the final-source clean-clone rehearsal is recorded separately in
+  [`clean_clone_rehearsal.md`](evidence/clean_clone_rehearsal.md); its result is a release gate and
+  not a hosted-provider guarantee.
 - Warm path: real Uvicorn TCP, file-backed SQLite approximation, 26 patients, 208 entries/highlights,
-  50 warm-up, 1,000 measured requests, concurrency 10, zero errors; P50 **49.774 ms**, P95
-  **67.823 ms**, P99 **80.593 ms**, max **86.835 ms**.
+  50 warm-up, 1,000 measured requests, concurrency 10, zero errors; P50 **44.283 ms**, P95
+  **56.053 ms**, P99 **81.509 ms**, max **89.495 ms**.
 
 The central trade-off remains trust over automation. Materialized reads and the fixture provider
 make the default prototype reproducible; the optional adapter adds network, balance, provider-data
@@ -140,8 +141,8 @@ processing, and latency dependencies. SSE is invalidation only, not simultaneous
 CRDT/OT is intentionally not implemented. One-click startup is a Windows convenience, not
 deployment. Render PostgreSQL, HTTPS/TLS, and provider encryption-at-rest evidence are now recorded
 for the synthetic evaluation deployment. Model quality and production retention/deletion policy
-remain outside this evaluation; independent UX-01 evidence is recorded separately, while the final
-video and external submission remain open.
+  remain outside this evaluation; independent UX-01 evidence is recorded separately. The original
+  final video is a local submission artifact and its content QA remains a separate human-review gate.
 
 ### Independent UX-01 evidence
 
@@ -159,9 +160,10 @@ independent Simplified Chinese UX result is recorded separately: approximately n
 without coaching, with all four defined answers correct.
 
 Scenario B: Staff edits the existing Staff note because the deployed UI has no new-note composer,
-opens the contextual Comments drawer, types `@` and selects a clinic collaborator, then Clinician
-reviews a plan revision with History, Compare, and Revert. Task creation and second-browser SSE
-are not part of the short deployed recording claim.
+opens the contextual Comments drawer, types `@` and selects a clinic collaborator, creates an
+assigned task, and then Clinician reviews task progress and a plan revision with History, Compare,
+and Revert. Task lifecycle and second-browser SSE are covered by local application evidence; the
+final recording's actual content is assessed separately.
 
 Scenario C: two writes use one expected version; the stale write returns `409` and remains beside
 the winner. Historical context discloses a derived summary that is not the original record and
@@ -171,16 +173,17 @@ Optional Phase 8: staff or clinician opens **AI Scribe Demo**, confirms the synt
 checks the active fixture/DeepSeek provider badge, and generates a suggestion. The resulting entry
 is system-authored, suggested, source-linked, and requires clinician review.
 
-Optional Phase 9: staff or clinician opens **Ambient Voice Prototype**, plays a prerecorded
-synthetic fixture, selects a timestamped mock transcript segment, and opens its generated source.
-Patients receive only the patient sample and no internal source identifiers. The deployed Voice
-status is Partial Bonus / Level C: ASR inference is unavailable, and there is no diarization or
-microphone capture.
+Optional Voice path: staff or clinician opens **Ambient Voice Prototype**, plays a prerecorded
+synthetic fixture, selects a prepared timestamped transcript segment, and opens its generated
+source. Patients receive only the patient sample and no internal source identifiers. The deployed
+Voice path is bounded prerecorded synthetic audio; ASR inference is unavailable, and there is no
+diarization or microphone capture.
 
 ## Delivery limitation
 
-The PDF, screenshots, source ZIP, and local rehearsal package are delivery artifacts, not hosted
-compliance evidence. The GitHub repository is private and pushed, but no email submission or public
+The PDF, screenshots, source ZIP, submission ZIP, and local rehearsal package are delivery artifacts,
+not clinical compliance evidence. The GitHub repository remains private; the original MP4 is
+included only in the submission ZIP and is not uploaded to GitHub. No email submission or public
 visibility change is implied by this brief. The DeepSeek adapter is integrated as an optional live
 path, but one smoke does not establish model quality, provider compliance, or production
-reliability. Full Voice capture remains out of scope beyond the Level-C architecture/demo path.
+reliability. Full Voice capture remains out of scope beyond the prerecorded synthetic demo path.

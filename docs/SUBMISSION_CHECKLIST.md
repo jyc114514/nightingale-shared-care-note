@@ -8,21 +8,24 @@
 - [x] `deliverables/Nightingale_Technical_Brief.pdf` rendered 3-page brief.
 - [x] `deliverables/technical_brief.html` editable/renderable brief source.
 - [x] `docs/DEMO_SCRIPT.md`, `docs/DEMO_SHOTLIST.md`, and `docs/UX_10_SECOND_TEST.md`.
+- [x] `JUDGE_ACCESS.md` with live URL, verified synthetic account emails, role order, and feature map.
 - [x] `docs/DEPLOYMENT_CHECKLIST.md` with explicit hosted-evidence boundary.
-- [x] `docs/evidence/gate_d_bonus.md` and `docs/evidence/technical_brief_qa.md`.
+- [x] `docs/evidence/gate_d_bonus.md`, `docs/evidence/technical_brief_qa.md`, and final video evidence.
 - [x] Phase 7/7.1 bilingual UI/Guide, one-click launcher, mentions/tasks, SSE, accessibility,
       contextual drawers and fixed-viewport preview checkpoints; final local regression evidence
       is recorded after the application checkpoint.
 - [x] Independent UX-01 result: Simplified Chinese interface, approximately nine seconds, no
       coaching, four defined answers correct; role and viewport were not separately recorded.
-- [ ] Final video after human review; no video is claimed while a reliable recorder/tool is not
-      available locally.
+- [ ] Final video content QA after human review. The original MP4 exists locally and its machine
+      metadata/full decode are recorded, but its 10:39 duration and complete content still require
+      human confirmation.
 
 ## Release gates
 
 - [x] Mandatory local application paths and bonus paths have automated evidence.
 - [x] Git checkpoint history is inspectable and current worktree is clean at the last checkpoint.
-- [x] Clean-clone rehearsal; package manifest is included in the local submission bundle.
+- [ ] Final clean-clone rehearsal from the final source commit; package manifest is included in the
+      local submission bundle.
 - [ ] Private GitHub upload verification, if authorized and authenticated.
 - [ ] Final human review of screenshots/brief/demo and recorded video.
 - [ ] Email submission by the user; Codex must not send it.
