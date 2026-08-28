@@ -1,7 +1,7 @@
 # Final requirements audit
 
-审计日期：2026-08-28  
-权威需求：[`requirements.txt`](../requirements.txt)  
+审计日期：2026-08-28
+权威需求：[`requirements.txt`](../requirements.txt)
 需求文件 SHA-256：`4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5`
 
 ## Release gate decision
