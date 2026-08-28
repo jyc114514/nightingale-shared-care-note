@@ -32,3 +32,25 @@ The isolated clone then ran the manual setup, full test suite, and one-click lau
 - The smoke runtime, database, logs, and child processes were removed after validation. No source
   database, real patient data, credential, API key, external provider call, or remote Git action
   was used.
+
+## Final release-candidate rehearsal attempt - 2026-08-28
+
+The final release candidate was cloned from commit `189d315` into an isolated temporary directory;
+the primary worktree and the untracked original MP4 were not copied into the clone.
+
+- Fresh clone checkout: passed at `189d315`.
+- Alembic upgrade through `0010_postgres_compat`, `alembic check`, twice-run synthetic seed, and
+  backend test suite: passed; the backend suite reported **85 passed**.
+- Fresh frontend `pnpm install --frozen-lockfile` and production build: passed.
+- The repository launcher started the isolated backend/frontend and both health endpoints returned
+  200. Its official smoke script then exited non-zero because the managed Windows environment
+  denied `taskkill.exe` while cleaning its own child-process tree. This is an environment cleanup
+  failure, not a product assertion pass.
+- A second launcher retry was not forced after the safety review could not prove port ownership
+  from available process metadata. Ports 8000, 8010, and 5173 were verified clear afterward.
+- Result: **partial rehearsal only; FINAL-CLEAN-CLONE remains in progress**. Do not claim a fully
+  green clean-clone launcher gate from this record until it is rerun on a host that permits the
+  repository's ownership-checked cleanup.
+
+No password file, API key, database URL, runtime secret, production database, Render write, or
+GitHub write was used by this rehearsal.

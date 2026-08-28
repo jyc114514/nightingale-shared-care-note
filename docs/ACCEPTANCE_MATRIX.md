@@ -295,7 +295,7 @@ section records the newer release-candidate deployment.
 | FINAL-WARM-PATH | Real Uvicorn TCP warm path: 1,000 requests, concurrency 10, zero errors, P95 56.053 ms | passed | [warm-path evidence](evidence/gate_c_warm_path.md) |
 | FINAL-BRIEF | Technical Brief source/HTML refreshed; final PDF is 3-page A4 and passed text/raster QA | passed | [PDF QA](evidence/technical_brief_qa.md), [PDF](../deliverables/Nightingale_Technical_Brief.pdf) |
 | FINAL-VIDEO | Original MP4 machine metadata/full decode recorded; complete content playback and safety review were not completed in this pass | in progress | [final video QA](evidence/final_demo_video_qa.md) |
-| FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | pending | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
+| FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | in progress | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
 | FINAL-PACKAGING | Source ZIP, submission ZIP, manifest, and explicit exclusion checks | pending | `deliverables/submission/` |
 
 ## Hard release gate
