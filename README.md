@@ -86,6 +86,27 @@ self-learning. The local evidence is recorded in
 [`round2_warm_path.md`](docs/evidence/round2_warm_path.md). This iteration remains local-only:
 it does not push, deploy, call DeepSeek, or change Voice.
 
+### Round 3 local safe-failure iteration
+
+The current local resilience slice adds Alembic `0013_ai_provider_resilience`, a persistent
+clinic/provider circuit with `closed`, `open`, and `half_open` states, and a bounded DeepSeek
+adapter budget of 8 seconds per attempt, 12 seconds total, and 2 attempts. Provider failures are
+never silently replaced by fixture output. Internal users can query the clinic-scoped provider
+status; the AI panel exposes available/degraded/temporarily unavailable states while preserving
+existing Glance, timeline, tasks, comments, and source navigation. The application logger accepts
+only allowlisted metadata, unexpected exceptions return a generic response, and the explicit local
+log audit command is:
+
+```powershell
+Push-Location backend
+& $pyExe -m app.scripts.audit_phi_logs path\to\local.log --known-name "Synthetic Patient"
+Pop-Location
+```
+
+Round 3 remains local-only and synthetic. It does not provide a durable queue, automatic replay,
+third-party retention evidence, live provider calls, PostgreSQL production evidence, or clinical
+SLA.
+
 ## Gate B API and UI
 
 - `POST /auth/login`, `GET /auth/me`, and `POST /auth/logout` use an HttpOnly signed cookie.
@@ -108,6 +129,9 @@ it does not push, deploy, call DeepSeek, or change Voice.
   entry. Provider failures stay failures and do not silently fall back to fixture.
 - `GET /ai-processing/provider` exposes only safe provider name/model/configured metadata to
   authorized staff/clinicians; it never returns a key, key-file path, or base URL.
+- `GET /patients/{patient_id}/ai-processing/provider-status` exposes clinic-scoped availability,
+  circuit state, bounded retry-after, and whether new suggestions are available to internal users.
+  It never contacts the provider or exposes keys, URLs, response bodies, or account data.
 - `GET /ai-processing/{job_id}` exposes job metadata and safe error codes, not raw input,
   provider prompts, or provider responses.
 - `POST /highlights/{highlight_id}/feedback` records clinic-scoped staff/clinician feedback with

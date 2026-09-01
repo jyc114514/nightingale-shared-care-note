@@ -1,0 +1,16 @@
+{
+  "checkpoint": "481db06",
+  "error_count": 0,
+  "metrics": {
+    "max_ms": 20.628,
+    "p50_ms": 16.721,
+    "p95_ms": 17.911,
+    "p99_ms": 18.111,
+    "request_count": 100,
+    "provider_calls_during_measured_open_window": 0,
+    "bootstrap_provider_calls": 3
+  },
+  "target_met": true,
+  "target_p95_ms": 300,
+  "transport": "in-process HTTPX ASGITransport; synthetic provider was opened first"
+}

@@ -12,13 +12,13 @@ that does not yet exist. A passing test is cited only for the behavior it actual
 |---:|---|---|---|---|---|---|
 | 1 | Patient has no email | DOES NOT | High | M | A patient without an email cannot use the email/password login route | Deferred; design identity onboarding |
 | 2 | Clinic isolation single failure | PARTIAL | Critical | M | A missed scope check could expose the entire patient/derived-record surface for a clinic | Improve the canonical scope path; defer database RLS |
-| 3 | PHI beyond model redaction | PARTIAL | Critical | L | A raw value can escape through an exception, request log, provider/host retention, or future event payload | Deferred to logging hardening after this vertical slice |
-| 4 | Redaction ordering | SURVIVES | High | M | A future caller bypassing the typed boundary could reintroduce an unsafe provider call | Existing strength; preserve and extend tests |
+| 3 | PHI beyond model redaction | PARTIAL | Critical | L | A raw value can escape through an exception, request log, provider/host retention, or future event payload | Local application logging hardened; external retention remains unknown |
+| 4 | Redaction ordering | SURVIVES | High | M | A future caller bypassing the typed boundary could reintroduce an unsafe provider call | Strengthened with ordered safe events and no-provider-on-redaction-failure tests |
 | 5 | Clinic B onboarding | PARTIAL | Medium | M | A new clinic cannot be provisioned through an audited admin workflow | Deferred |
 | 6 | Trilingual consult | DOES NOT | High | XL | The current fixture has a prepared English transcript, not multilingual capture or ASR | Deferred; do not call fixture Voice multilingual |
 | 7 | Allergy at minute 2 | DOES NOT | Critical | L | A contradiction is stored as unrelated text and no clinician flag is created | Implement the bounded allergy vertical slice |
-| 8 | Model hangs 45 seconds | PARTIAL | High | M | A synchronous processing request holds the clinician request open through timeout/retry | Deferred reliability work; keep safe failure semantics |
-| 9 | Provider 503 for an hour | PARTIAL | High | M | New suggestions fail safely, but the UI has no explicit stale/provider-outage state or retry policy | Preserve materialized Glance; document reliability gap |
+| 8 | Model hangs 45 seconds | PARTIAL | High | M | A synchronous processing request holds the clinician request open through timeout/retry | Bounded total wait added; durable asynchronous queue remains deferred |
+| 9 | Provider 503 for an hour | PARTIAL | High | M | New suggestions fail safely, but the UI has no explicit stale/provider-outage state or retry policy | Fail-fast circuit and degraded UI added; durable queue remains deferred |
 | 10 | Concurrent editing | SURVIVES | High | M | A same-section stale write is rejected and preserved as a write conflict | Existing strength; keep separate from clinical conflicts |
 | 11 | Appointment link never delivered | DOES NOT | Medium | L | There is no link-generation, delivery, receipt, retry, or acknowledgement path | Deferred |
 | 12 | Wrong patient-facing dosage | PARTIAL | Critical | L | Patient projection blocks internal AI text, but publication/correction/recall semantics do not exist | Deferred; do not equate Accept with Publish |
@@ -193,6 +193,15 @@ an application-wide sanitizer.
 
 Round 1 decision: Deferred; record as a Round 2 hardening candidate.
 
+Round 3 update (2026-09-02): Application logs now use a closed-vocabulary, metadata-only
+`safe_event` boundary with a defensive sanitizer and generic unexpected-exception middleware. A
+local audit script checks explicitly supplied logs for synthetic names, Singapore IDs, phones,
+authorization material, keys, credentialed database URLs, and cookies without printing matches.
+The redaction/provider event-order tests prove that provider start occurs only after redaction and
+that redaction failure makes zero provider calls. Local application logging is hardened, but
+Render/Uvicorn host retention and third-party provider retention remain Unknown; the status stays
+PARTIAL.
+
 ## Scenario 4 — Redaction ordering
 
 Status: SURVIVES
@@ -239,6 +248,13 @@ test_redaction.py, test_ai_provider_boundary.py, test_ai_processing.py, and
 test_deepseek_provider.py cover ordering, fail-closed behavior, and no-provider-on-failure.
 
 Round 1 decision: Existing strength; preserve while adding the allergy write-path derivation.
+
+Round 3 update (2026-09-02): The optional provider path records ordered metadata events for job
+creation, redaction completion, provider call start/completion or safe failure, and provenance
+completion. The provider performs a second redaction check, and the total budget prevents an
+unbounded retry loop. Existing fixture behavior remains the default. The source ordering status
+remains SURVIVES for the tested local application path, without implying external retention
+certification.
 
 ## Scenario 5 — Clinic B onboarding
 
@@ -453,6 +469,11 @@ exhaustion or prove an asynchronous production queue.
 
 Round 1 decision: Deferred; do not expand this round beyond allergy safety.
 
+Round 3 update (2026-09-02): DeepSeek attempts now use an 8-second per-attempt timeout, 12-second
+monotonic total budget, and at most two attempts. A synchronous route still waits for the bounded
+work, so this improves the 45-second hang but does not provide an asynchronous queue or worker
+isolation. The status remains PARTIAL.
+
 ## Scenario 9 — Provider 503 for an hour
 
 Status: PARTIAL
@@ -503,6 +524,13 @@ Provider failure and materialized-read tests cover the local behavior. No hour-l
 or stale-label production test exists.
 
 Round 1 decision: Deferred reliability work; preserve current safe failure.
+
+Round 3 update (2026-09-02): External provider state is persisted per clinic/provider with a
+three-failure threshold, 60-second cooldown, database-CAS half-open probe, safe provider-status
+API, and bilingual degraded-mode UI. When the circuit is open, no provider call is made and the
+job records `provider_circuit_open`; existing Glance/timeline/tasks/comments/source paths remain
+usable and there is no fixture fallback. There is no durable queue, scheduled retry, or automatic
+replay, so the status remains PARTIAL.
 
 ## Scenario 10 — Concurrent editing
 

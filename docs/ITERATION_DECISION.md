@@ -204,3 +204,45 @@ mypy, pip check, Alembic check, fresh
 migration/seed idempotency, frontend lint/format/type-check/build, and source/UI screenshot
 review. Round 2 stops before deployment, GitHub push, DeepSeek, Voice changes, patient
 publication, video/PDF/ZIP regeneration, RLS, and broad clinical NLP.
+
+# Round 3/10 iteration decision
+
+Baseline: `0530d645b19c6c822e7d90e11dc2cbf7b1a6c96b`
+
+Round: 3 of 10
+
+Decision: Make failure and observability behavior safe, bounded, persistent, and visible while
+preserving the existing clinical workspace. The optional external adapter remains opt-in; the
+fixture remains the deterministic default.
+
+## Selected work
+
+1. Add only sequential migration `0013_ai_provider_resilience`; keep `0001`-`0012`, dependency
+   manifests, requirements brief, and Voice behavior unchanged.
+2. Add an allowlisted structured logger, second-layer sanitizer, generic exception boundary, and an
+   explicit local log audit script. Logs contain opaque IDs and bounded operational metadata only.
+3. Bound the optional provider to 8 seconds per attempt, 12 seconds total, and at most two attempts.
+   Retry only transport timeout/connection/transient 5xx; do not silently use the fixture on failure.
+4. Persist one circuit per clinic/provider. Three counted failures open it for 60 seconds; one
+   CAS-reserved half-open probe either closes it on success or reopens it on failure.
+5. Expose an internal provider-status projection and a bilingual degraded-mode panel that keeps
+   existing records and navigation usable while new suggestions are unavailable.
+6. Verify Scenario E in real browser contexts at desktop/mobile sizes and measure both warm Glance
+   and circuit-open fail-fast paths.
+
+## What this round can claim
+
+The local synthetic application now proves redaction-before-provider event ordering, safe local log
+handling, bounded provider calls, persistent clinic-scoped circuit transitions, no silent fallback,
+and a visible degraded UI. The existing materialized Glance read path is independent of provider
+health. The round does not claim a durable job queue, automatic replay, third-party retention
+policy, production incident response, or clinical SLA.
+
+## Evidence and stop boundary
+
+The final local run at runtime checkpoint `481db06` and Scenario E test checkpoint `cc99b1c` reports 131 backend tests with 88% coverage, 44
+frontend Vitest tests, 18 core Playwright checks across 1440x900 and 390x844, 4 Voice regression
+checks, a warm Glance P95 of 70.639 ms with zero errors, and 100 circuit-open submissions with
+P95 17.911 ms and zero measured provider calls. Round 3 stops before push, deployment, live
+provider calls, Voice changes, patient publication, video/PDF/ZIP work, RLS, and broad clinical
+NLP.
