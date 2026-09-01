@@ -246,3 +246,49 @@ checks, a warm Glance P95 of 70.639 ms with zero errors, and 100 circuit-open su
 P95 17.911 ms and zero measured provider calls. Round 3 stops before push, deployment, live
 provider calls, Voice changes, patient publication, video/PDF/ZIP work, RLS, and broad clinical
 NLP.
+
+# Round 4/10 iteration decision
+
+Baseline: `4faff3448bb6bb5d3825a27d421741a36d8c3044`
+
+Round: 4 of 10
+
+Decision: Implement the patient publication gate for the critical wrong-dosage scenario while
+keeping the portal boundary explicit. The product must distinguish an internally accepted AI
+suggestion, a patient-facing draft, clinician approval, and a separate portal publish action.
+
+## Selected work
+
+1. Add only sequential migration `0014_patient_publications`; leave migrations `0001`–`0013`,
+   `requirements.txt`, dependency lockfiles, Voice, deployment, and existing Entry visibility
+   semantics unchanged.
+2. Add append-only publication content versions and deterministic source evidence anchored to
+   immutable EntryVersion codepoint spans. The supported dosage grammar is deliberately limited
+   to synthetic English metformin integer-mg once/twice-daily examples.
+3. Enforce server-side Staff/Clinician/Admin/Patient permissions and workflow-version CAS for
+   draft edit, approval, publish, recall, correction, and supersession. Store metadata-only
+   audit/events; do not add external delivery.
+4. Use a typed patient projection instead of flipping internal Entry visibility. Patient output
+   contains only current published content or safe withdrawal/correction notices.
+5. Add the bilingual internal publication drawer, dosage mismatch warning, explicit publish
+   confirmation, correction path, and desktop/mobile Scenario F browser checks.
+
+## What this round can claim
+
+The local synthetic prototype now proves that `Accept is not Publish`, blocks the demonstrated
+wrong dosage, requires a clinician to approve and explicitly publish the corrected content, and
+preserves source/publication history through recall and correction. The published-care endpoint
+met the local real-TCP P95 target with zero errors. The round does not claim external message
+delivery, receipt/recall semantics, general medication NLP, FHIR conformance, hosted PostgreSQL
+performance, or clinical production safety.
+
+## Evidence and stop boundary
+
+The Round 4 implementation checkpoints are `00f0e927` (backend workflow) and `d71946c` (UI and
+browser path). The final local evidence records 163 backend tests with 86% coverage, 45 frontend
+Vitest tests, 18 existing Gate B Playwright checks, 4 Voice checks, and 2 Scenario F checks
+across 1440x900 and 390x844. A separate 1,000-request published-care benchmark at concurrency
+10 measured P95 47.665 ms with zero errors on local SQLite/Uvicorn. The audit status remains
+PARTIAL because the dosage grammar is bounded and external delivery is intentionally absent.
+Round 4 stops before push, deployment, live LLM calls, Voice changes, video/PDF/ZIP regeneration,
+RLS, and broad clinical NLP.

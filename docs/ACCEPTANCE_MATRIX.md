@@ -45,6 +45,9 @@ Current total: **Mandatory 25/25 passed**. Deliverables: **5/5 present**, with D
 `passed with disclosed prototype boundary`: the original MP4 was supplied by the user and its
 content QA was explicitly waived for this pass. This is not a claim that Codex watched the video.
 
+Round 4 adds a separate adversarial safety record for Scenario 12; it does not silently convert
+the bounded portal gate into a general clinical or delivery claim.
+
 ## Phase 0 recorded evidence — 2026-08-25
 
 These rows record only the repository/environment scaffold. Product requirements above remain
@@ -347,6 +350,24 @@ their historical wording and commit-specific evidence.
 | ROUND3-BROWSER | Scenario E passes at desktop/mobile; timeout/503 is route-mocked, existing source/comments/tasks/history remain usable, and Patient sees no outage details | passed | [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [round3_safe_failure_logging.md](evidence/round3_safe_failure_logging.md) |
 | ROUND3-PERF | Warm Glance: 1,000 TCP requests, concurrency 10, zero errors, P50 56.818 ms, P95 70.639 ms, P99 93.048 ms, max 107.593 ms; circuit-open: 100 requests, P50 16.721 ms, P95 17.911 ms, P99 18.111 ms, max 20.628 ms, zero measured provider calls | passed with disclosed local approximation boundary | [round3_safe_failure_logging.md](evidence/round3_safe_failure_logging.md), [benchmark_circuit_failfast.py](../backend/app/scripts/benchmark_circuit_failfast.py) |
 | ROUND3-AUDIT-STATUS | #3 remains PARTIAL (local logging only); #4 SURVIVES strengthened; #8 remains PARTIAL (synchronous); #9 remains PARTIAL (no durable queue/replay) | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
+
+## Round 4 / patient publication gate evidence - 2026-09-02
+
+These additive rows record the bounded Scenario 12 implementation. The original 25-item
+Mandatory total remains unchanged; the real-clinic audit status is explicitly `PARTIAL` because
+the dosage grammar is narrow and external delivery is not implemented.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND4-DESIGN | State machine distinguishes internal suggestion acceptance, draft, clinician approval, portal publication, recall, correction, supersession, and entered-in-error | passed with disclosed prototype boundary | [ROUND4_PATIENT_PUBLICATION_DESIGN.md](ROUND4_PATIENT_PUBLICATION_DESIGN.md), [PATIENT_PUBLICATION_BOUNDARY.md](PATIENT_PUBLICATION_BOUNDARY.md) |
+| ROUND4-MIGRATION | New `0014_patient_publications` schema adds workflow, immutable content versions, and deterministic source evidence without editing `0001`–`0013`; Alembic head/check and downgrade/re-upgrade pass | passed | [0014_patient_publications.py](../backend/migrations/versions/0014_patient_publications.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND4-DOSAGE | Synthetic metformin integer-mg dosage evidence uses immutable source/version and Unicode-codepoint offsets; mismatch, ambiguity, unsupported grammar, and source changes fail closed | passed | [publication_evidence.py](../backend/app/services/publication_evidence.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-WORKFLOW | Staff prepare/edit, Clinician approve/publish/recall/correct, workflow CAS `409`, audit metadata, and no Accept→Publish shortcut pass through the real API | passed | [patient_publications.py](../backend/app/services/patient_publications.py), [patient_publications.py](../backend/app/api/routes/patient_publications.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-PATIENT-PROJECTION | Patient receives only current published content or safe withdrawal/correction notices; internal source, raw AI, workflow/evidence/history IDs are absent; legacy timeline remains unchanged | passed | [patients.py](../backend/app/api/routes/patients.py), [patient_publications.py](../backend/app/api/routes/patient_publications.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-UI | Bilingual internal publication drawer shows exact source, dosage status, draft history, role boundary, explicit publish confirmation, recall/correction controls, and Patient projection | passed | [App.tsx](../frontend/src/App.tsx), [App.test.tsx](../frontend/tests/App.test.tsx) |
+| ROUND4-BROWSER | Scenario F passes at 1440×900 and 390×844: wrong dosage block, Patient privacy, approval→publish, recall, correction, and two-context stale approval | passed | [patient-publication.spec.ts](../frontend/tests/e2e/patient-publication.spec.ts) |
+| ROUND4-PERF | Published-care real TCP path: 50 warm-up + 1,000 requests, concurrency 10, zero errors, P95 47.665 ms on local SQLite/Uvicorn | passed with disclosed local approximation boundary | [round4_patient_publication.md](evidence/round4_patient_publication.md), [round4_patient_publication_p95.json](evidence/round4_patient_publication_p95.json) |
+| ROUND4-AUDIT-STATUS | Scenario 12 improves from missing workflow to **PARTIAL** bounded portal gate; no external delivery/receipt/recall or general medication NLP is claimed | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
 
 ## Hard release gate
 

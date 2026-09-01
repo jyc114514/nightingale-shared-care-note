@@ -66,12 +66,25 @@ Pop-Location
 Remove-Item Env:DEMO_SEED_PASSWORD
 ```
 
-The seed creates two synthetic clinics, five users, two synthetic patients, nine entries, three
+The seed creates two synthetic clinics, five users, two synthetic patients, ten entries, three
 distinct system AI-scribed entry types, six source-linked highlights/materialized Glance rows,
 two source-anchored penicillin assertions with one protected conflict, a threaded internal
-comment fixture, and a derived archival summary with immutable source pointers. Re-running it
-preserves aggregate counts. Mentions and tasks are created through the clinic-scoped
-collaboration APIs so the seed remains deterministic and read-only by default.
+comment fixture, a bounded wrong-dosage publication draft, and a derived archival summary with
+immutable source pointers. Re-running it preserves aggregate counts. Mentions and tasks are
+created through the clinic-scoped collaboration APIs so the seed remains deterministic and
+read-only by default.
+
+### Round 4 patient publication gate
+
+Round 4 adds a local, synthetic, portal-only publication workflow. `Accept` on an internal AI
+highlight never publishes to a patient. Staff can prepare/edit a draft; only a Clinician can
+approve and then explicitly publish it. The bounded metformin dosage evidence check is
+source/version anchored and fails closed on mismatch, ambiguity, or unsupported grammar.
+Recall and correction are separate versioned transitions, while the Patient projection exposes
+only current published content or safe notices. See
+[`PATIENT_PUBLICATION_BOUNDARY.md`](docs/PATIENT_PUBLICATION_BOUNDARY.md), the
+[`Round 4 design`](docs/ROUND4_PATIENT_PUBLICATION_DESIGN.md), and the
+[`Round 4 evidence`](docs/evidence/round4_patient_publication.md).
 
 ### Round 2 local safety and exposure iteration
 

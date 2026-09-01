@@ -62,3 +62,29 @@ Do not describe this slice as general clinical NLP, allergy diagnosis, calibrate
 inverse-propensity correction, production compliance, ASR/Voice inference, live DeepSeek output,
 or hosted PostgreSQL evidence. Do not expose the patient-session internal source to the Patient
 persona.
+
+## Scenario 12 — Wrong patient-facing dosage
+
+Round 4 adds a separate portal publication gate for this bounded synthetic case. The source is
+the internal note `Continue metformin 500 mg twice daily.` Staff can prepare the patient-facing
+draft, but the intentionally wrong `Take metformin 1000 mg twice daily.` is visibly marked
+`mismatch`; the API rejects approval and the Patient sees nothing.
+
+The safe demonstration path is:
+
+1. Staff opens the source and prepares the update. Show the immutable source version and dosage
+   evidence; do not describe this as accepting or publishing an AI suggestion.
+2. Clinician edits the draft to `Take metformin 500 mg twice daily.`, saves the new immutable
+   draft version, and clicks `Approve for portal`.
+3. Clinician performs the separate `Publish to patient portal` confirmation. The Patient sees
+   the exact published content, while the internal source remains unchanged.
+4. Clinician can withdraw it with a safe reason code. The Patient then sees only the safe
+   withdrawal notice; the old content remains internal history.
+5. Clinician creates a linked correction draft, approves it, and explicitly publishes it. The
+   old publication becomes superseded and the Patient sees only the corrected current update.
+
+The workflow uses the typed publication projection rather than flipping an internal Entry's
+visibility. It is portal-only: no email, SMS, WhatsApp, push delivery, delivery receipt,
+external recall, general medication NLP, or FHIR conformance is claimed. See
+[`PATIENT_PUBLICATION_BOUNDARY.md`](PATIENT_PUBLICATION_BOUNDARY.md) for the exact role and
+state boundary.

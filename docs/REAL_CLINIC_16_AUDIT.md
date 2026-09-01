@@ -21,7 +21,7 @@ that does not yet exist. A passing test is cited only for the behavior it actual
 | 9 | Provider 503 for an hour | PARTIAL | High | M | New suggestions fail safely, but the UI has no explicit stale/provider-outage state or retry policy | Fail-fast circuit and degraded UI added; durable queue remains deferred |
 | 10 | Concurrent editing | SURVIVES | High | M | A same-section stale write is rejected and preserved as a write conflict | Existing strength; keep separate from clinical conflicts |
 | 11 | Appointment link never delivered | DOES NOT | Medium | L | There is no link-generation, delivery, receipt, retry, or acknowledgement path | Deferred |
-| 12 | Wrong patient-facing dosage | PARTIAL | Critical | L | Patient projection blocks internal AI text, but publication/correction/recall semantics do not exist | Deferred; do not equate Accept with Publish |
+| 12 | Wrong patient-facing dosage | PARTIAL | Critical | L | Bounded portal publication gate blocks mismatched synthetic dosage and separates draft, clinician approval, publish, recall, and correction; external delivery is absent | Round 4 partial gate; do not equate Accept with Publish |
 | 13 | Nurse allergy vs patient no allergies | DOES NOT | Critical | M | No normalized assertion or semantic comparison can create a reviewable contradiction | Implemented now in Phase 2 |
 | 14 | Meaningful risk/confidence/importance | PARTIAL | High | M | Display priority can be mistaken for medical risk and has no protected safety floor | Improved now through a deterministic safety floor |
 | 15 | Exposure bias and fatigue | PARTIAL | High | L | Only surfaced interactions create feedback; there is no impression denominator and ordinary adaptive feedback has no safety floor | Partially implemented now through protected feedback suppression; impression logging deferred |
@@ -644,15 +644,18 @@ Where:
 Current call/data path:
 
 AI output is an internal suggestion; Accept/Reject changes a highlight state and does not
-publish a patient entry. The patient projection blocks raw AI-scribed entries, comments,
-conflicts, and revision details. There is no dosage normalization, clinician publication
-workflow, already-sent correction, recall, or notification state.
+publish a patient entry. Round 4 adds a separate typed patient-publication projection. A
+Staff or Clinician can prepare an internal draft, but only a Clinician can approve and then
+explicitly publish the exact draft content. The portal projection includes only current
+published content and safe withdrawal/correction notices; it does not expose raw AI entries,
+comments, conflicts, source IDs, or publication history to a Patient.
 
 What breaks first:
 
-If a future feature treats accepted AI text as patient-facing content, the current model has
-no separate publication and correction barrier. In the current code the immediate failure is
-not leakage but the absence of a safe way to publish or correct a dosage instruction.
+The bounded workflow blocks the demonstrated wrong dosage (`500 mg` source versus `1000 mg`
+draft), but it intentionally abstains from unsupported medication grammar. Source-version
+changes after approval, stale workflow writes, ambiguous/multiple doses, and unsupported forms
+remain blocked rather than guessed.
 
 Blast radius:
 
@@ -662,21 +665,32 @@ workflow.
 
 What already mitigates it:
 
-Server-side patient projection, role-owned writes, immutable source versions, and explicit
-clinician review prevent the current Accept action from rewriting or exposing raw AI text.
+Server-side patient projection, role-owned writes, immutable source and publication-content
+versions, deterministic dosage evidence, explicit clinician approval/publication, workflow CAS,
+metadata-only audit rows, and safe recall/correction states prevent the current Accept action
+from rewriting or exposing raw AI text.
 
 Build it better:
 
-Add typed clinician-authored publication, source/version approval, patient-visible revision
-and correction/recall states, and delivery acknowledgement. Treat dosage as a separate
-clinical vocabulary; do not infer it from generic highlights.
+Extend the bounded gate only with a separately reviewed medication vocabulary and a production
+retention/notification policy. If external delivery is added, give it its own provider boundary,
+delivery receipt, retry, and recall semantics; do not imply those properties from this portal-only
+prototype.
 
 Evidence/tests:
 
-RBAC, AI-processing, and patient projection tests prove the current internal boundary. No
-publish/recall/dosage test exists.
+Round 4 adds `test_patient_publications.py`, the `0014_patient_publications` migration, and
+desktop/mobile Scenario F browser coverage for mismatch blocking, explicit approval/publication,
+patient projection, recall, correction, and stale workflow CAS. The local published-care
+benchmark is recorded separately. There is deliberately no external delivery test.
 
 Round 1 decision: Deferred.
+
+Round 4 update (2026-09-02): **PARTIAL — explicit portal gate implemented for a bounded
+synthetic dosage slice; no external delivery, provider receipt, or general medication NLP.**
+The detailed state machine, role matrix, source/version binding, and limitations are in
+[`ROUND4_PATIENT_PUBLICATION_DESIGN.md`](ROUND4_PATIENT_PUBLICATION_DESIGN.md) and the
+verification record is in [`evidence/round4_patient_publication.md`](evidence/round4_patient_publication.md).
 
 ## Scenario 13 — Nurse allergy vs patient no allergies
 
