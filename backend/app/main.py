@@ -16,6 +16,7 @@ from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
 from app.api.routes.events import router as events_router
 from app.api.routes.gate_b import router as gate_b_router
+from app.api.routes.impressions import router as impressions_router
 from app.api.routes.patients import router as patients_router
 from app.api.routes.tasks import router as tasks_router
 from app.api.routes.voice import router as voice_router
@@ -68,6 +69,7 @@ def create_app(static_directory: Path | None = None) -> FastAPI:
     application.include_router(entries_router)
     application.include_router(events_router)
     application.include_router(gate_b_router)
+    application.include_router(impressions_router)
     application.include_router(comments_router)
     application.include_router(clinical_conflicts_router)
     application.include_router(conflicts_router)

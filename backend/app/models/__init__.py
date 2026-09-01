@@ -11,6 +11,8 @@ from app.models.comment import Comment
 from app.models.collaboration_event import CollaborationEvent
 from app.models.conflict import Conflict
 from app.models.highlight_feedback_event import HighlightFeedbackEvent
+from app.models.glance_impression_batch import GlanceImpressionBatch
+from app.models.glance_impression_item import GlanceImpressionItem
 from app.models.importance_profile import ImportanceProfile
 from app.models.enums import (
     ConflictStatus,
@@ -76,6 +78,8 @@ __all__ = [
     "FeedbackEventType",
     "Highlight",
     "HighlightFeedbackEvent",
+    "GlanceImpressionBatch",
+    "GlanceImpressionItem",
     "HighlightActionState",
     "HighlightItemKind",
     "HighlightStatus",
