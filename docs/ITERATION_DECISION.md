@@ -284,11 +284,11 @@ performance, or clinical production safety.
 
 ## Evidence and stop boundary
 
-The Round 4 implementation checkpoints are `00f0e927` (backend workflow) and `d71946c` (UI and
-browser path). The final local evidence records 163 backend tests with 86% coverage, 45 frontend
+The Round 4 implementation checkpoints are `00f0e927` (backend workflow), `d71946c` (UI and
+browser path), and `85f5ff0` (dosage-context hardening). The final local evidence records 175 backend tests with 86% coverage, 45 frontend
 Vitest tests, 18 existing Gate B Playwright checks, 4 Voice checks, and 2 Scenario F checks
 across 1440x900 and 390x844. A separate 1,000-request published-care benchmark at concurrency
-10 measured P95 47.665 ms with zero errors on local SQLite/Uvicorn. The audit status remains
+10 measured P95 46.797 ms with zero errors on local SQLite/Uvicorn. The audit status remains
 PARTIAL because the dosage grammar is bounded and external delivery is intentionally absent.
 Round 4 stops before push, deployment, live LLM calls, Voice changes, video/PDF/ZIP regeneration,
 RLS, and broad clinical NLP.

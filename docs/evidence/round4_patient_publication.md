@@ -14,6 +14,7 @@ The selected typed projection keeps internal Entry visibility unchanged.
 | Migration/model/service/API | local commit `00f0e927` — `feat: add versioned patient publication workflow` |
 | UI, Patient projection, browser flow | local commit `d71946c` — `feat: add clinician publication and patient recall UI` |
 | Boundary tests and migration assertions | local commit `c960310` — `test: verify patient publication safety gate` |
+| Unsupported dosage-context hardening | local commit `85f5ff0` — `fix: reject unsupported dosage context` |
 | Current migration head | `0014_patient_publications` |
 | Requirements hash | `4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5` (unchanged) |
 
@@ -40,8 +41,8 @@ The local checks were run after implementation:
 
 | Check | Result |
 | --- | --- |
-| Backend Round 4 publication API tests | 32 passed |
-| Backend full regression | 163 passed; 86% coverage |
+| Backend Round 4 publication API tests | 44 passed |
+| Backend full regression | 175 passed; 86% coverage |
 | Ruff check/format and mypy `app tests` | passed |
 | Frontend Vitest | 45 passed |
 | Frontend ESLint/Prettier/type-check | passed |
@@ -49,7 +50,7 @@ The local checks were run after implementation:
 | Existing Voice Playwright | 4 passed at 1440×900 and 390×844 |
 | Scenario F publication Playwright | 2 passed at 1440×900 and 390×844 |
 | Published-care warm path | 50 warm-up + 1,000 real-TCP requests, concurrency 10, 0 errors |
-| Published-care P95 | 47.665 ms (local SQLite/Uvicorn approximation) |
+| Published-care P95 | 46.797 ms (local SQLite/Uvicorn approximation) |
 
 Machine-readable benchmark data is in
 [`round4_patient_publication_p95.json`](round4_patient_publication_p95.json). It is not
