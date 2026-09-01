@@ -130,6 +130,8 @@ def compare_dosage(source_content: str, draft_content: str) -> DosageValidation:
         status = (
             PublicationEvidenceStatus.MISSING
             if draft.status is PublicationEvidenceStatus.MISSING
+            else PublicationEvidenceStatus.UNSUPPORTED
+            if draft.status is PublicationEvidenceStatus.MATCHED
             else draft.status
         )
         return DosageValidation(

@@ -187,6 +187,39 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "last_failure_code",
             "version",
         } <= circuit_columns
+        publication_columns = {
+            column["name"] for column in database_inspector.get_columns("patient_publications")
+        }
+        assert {
+            "source_entry_id",
+            "source_version_id",
+            "state",
+            "content_version",
+            "workflow_version",
+            "severity_class",
+            "correction_of_publication_id",
+            "superseded_by_publication_id",
+            "approved_content_version",
+        } <= publication_columns
+        publication_version_columns = {
+            column["name"]
+            for column in database_inspector.get_columns("patient_publication_versions")
+        }
+        assert {"publication_id", "version_number", "content_sha256"} <= (
+            publication_version_columns
+        )
+        publication_evidence_columns = {
+            column["name"]
+            for column in database_inspector.get_columns("patient_publication_evidence")
+        }
+        assert {
+            "publication_version_id",
+            "source_version_id",
+            "start_offset",
+            "end_offset",
+            "quote_sha256",
+            "validation_status",
+        } <= publication_evidence_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -304,6 +337,23 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
             clinical_conflict_count = connection.execute(
                 text("SELECT COUNT(*) FROM clinical_conflicts")
             ).scalar_one()
+            publication_rows = list(
+                connection.execute(
+                    text(
+                        "SELECT state, severity_class FROM patient_publications "
+                        "WHERE source_entry_id IN (SELECT id FROM entries "
+                        "WHERE source_reference = 'synthetic-medication-plan')"
+                    )
+                ).mappings()
+            )
+            publication_evidence_status = connection.execute(
+                text(
+                    "SELECT validation_status FROM patient_publication_evidence "
+                    "WHERE publication_id IN (SELECT id FROM patient_publications "
+                    "WHERE source_entry_id IN (SELECT id FROM entries "
+                    "WHERE source_reference = 'synthetic-medication-plan'))"
+                )
+            ).scalar_one()
         assert ai_by_reference["synthetic-doctor-consult-2026-02-06"]["occurred_at"].startswith(
             "2026-02-06"
         )
@@ -317,6 +367,8 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
         assert len(allergy_rows) == 2
         assert assertion_count == 2
         assert clinical_conflict_count == 1
+        assert publication_rows == [{"state": "draft", "severity_class": "medication_dosage"}]
+        assert publication_evidence_status == "mismatch"
     finally:
         engine.dispose()
 
