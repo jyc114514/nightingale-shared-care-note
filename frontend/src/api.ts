@@ -9,6 +9,8 @@ import type {
   Comment,
   ContextRefresh,
   PatientContext,
+  PatientCareUpdate,
+  PatientPublication,
   Conflict,
   Diff,
   FeedbackEventType,
@@ -169,6 +171,79 @@ export const api = {
     ),
   source: (highlightId: string) =>
     request<ProvenanceSource>(`/highlights/${highlightId}/source`),
+  patientPublications: (patientId: string) =>
+    request<PatientPublication[]>(
+      `/patients/${patientId}/patient-publications`,
+    ),
+  patientPublication: (publicationId: string) =>
+    request<PatientPublication>(`/patient-publications/${publicationId}`),
+  createPatientPublication: (entryId: string, content?: string) =>
+    request<PatientPublication>(`/entries/${entryId}/patient-publications`, {
+      method: "POST",
+      ...json(content === undefined ? {} : { content }),
+    }),
+  updatePatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+    content: string,
+  ) =>
+    request<PatientPublication>(`/patient-publications/${publicationId}`, {
+      method: "PATCH",
+      ...json({
+        expected_workflow_version: expectedWorkflowVersion,
+        content,
+      }),
+    }),
+  approvePatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/approve`,
+      {
+        method: "POST",
+        ...json({ expected_workflow_version: expectedWorkflowVersion }),
+      },
+    ),
+  publishPatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/publish`,
+      {
+        method: "POST",
+        ...json({ expected_workflow_version: expectedWorkflowVersion }),
+      },
+    ),
+  recallPatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+    reasonCode:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/recall`,
+      {
+        method: "POST",
+        ...json({
+          expected_workflow_version: expectedWorkflowVersion,
+          reason_code: reasonCode,
+        }),
+      },
+    ),
+  createPatientPublicationCorrection: (publicationId: string) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/corrections`,
+      { method: "POST", ...json({}) },
+    ),
+  publishedCare: (patientId: string) =>
+    request<{ updates: PatientCareUpdate[] }>(
+      `/patients/${patientId}/published-care`,
+    ),
   comments: (entryId: string) =>
     request<Comment[]>(`/entries/${entryId}/comments`),
   addComment: (

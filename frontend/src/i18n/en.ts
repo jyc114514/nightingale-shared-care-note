@@ -422,4 +422,74 @@ export const en = {
   "guide.sourceNotice":
     "Patient record content stays in its original language to avoid changing clinical meaning.",
   "guide.openState": "Guide is open",
+  "publication.eyebrow": "Patient publication review",
+  "publication.title": "Patient publication review",
+  "publication.close": "Close publication review",
+  "publication.loading": "Loading publication review...",
+  "publication.stateLabel": "Workflow state",
+  "publication.stateDraft": "Draft",
+  "publication.stateApproved": "Clinician approved",
+  "publication.statePublished": "Published to portal",
+  "publication.stateRecalled": "Recalled from portal",
+  "publication.stateSuperseded": "Superseded",
+  "publication.stateEnteredInError": "Entered in error",
+  "publication.acceptDoesNotPublish":
+    "Accepting an AI suggestion does not publish it to the patient.",
+  "publication.sourceTitle": "Immutable source",
+  "publication.viewSource": "View source evidence",
+  "publication.sourceChanged":
+    "The source has changed since this draft was prepared. Re-review the latest immutable version before continuing.",
+  "publication.sourceIntegrity":
+    "Evidence is anchored to the immutable source using {{unit}} offsets.",
+  "publication.dosageTitle": "Medication dosage check",
+  "publication.statusMatched": "Matched",
+  "publication.statusMismatch": "Mismatch",
+  "publication.statusAmbiguous": "Ambiguous",
+  "publication.statusUnsupported": "Unsupported form",
+  "publication.statusMissing": "No dosage evidence",
+  "publication.dosageMatched":
+    "The draft dosage matches the selected source exactly. Clinician approval is still required.",
+  "publication.dosageNotPresent":
+    "No dosage was found in this general care update; no medication evidence was invented.",
+  "publication.dosageBlocked":
+    "This update cannot be approved or published until the dosage evidence is clear and matched.",
+  "publication.sourceDosage": "Source dosage",
+  "publication.draftDosage": "Draft dosage",
+  "publication.none": "Not present",
+  "publication.draftLabel": "Patient-facing draft",
+  "publication.save": "Save draft revision",
+  "publication.saving": "Saving...",
+  "publication.approve": "Approve for portal",
+  "publication.staffBoundary":
+    "A clinician must approve and publish this update. Staff can prepare and revise the draft, but cannot publish it.",
+  "publication.approvedExact":
+    "Approved content version {{version}} is held for a separate publish decision.",
+  "publication.publish": "Publish to patient portal",
+  "publication.publishing": "Publishing...",
+  "publication.publishConfirmation":
+    "Confirm that this exact approved version will be visible in the patient portal. No external message will be sent; the original source remains unchanged.",
+  "publication.confirmPublish": "Confirm publish",
+  "publication.cancel": "Cancel",
+  "publication.publishedSuccess":
+    "Published to the patient portal. The source and publication history remain auditable.",
+  "publication.recall": "Withdraw from portal",
+  "publication.createCorrection": "Create correction draft",
+  "publication.recallReason": "Withdrawal reason",
+  "publication.reasonDosage": "Dosage error",
+  "publication.reasonCorrection": "Clinical correction",
+  "publication.reasonEnteredError": "Entered in error",
+  "publication.reasonOther": "Other safe code",
+  "publication.withdrawnInternal":
+    "The portal no longer shows the withdrawn content. The internal history is retained for audit.",
+  "publication.versionHistory": "Draft content history ({{count}} versions)",
+  "publication.contentVersion": "Content version {{version}}",
+  "publication.prepare": "Prepare patient update",
+  "publication.stale":
+    "This publication changed. Refresh it before trying again.",
+  "patient.careUpdatesEyebrow": "Patient portal",
+  "patient.careUpdatesTitle": "Published care updates",
+  "patient.careUpdatesBody":
+    "Only updates explicitly published by a clinician are shown here.",
+  "patient.careUpdatesEmpty":
+    "No new clinician-published updates are available.",
 } as const;

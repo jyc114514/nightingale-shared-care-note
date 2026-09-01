@@ -38,6 +38,123 @@ export type TimelineEntry = {
   updated_at: string;
 };
 
+export type PatientPublicationState =
+  | "draft"
+  | "clinician_approved"
+  | "published"
+  | "recalled"
+  | "superseded"
+  | "entered_in_error";
+
+export type PatientPublicationSeverity = "general" | "medication_dosage";
+
+export type PublicationEvidenceStatus =
+  "matched" | "mismatch" | "ambiguous" | "unsupported" | "missing";
+
+export type PublicationSource = {
+  source_entry_id: string;
+  source_version_id: string;
+  version_number: number;
+  current_entry_version: number;
+  entry_type: string;
+  source_kind: string;
+  source_reference: string | null;
+  occurred_at: string;
+  version_content: string;
+  quote: string;
+  start_offset: number;
+  end_offset: number;
+  quote_sha256: string;
+  offset_unit: string;
+  source_is_current_version: boolean;
+};
+
+export type PublicationDosage = {
+  status: PublicationEvidenceStatus;
+  severity_class: PatientPublicationSeverity;
+  source_concept_key: string | null;
+  source_value: string | null;
+  source_unit: string | null;
+  source_frequency: string | null;
+  draft_concept_key: string | null;
+  draft_value: string | null;
+  draft_unit: string | null;
+  draft_frequency: string | null;
+  source_quote: string;
+  source_start_offset: number;
+  source_end_offset: number;
+};
+
+export type PublicationVersion = {
+  id: string;
+  publication_id: string;
+  version_number: number;
+  content: string;
+  content_sha256: string;
+  created_by_user_id: string;
+  created_by_role: string;
+  created_at: string;
+};
+
+export type PublicationEvidence = {
+  id: string;
+  publication_id: string;
+  publication_version_id: string;
+  evidence_type: string;
+  concept_key: string;
+  normalized_value: string | null;
+  unit: string | null;
+  frequency: string | null;
+  source_entry_id: string;
+  source_version_id: string;
+  start_offset: number;
+  end_offset: number;
+  quote: string;
+  quote_sha256: string;
+  offset_unit: string;
+  validation_status: PublicationEvidenceStatus;
+  created_at: string;
+};
+
+export type PatientPublication = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  source_entry_id: string;
+  source_version_id: string;
+  state: PatientPublicationState;
+  content_version: number;
+  workflow_version: number;
+  severity_class: PatientPublicationSeverity;
+  published_entry_id: string | null;
+  correction_of_publication_id: string | null;
+  superseded_by_publication_id: string | null;
+  created_by_user_id: string;
+  created_by_role: string;
+  approved_by_user_id: string | null;
+  approved_at: string | null;
+  approved_content_version: number | null;
+  published_by_user_id: string | null;
+  published_at: string | null;
+  recalled_by_user_id: string | null;
+  recalled_at: string | null;
+  recall_reason_code: string | null;
+  created_at: string;
+  updated_at: string;
+  current_content: string;
+  source: PublicationSource;
+  dosage: PublicationDosage;
+  versions: PublicationVersion[];
+  evidence: PublicationEvidence[];
+};
+
+export type PatientCareUpdate = {
+  kind: "published" | "withdrawn" | "corrected";
+  published_at: string | null;
+  content: string | null;
+  notice: string | null;
+};
+
 export type GlanceItem = {
   id: string;
   resource_type?: "highlight" | "task";
@@ -521,5 +638,9 @@ export type ApiErrorShape = {
         actual_version?: number;
         expected_version?: number;
         attempted_resolution?: string;
+        publication_id?: string;
+        actual_workflow_version?: number;
+        expected_workflow_version?: number;
+        source_changed?: boolean;
       };
 };

@@ -20,6 +20,10 @@ import type {
   ClinicalConflict,
   ClinicalConflictResolution,
   PatientContext,
+  PatientCareUpdate,
+  PatientPublication,
+  PatientPublicationState,
+  PublicationEvidenceStatus,
   Conflict,
   Diff,
   FeedbackEventType,
@@ -159,6 +163,18 @@ function displayError(
       return t("error.versionConflict", {
         version: error.body.detail.actual_version,
       });
+    }
+    if (
+      typeof error.body.detail === "object" &&
+      error.body.detail?.actual_workflow_version
+    ) {
+      return t("publication.stale");
+    }
+    if (
+      typeof error.body.detail === "object" &&
+      error.body.detail?.source_changed
+    ) {
+      return t("publication.sourceChanged");
     }
     if (context === "auth" && error.status === 401) return t("error.signIn");
     if (error.status === 401 || error.status === 403)
@@ -337,6 +353,7 @@ function Button({
   ariaExpanded,
   ariaControls,
   buttonRef,
+  dataTestId,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -347,6 +364,7 @@ function Button({
   ariaExpanded?: boolean;
   ariaControls?: string;
   buttonRef?: Ref<HTMLButtonElement>;
+  dataTestId?: string;
 }) {
   const styles = {
     primary: "border-blue-700 bg-blue-700 text-white hover:bg-blue-800",
@@ -365,6 +383,7 @@ function Button({
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       aria-controls={ariaControls}
+      data-testid={dataTestId}
       className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]}`}
     >
       {children}
@@ -1054,6 +1073,541 @@ function SourcePanel({
           {t("source.sha")}
         </p>
       </details>
+    </section>
+  );
+}
+
+const publicationStateKeys: Record<PatientPublicationState, TranslationKey> = {
+  draft: "publication.stateDraft",
+  clinician_approved: "publication.stateApproved",
+  published: "publication.statePublished",
+  recalled: "publication.stateRecalled",
+  superseded: "publication.stateSuperseded",
+  entered_in_error: "publication.stateEnteredInError",
+};
+
+const publicationEvidenceKeys: Record<
+  PublicationEvidenceStatus,
+  TranslationKey
+> = {
+  matched: "publication.statusMatched",
+  mismatch: "publication.statusMismatch",
+  ambiguous: "publication.statusAmbiguous",
+  unsupported: "publication.statusUnsupported",
+  missing: "publication.statusMissing",
+};
+
+function PublicationReviewPanel({
+  publication,
+  role,
+  loading,
+  error,
+  busy,
+  onEdit,
+  onApprove,
+  onPublish,
+  onRecall,
+  onCorrection,
+  onViewSource,
+  draftRef,
+}: {
+  publication: PatientPublication | null;
+  role: string;
+  loading: boolean;
+  error: string | null;
+  busy: boolean;
+  onEdit: (content: string) => Promise<void>;
+  onApprove: () => Promise<void>;
+  onPublish: () => Promise<void>;
+  onRecall: (
+    reason:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) => Promise<void>;
+  onCorrection: () => Promise<void>;
+  onViewSource: () => void;
+  draftRef: RefObject<HTMLTextAreaElement | null>;
+}) {
+  const { locale, t } = useI18n();
+  const [draft, setDraft] = useState("");
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [showSource, setShowSource] = useState(true);
+  const [recallReason, setRecallReason] = useState<
+    | "dosage_error"
+    | "clinical_correction"
+    | "entered_in_error"
+    | "other_safe_code"
+  >("clinical_correction");
+
+  useEffect(() => {
+    if (!publication) return;
+    setDraft(publication.current_content);
+    setConfirmPublish(false);
+    setShowSource(true);
+  }, [publication?.id, publication?.content_version]);
+
+  if (loading && !publication) {
+    return (
+      <p
+        className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800"
+        role="status"
+      >
+        {t("publication.loading")}
+      </p>
+    );
+  }
+  if (!publication) {
+    return error ? (
+      <p
+        className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+        role="alert"
+      >
+        {error}
+      </p>
+    ) : null;
+  }
+
+  const state = publication.state;
+  const editable =
+    (role === "staff" || role === "clinician") &&
+    (state === "draft" || state === "clinician_approved");
+  const dosageAllowsAdvance =
+    publication.dosage.status === "matched" ||
+    (publication.severity_class === "general" &&
+      publication.dosage.status === "missing");
+  const currentSource = publication.source.source_is_current_version;
+  const canApprove =
+    role === "clinician" &&
+    state === "draft" &&
+    dosageAllowsAdvance &&
+    currentSource;
+  const canPublish =
+    role === "clinician" &&
+    state === "clinician_approved" &&
+    dosageAllowsAdvance &&
+    currentSource;
+  const statusTone =
+    state === "published"
+      ? "green"
+      : state === "recalled" || state === "entered_in_error"
+        ? "red"
+        : "amber";
+  const dosageTone =
+    publication.dosage.status === "matched" ||
+    (publication.severity_class === "general" &&
+      publication.dosage.status === "missing")
+      ? "green"
+      : "red";
+  const currentContent = publication.current_content;
+
+  async function saveDraft() {
+    if (!draft.trim() || draft.trim() === currentContent) return;
+    await onEdit(draft.trim());
+  }
+
+  return (
+    <div className="space-y-4" data-testid="publication-review-panel">
+      {error && (
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid="publication-error"
+        >
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+            {t("publication.eyebrow")}
+          </p>
+          <p
+            className="mt-2 text-sm text-slate-600"
+            data-testid="publication-state"
+          >
+            {t("publication.stateLabel")}: {t(publicationStateKeys[state])}
+          </p>
+        </div>
+        <Pill tone={statusTone}>{t(publicationStateKeys[state])}</Pill>
+      </div>
+      <p
+        className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950"
+        data-testid="publication-accept-warning"
+      >
+        {t("publication.acceptDoesNotPublish")}
+      </p>
+
+      <section
+        className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4"
+        data-testid="publication-source"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+              {t("publication.sourceTitle")}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {t(
+                entryTypeKeys[publication.source.entry_type] ??
+                  "entryType.systemEvent",
+              )}{" "}
+              · v{publication.source.version_number}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {formatDate(publication.source.occurred_at, locale)}
+            </p>
+          </div>
+          <Button
+            kind="secondary"
+            onClick={() => {
+              setShowSource((current) => !current);
+              onViewSource();
+            }}
+            dataTestId="publication-view-source"
+          >
+            {t("publication.viewSource")}
+          </Button>
+        </div>
+        {!currentSource && (
+          <p
+            className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-800"
+            role="alert"
+            data-testid="publication-source-changed"
+          >
+            {t("publication.sourceChanged")}
+          </p>
+        )}
+        {showSource && (
+          <blockquote className="mt-3 rounded-xl border border-blue-100 bg-white p-3 text-sm leading-7 text-slate-800">
+            {publication.source.quote ? (
+              <ExactSpanView
+                text={publication.source.version_content}
+                quote={publication.source.quote}
+                startOffset={publication.source.start_offset}
+                endOffset={publication.source.end_offset}
+              />
+            ) : (
+              publication.source.version_content
+            )}
+          </blockquote>
+        )}
+        <p className="mt-2 text-xs text-slate-500">
+          {t("publication.sourceIntegrity", {
+            unit: publication.source.offset_unit,
+          })}
+        </p>
+      </section>
+
+      <section
+        className={`rounded-2xl border p-4 ${dosageTone === "green" ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}
+        data-testid="publication-dosage"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
+            {t("publication.dosageTitle")}
+          </p>
+          <Pill tone={dosageTone}>
+            {t(publicationEvidenceKeys[publication.dosage.status])}
+          </Pill>
+        </div>
+        <p
+          className="mt-3 text-sm leading-6 text-slate-700"
+          data-testid="publication-dosage-status"
+        >
+          {publication.dosage.status === "matched"
+            ? t("publication.dosageMatched")
+            : publication.severity_class === "general" &&
+                publication.dosage.status === "missing"
+              ? t("publication.dosageNotPresent")
+              : t("publication.dosageBlocked")}
+        </p>
+        <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+          <div>
+            <dt className="font-semibold">{t("publication.sourceDosage")}</dt>
+            <dd className="mt-1">
+              {publication.dosage.source_value ?? t("publication.none")}{" "}
+              {publication.dosage.source_unit ?? ""}{" "}
+              {publication.dosage.source_frequency ?? ""}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold">{t("publication.draftDosage")}</dt>
+            <dd className="mt-1">
+              {publication.dosage.draft_value ?? t("publication.none")}{" "}
+              {publication.dosage.draft_unit ?? ""}{" "}
+              {publication.dosage.draft_frequency ?? ""}
+            </dd>
+          </div>
+        </dl>
+        {publication.dosage.status !== "matched" &&
+          !(
+            publication.severity_class === "general" &&
+            publication.dosage.status === "missing"
+          ) && (
+            <p
+              className="mt-3 text-xs font-semibold text-rose-800"
+              role="alert"
+              data-testid="publication-mismatch"
+            >
+              {t("publication.dosageBlocked")}
+            </p>
+          )}
+      </section>
+
+      {editable && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <label
+            className="block text-sm font-semibold text-slate-700"
+            htmlFor="publication-draft"
+          >
+            {t("publication.draftLabel")}
+            <textarea
+              id="publication-draft"
+              ref={draftRef}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              data-testid="publication-draft"
+              className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              kind="secondary"
+              onClick={() => void saveDraft()}
+              disabled={
+                busy || !draft.trim() || draft.trim() === currentContent
+              }
+              dataTestId="publication-save"
+            >
+              {busy ? t("publication.saving") : t("publication.save")}
+            </Button>
+            {role === "clinician" && state === "draft" && (
+              <Button
+                kind="primary"
+                onClick={() => void onApprove()}
+                disabled={busy || !canApprove}
+                dataTestId="publication-approve"
+              >
+                {t("publication.approve")}
+              </Button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {role === "staff" &&
+        (state === "draft" || state === "clinician_approved") && (
+          <p
+            className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+            data-testid="publication-staff-boundary"
+          >
+            {t("publication.staffBoundary")}
+          </p>
+        )}
+
+      {state === "clinician_approved" && role === "clinician" && (
+        <section
+          className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+          data-testid="publication-approved-actions"
+        >
+          <p className="text-sm leading-6 text-emerald-900">
+            {t("publication.approvedExact", {
+              version:
+                publication.approved_content_version ??
+                publication.content_version,
+            })}
+          </p>
+          {!confirmPublish ? (
+            <Button
+              kind="primary"
+              onClick={() => setConfirmPublish(true)}
+              disabled={busy || !canPublish}
+              dataTestId="publication-publish"
+            >
+              {t("publication.publish")}
+            </Button>
+          ) : (
+            <div
+              className="mt-3 space-y-3"
+              data-testid="publication-publish-confirm"
+            >
+              <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                {t("publication.publishConfirmation")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  kind="primary"
+                  onClick={() => void onPublish()}
+                  disabled={busy || !canPublish}
+                  dataTestId="publication-confirm-publish"
+                >
+                  {busy
+                    ? t("publication.publishing")
+                    : t("publication.confirmPublish")}
+                </Button>
+                <Button kind="quiet" onClick={() => setConfirmPublish(false)}>
+                  {t("publication.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {state === "published" && role === "clinician" && (
+        <section
+          className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+          data-testid="publication-success"
+        >
+          <p className="text-sm font-semibold text-emerald-900">
+            {t("publication.publishedSuccess")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              kind="danger"
+              onClick={() => void onRecall(recallReason)}
+              disabled={busy}
+              dataTestId="publication-recall"
+            >
+              {t("publication.recall")}
+            </Button>
+            <Button
+              kind="secondary"
+              onClick={() => void onCorrection()}
+              disabled={busy}
+              dataTestId="publication-correction"
+            >
+              {t("publication.createCorrection")}
+            </Button>
+          </div>
+          <label className="block text-xs font-semibold text-slate-700">
+            {t("publication.recallReason")}
+            <select
+              value={recallReason}
+              onChange={(event) =>
+                setRecallReason(event.target.value as typeof recallReason)
+              }
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+              aria-label={t("publication.recallReason")}
+            >
+              <option value="dosage_error">
+                {t("publication.reasonDosage")}
+              </option>
+              <option value="clinical_correction">
+                {t("publication.reasonCorrection")}
+              </option>
+              <option value="entered_in_error">
+                {t("publication.reasonEnteredError")}
+              </option>
+              <option value="other_safe_code">
+                {t("publication.reasonOther")}
+              </option>
+            </select>
+          </label>
+        </section>
+      )}
+
+      {(state === "recalled" || state === "entered_in_error") &&
+        role === "clinician" && (
+          <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm leading-6 text-amber-900">
+              {t("publication.withdrawnInternal")}
+            </p>
+            <Button
+              kind="primary"
+              onClick={() => void onCorrection()}
+              disabled={busy}
+              dataTestId="publication-correction"
+            >
+              {t("publication.createCorrection")}
+            </Button>
+          </section>
+        )}
+
+      <details
+        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+        data-testid="publication-version-history"
+      >
+        <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+          {t("publication.versionHistory", {
+            count: publication.versions.length,
+          })}
+        </summary>
+        <div className="mt-3 space-y-2">
+          {publication.versions.map((version) => (
+            <div
+              key={version.id}
+              className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5"
+            >
+              <p className="font-semibold text-slate-700">
+                {t("publication.contentVersion", {
+                  version: version.version_number,
+                })}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-slate-600">
+                {version.content}
+              </p>
+            </div>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function PatientCarePanel({ updates }: { updates: PatientCareUpdate[] }) {
+  const { locale, t } = useI18n();
+  return (
+    <section
+      className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm sm:p-7"
+      aria-label={t("patient.careUpdatesTitle")}
+      data-testid="patient-published-care"
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
+        {t("patient.careUpdatesEyebrow")}
+      </p>
+      <h2 className="mt-2 text-xl font-semibold text-slate-900">
+        {t("patient.careUpdatesTitle")}
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        {t("patient.careUpdatesBody")}
+      </p>
+      {updates.length === 0 ? (
+        <p className="mt-4 rounded-2xl border border-dashed border-emerald-200 bg-white p-4 text-sm text-slate-500">
+          {t("patient.careUpdatesEmpty")}
+        </p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {updates.map((update, index) => (
+            <article
+              key={`${update.kind}-${update.published_at ?? "none"}-${index}`}
+              className="rounded-2xl border border-emerald-100 bg-white p-4"
+              data-testid={`patient-care-update-${index}`}
+            >
+              <p className="text-xs text-slate-500">
+                {update.published_at
+                  ? formatDate(update.published_at, locale)
+                  : ""}
+              </p>
+              {update.content && (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-800">
+                  {update.content}
+                </p>
+              )}
+              {update.notice && (
+                <p
+                  className="mt-2 text-sm leading-6 text-amber-900"
+                  role="status"
+                >
+                  {update.notice}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -2865,6 +3419,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [publishedCare, setPublishedCare] = useState<PatientCareUpdate[]>([]);
+  const [publicationOpen, setPublicationOpen] = useState(false);
+  const [publication, setPublication] = useState<PatientPublication | null>(
+    null,
+  );
+  const [publicationLoading, setPublicationLoading] = useState(false);
+  const [publicationError, setPublicationError] = useState<string | null>(null);
+  const [publicationBusy, setPublicationBusy] = useState(false);
   const commentsInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
   const commentsRequestRef = useRef(0);
@@ -2874,6 +3436,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const taskTitleInputRef = useRef<HTMLInputElement>(null);
   const taskReturnFocusRef = useRef<HTMLElement | null>(null);
   const conflictResolutionRef = useRef<HTMLSelectElement>(null);
+  const publicationDraftRef = useRef<HTMLTextAreaElement>(null);
   const conflictRequestRef = useRef(0);
   const impressionSignatureRef = useRef<string | null>(null);
   const patientDataReadyRef = useRef(false);
@@ -2946,6 +3509,12 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setEditingText("");
     setRemoteUpdatePending(false);
     setMutationError(null);
+    setPublishedCare([]);
+    setPublicationOpen(false);
+    setPublication(null);
+    setPublicationLoading(false);
+    setPublicationError(null);
+    setPublicationBusy(false);
     patientDataReadyRef.current = false;
   }, [patientId, internal, user.id]);
 
@@ -2967,12 +3536,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     const tasksRequest = internal
       ? api.tasks(patientId)
       : Promise.resolve([] as Task[]);
+    const publishedCareRequest = internal
+      ? Promise.resolve({ updates: [] as PatientCareUpdate[] })
+      : api.publishedCare(patientId);
     Promise.all([
       api.timeline(patientId),
       glanceRequest,
       api.context(patientId),
       collaboratorsRequest,
       tasksRequest,
+      publishedCareRequest,
     ])
       .then(
         async ([
@@ -2981,6 +3554,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           contextResult,
           collaboratorsResult,
           tasksResult,
+          publishedCareResult,
         ]) => {
           if (!active) return;
           const activeCommentEntryId = commentsEntryIdRef.current;
@@ -3004,6 +3578,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           setContext(contextResult);
           setCollaborators(collaboratorsResult);
           setTasks(tasksResult);
+          setPublishedCare(
+            Array.isArray(publishedCareResult?.updates)
+              ? publishedCareResult.updates
+              : [],
+          );
           if (internal && requestedHighlightId) {
             setSourceLoading(true);
             const linkedSource = await api.source(requestedHighlightId);
@@ -3191,6 +3770,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           void refreshTasksAndGlance().catch((error) =>
             setLoadError(displayError(error, translationRef.current)),
           );
+          return;
+        }
+        if (payload.resource_type === "patient_publication") {
+          setRefreshToken((value) => value + 1);
           return;
         }
         if (editingEntryIdRef.current) {
@@ -3500,6 +4083,138 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       "",
       `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
     );
+  }
+
+  async function openPublication(entryId: string) {
+    if (!patientId || role === "admin" || !internal) return;
+    setPublicationOpen(true);
+    setPublication(null);
+    setPublicationLoading(true);
+    setPublicationError(null);
+    try {
+      setPublication(await api.createPatientPublication(entryId));
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationLoading(false);
+    }
+  }
+
+  function closePublication() {
+    setPublicationOpen(false);
+    setPublication(null);
+    setPublicationError(null);
+    setPublicationLoading(false);
+    setPublicationBusy(false);
+  }
+
+  async function editPublication(content: string) {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.updatePatientPublication(
+          publication.id,
+          publication.workflow_version,
+          content,
+        ),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function approvePublication() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.approvePatientPublication(
+          publication.id,
+          publication.workflow_version,
+        ),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function publishPublication() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      const updated = await api.publishPatientPublication(
+        publication.id,
+        publication.workflow_version,
+      );
+      setPublication(updated);
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function recallPublication(
+    reason:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.recallPatientPublication(
+          publication.id,
+          publication.workflow_version,
+          reason,
+        ),
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function createPublicationCorrection() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.createPatientPublicationCorrection(publication.id),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  function openPublicationSource() {
+    if (!publication) return;
+    setFocusEntryId(publication.source.source_entry_id);
+    window.setTimeout(() => {
+      scrollToElement(
+        document.getElementById(
+          `timeline-entry-${publication?.source.source_entry_id}`,
+        ),
+      );
+    }, 0);
+    window.setTimeout(() => setFocusEntryId(null), 2400);
   }
 
   async function loadHistory(entryId: string) {
@@ -4326,6 +5041,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             </section>
           )}
 
+          {!internal && <PatientCarePanel updates={publishedCare} />}
+
           <HistoricalContextPanel
             context={context}
             internal={internal}
@@ -4485,6 +5202,20 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             {t("button.assignTask")}
                           </Button>
                         )}
+                        {internal &&
+                          role !== "admin" &&
+                          ![
+                            "patient_facing_summary",
+                            "patient_instruction",
+                          ].includes(entry.entry_type) && (
+                            <Button
+                              kind="secondary"
+                              onClick={() => void openPublication(entry.id)}
+                              dataTestId={`prepare-publication-${entry.id}`}
+                            >
+                              {t("publication.prepare")}
+                            </Button>
+                          )}
                         {editable && !isEditing && (
                           <Button
                             kind="quiet"
@@ -4553,6 +5284,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             loading={commentBusy}
             error={commentsError}
             busy={commentBusy}
+          />
+        </ContextualDrawer>
+      )}
+      {internal && (
+        <ContextualDrawer
+          open={publicationOpen}
+          title={t("publication.title")}
+          closeLabel={t("publication.close")}
+          onClose={closePublication}
+          initialFocusRef={publicationDraftRef}
+          testId="patient-publication-drawer"
+        >
+          <PublicationReviewPanel
+            publication={publication}
+            role={role}
+            loading={publicationLoading}
+            error={publicationError}
+            busy={publicationBusy}
+            onEdit={editPublication}
+            onApprove={approvePublication}
+            onPublish={publishPublication}
+            onRecall={recallPublication}
+            onCorrection={createPublicationCorrection}
+            onViewSource={openPublicationSource}
+            draftRef={publicationDraftRef}
           />
         </ContextualDrawer>
       )}

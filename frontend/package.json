@@ -11,7 +11,8 @@
     "test": "vitest run",
     "type-check": "tsc -b --pretty false",
     "e2e": "playwright test tests/e2e/gate-b.spec.ts",
-    "e2e:voice": "playwright test tests/e2e/voice.spec.ts"
+    "e2e:voice": "playwright test tests/e2e/voice.spec.ts",
+    "e2e:publication": "playwright test tests/e2e/patient-publication.spec.ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",

@@ -24,6 +24,7 @@ import type {
   ClinicalConflict,
   Me,
   Patient,
+  PatientPublication,
   ProvenanceSource,
   Version,
 } from "../src/types";
@@ -299,6 +300,99 @@ const context = {
   ],
 };
 
+const publicationFixture: PatientPublication = {
+  id: "publication-1",
+  clinic_id: "clinic-a",
+  patient_id: "patient-a",
+  source_entry_id: "entry-staff",
+  source_version_id: "version-1",
+  state: "draft",
+  content_version: 1,
+  workflow_version: 1,
+  severity_class: "medication_dosage",
+  published_entry_id: null,
+  correction_of_publication_id: null,
+  superseded_by_publication_id: null,
+  created_by_user_id: "staff-user",
+  created_by_role: "staff",
+  approved_by_user_id: null,
+  approved_at: null,
+  approved_content_version: null,
+  published_by_user_id: null,
+  published_at: null,
+  recalled_by_user_id: null,
+  recalled_at: null,
+  recall_reason_code: null,
+  created_at: "2026-08-25T08:00:00Z",
+  updated_at: "2026-08-25T08:00:00Z",
+  current_content: "Take metformin 1000 mg twice daily.",
+  source: {
+    source_entry_id: "entry-staff",
+    source_version_id: "version-1",
+    version_number: 1,
+    current_entry_version: 1,
+    entry_type: "staff_note",
+    source_kind: "manual",
+    source_reference: "synthetic-medication-plan",
+    occurred_at: "2026-08-25T08:00:00Z",
+    version_content: "Continue metformin 500 mg twice daily.",
+    quote: "metformin 500 mg twice daily",
+    start_offset: 9,
+    end_offset: 37,
+    quote_sha256: "source-hash",
+    offset_unit: "unicode_codepoint",
+    source_is_current_version: true,
+  },
+  dosage: {
+    status: "mismatch",
+    severity_class: "medication_dosage",
+    source_concept_key: "metformin",
+    source_value: "500",
+    source_unit: "mg",
+    source_frequency: "twice daily",
+    draft_concept_key: "metformin",
+    draft_value: "1000",
+    draft_unit: "mg",
+    draft_frequency: "twice daily",
+    source_quote: "metformin 500 mg twice daily",
+    source_start_offset: 9,
+    source_end_offset: 37,
+  },
+  versions: [
+    {
+      id: "publication-version-1",
+      publication_id: "publication-1",
+      version_number: 1,
+      content: "Take metformin 1000 mg twice daily.",
+      content_sha256: "draft-hash",
+      created_by_user_id: "staff-user",
+      created_by_role: "staff",
+      created_at: "2026-08-25T08:00:00Z",
+    },
+  ],
+  evidence: [
+    {
+      id: "publication-evidence-1",
+      publication_id: "publication-1",
+      publication_version_id: "publication-version-1",
+      evidence_type: "medication_dosage",
+      concept_key: "metformin",
+      normalized_value: "500",
+      unit: "mg",
+      frequency: "twice daily",
+      source_entry_id: "entry-staff",
+      source_version_id: "version-1",
+      start_offset: 9,
+      end_offset: 37,
+      quote: "metformin 500 mg twice daily",
+      quote_sha256: "source-hash",
+      offset_unit: "unicode_codepoint",
+      validation_status: "mismatch",
+      created_at: "2026-08-25T08:00:00Z",
+    },
+  ],
+};
+
 function response(payload: unknown, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -364,6 +458,9 @@ function mockAuthenticatedApi(
     adjudicationStatus?: number;
     impressionStatus?: number;
     feedbackResponse?: unknown;
+    publicationResponse?: PatientPublication;
+    publicationMutationResponse?: PatientPublication;
+    publishedCareResponse?: unknown;
   } = {},
 ) {
   let timelineCallCount = 0;
@@ -375,6 +472,15 @@ function mockAuthenticatedApi(
       if (url.endsWith("/patients"))
         return response(sourceOptions.patients ?? [patient]);
       if (url.endsWith("/context")) return response(context);
+      if (url.endsWith("/published-care"))
+        return response(sourceOptions.publishedCareResponse ?? { updates: [] });
+      if (url.includes("/patient-publications")) {
+        return response(
+          sourceOptions.publicationMutationResponse ??
+            sourceOptions.publicationResponse ??
+            {},
+        );
+      }
       if (url.endsWith("/timeline")) {
         timelineCallCount += 1;
         return response(
@@ -2002,6 +2108,43 @@ describe("Gate B shared care note", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add comment" }));
     await waitFor(() =>
       expect(screen.getByLabelText("Comment body")).toHaveValue(""),
+    );
+  });
+
+  it("keeps patient publication review internal and blocks a mismatched dosage", async () => {
+    const fetchMock = mockAuthenticatedApi(staffUser, {
+      publicationResponse: publicationFixture,
+    });
+    renderApp();
+    const prepareButton = await screen.findByTestId(
+      "prepare-publication-entry-staff",
+    );
+    fireEvent.click(prepareButton);
+    expect(
+      await screen.findByTestId("patient-publication-drawer"),
+    ).toBeVisible();
+    expect(screen.getByTestId("publication-dosage-status")).toHaveTextContent(
+      "cannot be approved or published",
+    );
+    expect(screen.getByTestId("publication-staff-boundary")).toHaveTextContent(
+      "A clinician must approve and publish",
+    );
+    expect(screen.queryByTestId("publication-approve")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("publication-publish")).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(
+        ([input, init]) =>
+          String(input).includes("/patient-publications") &&
+          init?.method === "POST",
+      ),
+    ).toBe(true);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close publication review" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId("patient-publication-drawer"),
+      ).not.toBeInTheDocument(),
     );
   });
 
