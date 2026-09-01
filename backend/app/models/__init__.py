@@ -4,6 +4,8 @@ from app.models.audit_log import AuditLog
 from app.models.ai_processing_job import AIProcessingJob
 from app.models.archival_summary import ArchivalSummary
 from app.models.archival_summary_source import ArchivalSummarySource
+from app.models.clinical_assertion import ClinicalAssertion
+from app.models.clinical_conflict import ClinicalConflict
 from app.models.clinic import Clinic
 from app.models.comment import Comment
 from app.models.collaboration_event import CollaborationEvent
@@ -12,6 +14,14 @@ from app.models.highlight_feedback_event import HighlightFeedbackEvent
 from app.models.importance_profile import ImportanceProfile
 from app.models.enums import (
     ConflictStatus,
+    AssertionCriticality,
+    AssertionDomain,
+    AssertionPolarity,
+    AssertionStatus,
+    AssertionVerificationStatus,
+    ClinicalConflictResolution,
+    ClinicalConflictStatus,
+    ClinicalConflictType,
     EntryOwnerRole,
     EntryType,
     EntryVisibility,
@@ -44,6 +54,16 @@ __all__ = [
     "ArchivalSummarySource",
     "Clinic",
     "ClinicMembership",
+    "ClinicalAssertion",
+    "ClinicalConflict",
+    "AssertionCriticality",
+    "AssertionDomain",
+    "AssertionPolarity",
+    "AssertionStatus",
+    "AssertionVerificationStatus",
+    "ClinicalConflictResolution",
+    "ClinicalConflictStatus",
+    "ClinicalConflictType",
     "Comment",
     "CollaborationEvent",
     "Conflict",

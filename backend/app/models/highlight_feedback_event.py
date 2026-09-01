@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, new_id, utcnow
@@ -32,3 +32,5 @@ class HighlightFeedbackEvent(Base):
         DateTime(timezone=True), default=utcnow, nullable=False
     )
     idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    applied_to_profile: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    suppression_reason: Mapped[str | None] = mapped_column(String(100), nullable=True)

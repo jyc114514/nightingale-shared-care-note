@@ -77,6 +77,9 @@ class HighlightOut(BaseModel):
     risk_reason: str
     action_label: str | None
     action_state: HighlightActionState
+    clinical_conflict_id: str | None
+    safety_class: str | None
+    safety_floor: float | None
     created_by_role: str
     created_by_user_id: str | None
     reviewed_by_user_id: str | None
@@ -105,6 +108,9 @@ class GlanceItemOut(BaseModel):
     risk_reason: str
     action_label: str | None
     action_state: str
+    clinical_conflict_id: str | None = None
+    safety_class: str | None = None
+    safety_floor: float | None = None
     source_entry_id: str | None
     source_version_id: str | None
     version_number: int | None
@@ -136,8 +142,10 @@ class HighlightFeedbackOut(BaseModel):
     event_type: FeedbackEventType
     created: bool
     feature_signature: str
-    profile: ImportanceProfileOut
+    profile: ImportanceProfileOut | None
     ranking_explanation: dict[str, float]
+    applied_to_profile: bool
+    suppression_reason: str | None
 
 
 class ProvenanceSourceOut(BaseModel):

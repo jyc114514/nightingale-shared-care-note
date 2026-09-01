@@ -79,6 +79,8 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "collaboration_events",
             "voice_sessions",
             "transcript_segments",
+            "clinical_assertions",
+            "clinical_conflicts",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -106,7 +108,36 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "base_priority",
             "adaptive_feedback_adjustment",
             "ranking_explanation",
+            "clinical_conflict_id",
+            "safety_class",
+            "safety_floor",
         } <= glance_columns
+        feedback_columns = {
+            column["name"] for column in database_inspector.get_columns("highlight_feedback_events")
+        }
+        assert {"applied_to_profile", "suppression_reason"} <= feedback_columns
+        assertion_columns = {
+            column["name"] for column in database_inspector.get_columns("clinical_assertions")
+        }
+        assert {
+            "source_entry_id",
+            "source_version_id",
+            "start_offset",
+            "end_offset",
+            "quote_sha256",
+            "verification_status",
+            "status",
+        } <= assertion_columns
+        conflict_columns = {
+            column["name"] for column in database_inspector.get_columns("clinical_conflicts")
+        }
+        assert {
+            "positive_assertion_id",
+            "negative_assertion_id",
+            "version",
+            "resolution",
+            "status",
+        } <= conflict_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -119,7 +150,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0010_postgres_compat"
+                == "0011_real_clinic_safety"
             )
     finally:
         engine.dispose()
@@ -174,7 +205,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0010_postgres_compat"
+                == "0011_real_clinic_safety"
             )
     finally:
         engine.dispose()
