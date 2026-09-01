@@ -28,6 +28,9 @@ from app.models import (
     HighlightStatus,
     Patient,
     PatientGlanceItem,
+    PatientPublication,
+    PatientPublicationEvidence,
+    PatientPublicationVersion,
     PatientUserLink,
     User,
 )
@@ -36,6 +39,7 @@ from app.services.clinical_assertions import sync_entry_assertions_safely
 from app.services.archival import refresh_archival_summaries
 from app.services.highlights import create_highlight_record
 from app.services.glance import sync_highlight_projection
+from app.services.patient_publications import create_publication_draft
 
 
 def get_or_create_clinic(db: Session, name: str) -> Clinic:
@@ -403,6 +407,21 @@ def seed_demo() -> dict[str, object]:
             source_kind="manual",
             source_reference="self-manual",
         )
+        dosage_source = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.STAFF_NOTE,
+            owner_role=EntryOwnerRole.STAFF,
+            visibility=EntryVisibility.INTERNAL,
+            content="Continue metformin 500 mg twice daily.",
+            created_by_user_id=staff_a.id,
+            created_by_role="staff",
+            request_id="seed-dosage-source",
+            occurred_at=demo_time("2026-08-25T07:30:00"),
+            source_kind="manual",
+            source_reference="synthetic-medication-plan",
+        )
         clinician_section = ensure_entry(
             db,
             clinic=clinic_a,
@@ -573,6 +592,16 @@ def seed_demo() -> dict[str, object]:
             created_by_user_id=None,
             request_id="seed-highlight-conflict",
         )
+        create_publication_draft(
+            db,
+            clinic_id=clinic_a.id,
+            patient_id=patient_a.id,
+            source_entry_id=dosage_source.id,
+            actor=staff_a,
+            actor_role="staff",
+            request_id="seed-publication-dosage",
+            content="Take metformin 1000 mg twice daily.",
+        )
         refresh_archival_summaries(
             db,
             clinic_id=clinic_a.id,
@@ -590,6 +619,9 @@ def seed_demo() -> dict[str, object]:
             "glance_items": db.query(PatientGlanceItem).count(),
             "archival_summaries": db.query(ArchivalSummary).count(),
             "archival_sources": db.query(ArchivalSummarySource).count(),
+            "patient_publications": db.query(PatientPublication).count(),
+            "patient_publication_versions": db.query(PatientPublicationVersion).count(),
+            "patient_publication_evidence": db.query(PatientPublicationEvidence).count(),
         }
         return {
             "clinic_ids": [clinic_a.id, clinic_b.id],

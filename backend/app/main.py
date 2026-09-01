@@ -18,6 +18,7 @@ from app.api.routes.events import router as events_router
 from app.api.routes.gate_b import router as gate_b_router
 from app.api.routes.impressions import router as impressions_router
 from app.api.routes.patients import router as patients_router
+from app.api.routes.patient_publications import router as patient_publications_router
 from app.api.routes.tasks import router as tasks_router
 from app.api.routes.voice import router as voice_router
 from app.config import settings
@@ -70,6 +71,7 @@ def create_app(static_directory: Path | None = None) -> FastAPI:
     application.include_router(auth_router)
     application.include_router(ai_processing_router)
     application.include_router(patients_router)
+    application.include_router(patient_publications_router)
     application.include_router(entries_router)
     application.include_router(events_router)
     application.include_router(gate_b_router)

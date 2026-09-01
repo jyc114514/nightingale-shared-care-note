@@ -1,3 +1,3 @@
 """Application-visible Alembic head used to fail closed in operational scripts."""
 
-CURRENT_MIGRATION_HEAD = "0013_ai_provider_resilience"
+CURRENT_MIGRATION_HEAD = "0014_patient_publications"

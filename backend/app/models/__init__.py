@@ -33,6 +33,10 @@ from app.models.enums import (
     HighlightItemKind,
     HighlightStatus,
     MembershipRole,
+    PatientPublicationSeverity,
+    PatientPublicationState,
+    PublicationEvidenceStatus,
+    PublicationEvidenceType,
     SourceKind,
     TaskStatus,
 )
@@ -41,6 +45,11 @@ from app.models.entry_version import EntryVersion
 from app.models.highlight import Highlight
 from app.models.membership import ClinicMembership
 from app.models.patient import Patient, PatientUserLink
+from app.models.patient_publication import (
+    PatientPublication,
+    PatientPublicationEvidence,
+    PatientPublicationVersion,
+)
 from app.models.patient_glance_item import PatientGlanceItem
 from app.models.mention import Mention
 from app.models.task import Task
@@ -87,6 +96,13 @@ __all__ = [
     "HighlightStatus",
     "ImportanceProfile",
     "MembershipRole",
+    "PatientPublication",
+    "PatientPublicationEvidence",
+    "PatientPublicationSeverity",
+    "PatientPublicationState",
+    "PatientPublicationVersion",
+    "PublicationEvidenceStatus",
+    "PublicationEvidenceType",
     "Mention",
     "Patient",
     "PatientGlanceItem",

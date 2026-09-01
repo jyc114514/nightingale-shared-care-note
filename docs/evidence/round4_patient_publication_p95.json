@@ -1,0 +1,22 @@
+{
+  "commit": "4faff34",
+  "database": "file-backed SQLite local approximation",
+  "endpoint": "GET /patients/{patient_id}/published-care",
+  "generated_at": "2026-09-01T18:14:00.589098+00:00",
+  "metrics": {
+    "concurrency": 10,
+    "error_count": 0,
+    "max_ms": 80.669,
+    "p50_ms": 35.881,
+    "p95_ms": 49.82,
+    "p99_ms": 71.812,
+    "request_count": 1000,
+    "response_item_count": 1,
+    "warmup_error_count": 0,
+    "warmup_requests": 50
+  },
+  "python": "3.10.20",
+  "target_met": true,
+  "target_p95_ms": 300,
+  "transport": "real TCP HTTP via Uvicorn and httpx.Client"
+}

@@ -85,6 +85,32 @@ class TaskStatus(str, Enum):
     DONE = "done"
 
 
+class PatientPublicationState(str, Enum):
+    DRAFT = "draft"
+    CLINICIAN_APPROVED = "clinician_approved"
+    PUBLISHED = "published"
+    RECALLED = "recalled"
+    SUPERSEDED = "superseded"
+    ENTERED_IN_ERROR = "entered_in_error"
+
+
+class PatientPublicationSeverity(str, Enum):
+    GENERAL = "general"
+    MEDICATION_DOSAGE = "medication_dosage"
+
+
+class PublicationEvidenceType(str, Enum):
+    MEDICATION_DOSAGE = "medication_dosage"
+
+
+class PublicationEvidenceStatus(str, Enum):
+    MATCHED = "matched"
+    MISMATCH = "mismatch"
+    AMBIGUOUS = "ambiguous"
+    UNSUPPORTED = "unsupported"
+    MISSING = "missing"
+
+
 class AssertionDomain(str, Enum):
     ALLERGY = "allergy"
 
