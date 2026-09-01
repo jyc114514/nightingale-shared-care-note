@@ -663,3 +663,249 @@ test("Demo preview uses real internal viewports without recursive controls", asy
   await page.getByRole("button", { name: "Close preview" }).click();
   await expect(page.getByTestId("demo-preview")).toHaveCount(0);
 });
+
+test("Scenario D - protected allergy conflict stays reviewable and private", async ({
+  page,
+  browser,
+}, testInfo) => {
+  await login(page, "staff.a@clinic-a.test");
+  const patientId = await page.locator("#patient-select").inputValue();
+  const conflictResponse = await backendRequest(
+    page,
+    "/patients/" + patientId + "/clinical-conflicts",
+  );
+  expect(conflictResponse.status).toBe(200);
+  const conflicts = conflictResponse.body as JsonObject[];
+  const openConflict = conflicts.find(
+    (candidate) => candidate.status === "open",
+  );
+  expect(openConflict).toBeDefined();
+  const conflictId = String(openConflict?.id);
+  const positiveAssertion = openConflict?.positive_assertion as JsonObject;
+  const negativeAssertion = openConflict?.negative_assertion as JsonObject;
+
+  const protectedCard = page.locator(
+    '[data-testid="glance-item"][data-protected-conflict="true"]',
+  );
+  await expect(protectedCard).toHaveCount(1);
+  await expect(protectedCard).toContainText("Conflicting allergy information");
+  await expect(protectedCard).toContainText("Needs clinician review");
+  await expect(protectedCard).toContainText("Protected attention");
+  await expect(
+    protectedCard.getByRole("button", { name: "Accept" }),
+  ).toHaveCount(0);
+  await expect(
+    protectedCard.getByRole("button", { name: "Reject" }),
+  ).toHaveCount(0);
+  await protectedCard.getByTestId("ranking-details").click();
+  await expect(protectedCard).toContainText("Before minimum");
+  await expect(protectedCard).toContainText("Minimum display priority");
+  await expect(protectedCard).toContainText("Minimum applied");
+  await protectedCard.getByRole("button", { name: "Pin" }).click();
+  await expect(page.getByTestId("protected-feedback-notice")).toContainText(
+    "does not train preference ranking while unresolved",
+  );
+
+  await protectedCard.getByRole("button", { name: "Review conflict" }).click();
+  const staffDrawer = page.getByTestId("clinical-conflict-drawer");
+  await expect(staffDrawer).toBeVisible();
+  await expect(staffDrawer).toContainText("Allergy conflict review");
+  await expect(
+    staffDrawer.getByTestId("clinical-assertion-present"),
+  ).toBeVisible();
+  await expect(
+    staffDrawer.getByTestId("clinical-assertion-absent"),
+  ).toBeVisible();
+  await expect(staffDrawer).toContainText("Read-only for Staff");
+  await expect(
+    staffDrawer.getByRole("button", { name: "Record clinical decision" }),
+  ).toHaveCount(0);
+
+  const reported = staffDrawer.getByTestId("clinical-assertion-present");
+  await reported.getByRole("button", { name: /View source/ }).click();
+  const source = page.getByRole("region", {
+    name: "Original source",
+    exact: true,
+  });
+  await expect(source).toBeVisible();
+  const reportedSourceEntryId = await source.getAttribute(
+    "data-source-entry-id",
+  );
+  const reportedQuote = await source.getByTestId("source-quote").textContent();
+  expect(reportedSourceEntryId).toBeTruthy();
+  expect(reportedQuote).toBe("penicillin allergy");
+  await expect(
+    page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
+  ).toHaveText(reportedQuote ?? "");
+
+  const denied = staffDrawer.getByTestId("clinical-assertion-absent");
+  await denied.getByRole("button", { name: /View source/ }).click();
+  await expect(source).not.toHaveAttribute(
+    "data-source-entry-id",
+    reportedSourceEntryId ?? "",
+  );
+  const deniedQuote = await source.getByTestId("source-quote").textContent();
+  expect(deniedQuote).toBe("no known drug allergies");
+  await expect(
+    page.getByTestId("immutable-timeline-source").getByTestId("source-quote"),
+  ).toHaveText(deniedQuote ?? "");
+  await page.screenshot({
+    path: screenshotPath(
+      testInfo.project.name,
+      "scenario-d-conflict-drawer.png",
+    ),
+    fullPage: false,
+  });
+  await page.getByRole("button", { name: "Close conflict review" }).click();
+  await expect(staffDrawer).toHaveCount(0);
+  await page.getByRole("button", { name: "Close source" }).click();
+  await page.close();
+
+  const primaryClinicianContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const clinicianPage = await primaryClinicianContext.newPage();
+  const clinicianContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const secondClinicianPage = await clinicianContext.newPage();
+  try {
+    await login(clinicianPage, "clinician.a@clinic-a.test");
+    await login(secondClinicianPage, "clinician.a@clinic-a.test");
+    const clinicianCard = clinicianPage.locator(
+      '[data-testid="glance-item"][data-protected-conflict="true"]',
+    );
+    const secondClinicianCard = secondClinicianPage.locator(
+      '[data-testid="glance-item"][data-protected-conflict="true"]',
+    );
+    await expect(clinicianCard).toHaveCount(1);
+    await expect(secondClinicianCard).toHaveCount(1);
+    await clinicianCard
+      .getByRole("button", { name: "Review conflict" })
+      .click();
+    await secondClinicianCard
+      .getByRole("button", { name: "Review conflict" })
+      .click();
+    const clinicianDrawer = clinicianPage.getByTestId(
+      "clinical-conflict-drawer",
+    );
+    const secondClinicianDrawer = secondClinicianPage.getByTestId(
+      "clinical-conflict-drawer",
+    );
+    await expect(clinicianDrawer).toBeVisible();
+    await expect(secondClinicianDrawer).toBeVisible();
+    const decision = clinicianDrawer.getByLabel("Clinical decision");
+    const secondDecision =
+      secondClinicianDrawer.getByLabel("Clinical decision");
+    await expect(decision).toHaveValue("needs_more_information");
+    await expect(secondDecision).toHaveValue("needs_more_information");
+    await decision.selectOption("needs_more_information");
+    await secondDecision.selectOption("needs_more_information");
+
+    await Promise.all([
+      clinicianDrawer
+        .getByRole("button", { name: "Record clinical decision" })
+        .click(),
+      secondClinicianDrawer
+        .getByRole("button", { name: "Record clinical decision" })
+        .click(),
+    ]);
+    await expect
+      .poll(
+        async () =>
+          (await secondClinicianPage
+            .getByTestId("clinical-conflict-stale")
+            .count()) +
+          (await clinicianPage.getByTestId("clinical-conflict-stale").count()),
+      )
+      .toBe(1);
+    await expect
+      .poll(
+        async () =>
+          (await secondClinicianPage
+            .getByTestId("clinical-conflict-success")
+            .count()) +
+          (await clinicianPage
+            .getByTestId("clinical-conflict-success")
+            .count()),
+      )
+      .toBe(1);
+    await expect(clinicianDrawer).toBeVisible();
+    await expect(secondClinicianDrawer).toBeVisible();
+    await clinicianPage.screenshot({
+      path: screenshotPath(
+        testInfo.project.name,
+        "scenario-d-conflict-409.png",
+      ),
+      fullPage: false,
+    });
+  } finally {
+    await clinicianContext.close();
+    await primaryClinicianContext.close();
+  }
+
+  const patientContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const patientPage = await patientContext.newPage();
+  const patientRequests: string[] = [];
+  patientPage.on("request", (request) => {
+    if (request.url().includes("127.0.0.1:8000")) {
+      patientRequests.push(request.url());
+    }
+  });
+  try {
+    await login(patientPage, "sarah.patient@clinic-a.test");
+    await expect(patientPage.getByText("Your care summary")).toBeVisible();
+    await expect(
+      patientPage.getByText("Conflicting allergy information"),
+    ).toHaveCount(0);
+    await expect(patientPage.getByText("Needs clinician review")).toHaveCount(
+      0,
+    );
+    await expect(
+      patientPage.getByTestId("clinical-conflict-drawer"),
+    ).toHaveCount(0);
+    expect(
+      patientRequests.some((url) =>
+        /clinical-conflicts|clinical-assertions|glance-impressions/.test(url),
+      ),
+    ).toBe(false);
+
+    const patientConflictList = await backendRequest(
+      patientPage,
+      "/patients/" + patientId + "/clinical-conflicts",
+    );
+    expect(patientConflictList.status).toBe(403);
+    const patientConflictDetail = await backendRequest(
+      patientPage,
+      "/clinical-conflicts/" + conflictId,
+    );
+    expect(patientConflictDetail.status).toBe(403);
+    const patientImpressionSummary = await backendRequest(
+      patientPage,
+      "/patients/" + patientId + "/glance-impressions/summary",
+    );
+    expect(patientImpressionSummary.status).toBe(403);
+    const patientAssertionSource = await backendRequest(
+      patientPage,
+      "/clinical-assertions/" + String(positiveAssertion.id) + "/source",
+    );
+    expect(patientAssertionSource.status).toBe(403);
+    const patientNegativeAssertionSource = await backendRequest(
+      patientPage,
+      "/clinical-assertions/" + String(negativeAssertion.id) + "/source",
+    );
+    expect(patientNegativeAssertionSource.status).toBe(403);
+    await patientPage.screenshot({
+      path: screenshotPath(
+        testInfo.project.name,
+        "scenario-d-patient-privacy.png",
+      ),
+      fullPage: false,
+    });
+    expect(conflictId).toBeTruthy();
+  } finally {
+    await patientContext.close();
+  }
+});
