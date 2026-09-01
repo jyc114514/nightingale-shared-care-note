@@ -991,6 +991,13 @@ test("Scenario E - provider outage degrades AI without erasing care context", as
   await expect(glance.getByTestId("glance-item").first()).toBeVisible();
   const initialGlanceCount = await glance.getByTestId("glance-item").count();
   expect(initialGlanceCount).toBeGreaterThan(0);
+  await page.screenshot({
+    path: screenshotPath(
+      testInfo.project.name,
+      "scenario-e-degraded-initial.png",
+    ),
+    fullPage: false,
+  });
 
   await panel.getByRole("button", { name: "Create suggestion" }).click();
   const failedJob = page.getByTestId("ai-job-result");
@@ -1013,12 +1020,20 @@ test("Scenario E - provider outage degrades AI without erasing care context", as
   await expect(glance.getByTestId("glance-item")).toHaveCount(
     initialGlanceCount,
   );
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "scenario-e-circuit-open.png"),
+    fullPage: false,
+  });
 
   const sourceCard = page.getByTestId("glance-item").first();
   await sourceCard.getByRole("button", { name: "Open source" }).click();
   await expect(
     page.getByRole("region", { name: "Original source", exact: true }),
   ).toBeVisible();
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "scenario-e-source-outage.png"),
+    fullPage: false,
+  });
   await page.getByRole("button", { name: "Close source" }).click();
   const staff = await staffEntry(page);
   const timelineEntry = page.getByTestId("timeline-entry-" + staff.id);
