@@ -115,7 +115,8 @@ floor. Ordinary feedback remains clinic-scoped, idempotent, and bounded to plus/
 
 Backend environment: existing ai_env, Python 3.10.20. No dependency manifest was changed.
 
-- Targeted assertion/conflict tests: 20 passed.
+- Targeted clinical assertion/conflict tests: 16 passed; four migration tests in the same
+  targeted command also passed (20 combined).
 - Full backend suite: 101 passed.
 - Coverage: 89% total with pytest --cov=app.
 - Ruff check: passed for app, tests, and migrations.
