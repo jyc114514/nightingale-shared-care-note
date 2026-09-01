@@ -1,6 +1,7 @@
 """Real application tests for allergy conflicts, safety floors, and adjudication."""
 
 from dataclasses import dataclass
+from hashlib import sha256
 
 import httpx
 import pytest
@@ -131,6 +132,80 @@ async def test_conflict_has_dual_provenance_protected_glance_floor_and_safe_api(
         for audit in audit_rows
         for field in ("quote", "content", "raw_text")
     )
+
+
+@pytest.mark.asyncio
+async def test_assertion_source_endpoint_revalidates_exact_span_after_source_edit(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    fixture = make_conflict(db_session, demo_data)
+    await login(client, "staff@clinic-a.test")
+    first = await client.get(f"/clinical-assertions/{fixture.positive.id}/source")
+    assert first.status_code == 200, first.text
+    body = first.json()
+    assert body["source_entry_id"] == fixture.positive.source_entry_id
+    assert body["source_version_id"] == fixture.positive.source_version_id
+    assert body["version_content"] == "Nurse records penicillin allergy."
+    assert body["quote"] == "penicillin allergy"
+    assert body["quote_sha256"] == sha256(body["quote"].encode("utf-8")).hexdigest()
+    assert body["source_is_current_version"] is True
+
+    updated = update_entry_content(
+        db_session,
+        entry=fixture.positive_entry,
+        expected_version=1,
+        content="Nurse records a penicillin allergy.",
+        actor_user_id=demo_data.staff_a.id,
+        actor_role="staff",
+        request_id="assertion-source-edit",
+    )
+    assert updated.current_version == 2
+    old_source = await client.get(f"/clinical-assertions/{fixture.positive.id}/source")
+    assert old_source.status_code == 200, old_source.text
+    old_body = old_source.json()
+    assert old_body["version_content"] == "Nurse records penicillin allergy."
+    assert old_body["source_is_current_version"] is False
+    assert old_body["version_number"] == 1
+
+
+@pytest.mark.asyncio
+async def test_corrupt_assertion_provenance_returns_safe_error_without_quote_details(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    fixture = make_conflict(db_session, demo_data)
+    assertion = db_session.get(ClinicalAssertion, fixture.positive.id)
+    assert assertion is not None
+    assertion.quote = "forged clinical content"
+    db_session.commit()
+    await login(client, "staff@clinic-a.test")
+    response = await client.get(f"/clinical-assertions/{fixture.positive.id}/source")
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Clinical assertion source could not be verified"
+    assert "forged clinical content" not in response.text
+
+
+@pytest.mark.asyncio
+async def test_generic_highlight_review_cannot_handle_clinical_conflict(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    fixture = make_conflict(db_session, demo_data)
+    await login(client, "clinician@clinic-a.test")
+    response = await client.patch(
+        f"/highlights/{fixture.highlight.id}/review",
+        json={"status": "accepted"},
+    )
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Clinical conflicts require adjudication"
+    db_session.expire_all()
+    highlight = db_session.get(Highlight, fixture.highlight.id)
+    assert highlight is not None
+    assert highlight.status == "conflict_review"
 
 
 @pytest.mark.asyncio

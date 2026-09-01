@@ -116,13 +116,14 @@ def ensure_entry(
     source_kind: str | None = None,
     source_reference: str | None = None,
 ) -> Entry:
-    entry = db.scalar(
-        select(Entry).where(
-            Entry.patient_id == patient.id,
-            Entry.entry_type == entry_type.value,
-            Entry.created_by_user_id == created_by_user_id,
-        )
+    entry_query = select(Entry).where(
+        Entry.patient_id == patient.id,
+        Entry.entry_type == entry_type.value,
+        Entry.created_by_user_id == created_by_user_id,
     )
+    if source_reference is not None:
+        entry_query = entry_query.where(Entry.source_reference == source_reference)
+    entry = db.scalar(entry_query)
     if entry is not None:
         written_version: EntryVersion | None = None
         current_version = db.scalar(
@@ -461,6 +462,36 @@ def seed_demo() -> dict[str, object]:
             occurred_at=demo_time("2026-08-20T10:00:00"),
             source_kind="patient_ai_session",
             source_reference="synthetic-patient-session-2026-08-20",
+        )
+        _allergy_nurse = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.STAFF_NOTE,
+            owner_role=EntryOwnerRole.STAFF,
+            visibility=EntryVisibility.INTERNAL,
+            content="Patient reports a penicillin allergy.",
+            created_by_user_id=staff_a.id,
+            created_by_role="staff",
+            request_id="seed-allergy-nurse",
+            occurred_at=demo_time("2026-08-24T09:00:00"),
+            source_kind="manual",
+            source_reference="synthetic-allergy-nurse-note",
+        )
+        _allergy_patient = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.AI_PATIENT_SESSION_SUMMARY,
+            owner_role=EntryOwnerRole.SYSTEM,
+            visibility=EntryVisibility.INTERNAL,
+            content="I have no known drug allergies.",
+            created_by_user_id=None,
+            created_by_role="system",
+            request_id="seed-allergy-patient",
+            occurred_at=demo_time("2026-08-24T09:05:00"),
+            source_kind="patient_ai_session",
+            source_reference="synthetic-allergy-patient-session",
         )
         root_comment = ensure_comment(db, clinic_a, patient_a, ai_session, clinician_a)
         ensure_reply(

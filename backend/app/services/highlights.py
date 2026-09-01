@@ -158,10 +158,10 @@ def review_highlight(
 ) -> Highlight:
     if status is HighlightStatus.SUGGESTED:
         raise HighlightValidationError("Review status must be a human decision")
+    if highlight.clinical_conflict_id is not None:
+        raise HighlightValidationError("Clinical conflicts require adjudication")
     if highlight.safety_class is not None:
-        raise HighlightValidationError(
-            "Protected safety highlights require clinical conflict adjudication"
-        )
+        raise HighlightValidationError("Protected safety highlights require adjudication")
     reviewed_at = utcnow()
     highlight.status = status.value
     highlight.reviewed_by_user_id = reviewer_user_id

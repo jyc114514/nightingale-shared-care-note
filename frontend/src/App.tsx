@@ -15,6 +15,10 @@ import { I18nProvider, LanguageToggle, useI18n } from "./i18n";
 import type { Locale, Translate, TranslationKey } from "./i18n/types";
 import type {
   Comment,
+  ClinicalAssertion,
+  ClinicalAssertionSource,
+  ClinicalConflict,
+  ClinicalConflictResolution,
   PatientContext,
   Conflict,
   Diff,
@@ -123,6 +127,13 @@ function formatDate(value: string, locale: Locale = "en") {
   }).format(new Date(value));
 }
 
+function createOpaqueIdempotencyKey(prefix: string) {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    prefix + "-" + Date.now() + "-" + Math.random().toString(36).slice(2)
+  );
+}
+
 export function scrollToElement(element: HTMLElement | null) {
   if (!element || typeof element.scrollIntoView !== "function") return;
   const reducedMotion = window.matchMedia?.(
@@ -206,6 +217,18 @@ export function productizeProvenanceSource(source: ProvenanceSource) {
     start_offset: source.start_offset + offsetDelta,
     end_offset: source.end_offset + offsetDelta,
   };
+}
+
+type SourceSelection = ProvenanceSource | ClinicalAssertionSource;
+
+function isAssertionSource(
+  source: SourceSelection,
+): source is ClinicalAssertionSource {
+  return "assertion" in source;
+}
+
+function sourceHighlightId(source: SourceSelection | null) {
+  return source && !isAssertionSource(source) ? source.highlight.id : null;
 }
 
 export function exactCodepointSpan(
@@ -923,7 +946,7 @@ function SourcePanel({
   source,
   onClose,
 }: {
-  source: ProvenanceSource | null;
+  source: SourceSelection | null;
   onClose: () => void;
 }) {
   const { locale, t } = useI18n();
@@ -945,7 +968,9 @@ function SourcePanel({
       </section>
     );
   }
-  const displaySource = productizeProvenanceSource(source);
+  const displaySource = isAssertionSource(source)
+    ? source
+    : productizeProvenanceSource(source);
   return (
     <section
       className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5"
@@ -1032,9 +1057,11 @@ function SourcePanel({
   );
 }
 
-function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
+function ImmutableTimelineSource({ source }: { source: SourceSelection }) {
   const { t } = useI18n();
-  const displaySource = productizeProvenanceSource(source);
+  const displaySource = isAssertionSource(source)
+    ? source
+    : productizeProvenanceSource(source);
   return (
     <section
       className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
@@ -1068,6 +1095,253 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
           />
         </span>
       </div>
+    </section>
+  );
+}
+
+const clinicalConflictStatusKeys: Record<
+  ClinicalConflict["status"],
+  TranslationKey
+> = {
+  open: "conflict.statusOpen",
+  adjudicated: "conflict.statusAdjudicated",
+  superseded: "conflict.statusSuperseded",
+};
+
+const assertionVerificationKeys: Record<
+  ClinicalAssertion["verification_status"],
+  TranslationKey
+> = {
+  unconfirmed: "conflict.unconfirmed",
+  confirmed: "conflict.confirmed",
+  refuted: "conflict.refuted",
+  entered_in_error: "conflict.enteredInErrorStatus",
+};
+
+function ClinicalAssertionSide({
+  assertion,
+  source,
+  label,
+  onViewSource,
+}: {
+  assertion: ClinicalAssertion;
+  source?: ClinicalAssertionSource;
+  label: string;
+  onViewSource: (assertionId: string) => void;
+}) {
+  const { locale, t } = useI18n();
+  return (
+    <article
+      className="rounded-2xl border border-blue-100 bg-slate-50 p-4"
+      data-testid={"clinical-assertion-" + assertion.polarity}
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+        {label}
+      </p>
+      <p className="mt-2 font-semibold text-slate-900">
+        {t("conflict.concept")}
+      </p>
+      <dl className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
+        <div>
+          <dt className="text-slate-500">{t("conflict.verificationLabel")}</dt>
+          <dd className="font-semibold text-slate-800">
+            {t(assertionVerificationKeys[assertion.verification_status])}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-slate-500">{t("conflict.assertedByLabel")}</dt>
+          <dd className="font-semibold text-slate-800">
+            {t(roleKeys[assertion.asserted_by_role] ?? "role.system")}
+          </dd>
+        </div>
+        {source && (
+          <div>
+            <dt className="text-slate-500">{t("conflict.sourceLabel")}</dt>
+            <dd className="font-semibold text-slate-800">
+              {t(entryTypeKeys[source.entry_type] ?? "entryType.systemEvent")} ·{" "}
+              {t("source.version", { version: source.version_number })} ·{" "}
+              {formatDate(source.occurred_at, locale)}
+            </dd>
+          </div>
+        )}
+      </dl>
+      <blockquote className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-800">
+        {assertion.quote}
+      </blockquote>
+      <Button
+        kind="secondary"
+        onClick={() => onViewSource(assertion.id)}
+        ariaLabel={t("conflict.viewSource") + ": " + label}
+      >
+        {t("conflict.viewSource")}
+      </Button>
+    </article>
+  );
+}
+
+function ClinicalConflictReviewPanel({
+  conflict,
+  sources,
+  role,
+  loading,
+  error,
+  stale,
+  success,
+  busy,
+  resolution,
+  onResolution,
+  onSubmit,
+  onViewSource,
+}: {
+  conflict: ClinicalConflict | null;
+  sources: Record<string, ClinicalAssertionSource>;
+  role: string;
+  loading: boolean;
+  error: string | null;
+  stale: boolean;
+  success: string | null;
+  busy: boolean;
+  resolution: ClinicalConflictResolution;
+  onResolution: (resolution: ClinicalConflictResolution) => void;
+  onSubmit: () => void;
+  onViewSource: (assertionId: string) => void;
+}) {
+  const { t } = useI18n();
+  if (!conflict) {
+    return (
+      <div className="space-y-3" data-testid="clinical-conflict-panel">
+        {loading && (
+          <p
+            className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800"
+            role="status"
+          >
+            {t("conflict.loading")}
+          </p>
+        )}
+        {error && (
+          <p
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+  const positiveSource = sources[conflict.positive_assertion.id];
+  const negativeSource = sources[conflict.negative_assertion.id];
+  const confirmationKey =
+    resolution === "needs_more_information"
+      ? "conflict.confirmationMoreInfo"
+      : resolution === "confirmed_absent"
+        ? "conflict.confirmationAbsent"
+        : "conflict.confirmation";
+  return (
+    <section className="space-y-4" data-testid="clinical-conflict-panel">
+      {error && (
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid={
+            stale ? "clinical-conflict-stale" : "clinical-conflict-error"
+          }
+        >
+          {error}
+        </p>
+      )}
+      {success && (
+        <p
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+          role="status"
+          data-testid="clinical-conflict-success"
+        >
+          {success}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="amber">
+          {t(clinicalConflictStatusKeys[conflict.status])}
+        </Pill>
+        <Pill tone="slate">
+          {t("conflict.version", { version: conflict.version })}
+        </Pill>
+      </div>
+      <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+        {t("conflict.explanation")}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ClinicalAssertionSide
+          assertion={conflict.positive_assertion}
+          source={positiveSource}
+          label={t("conflict.reported")}
+          onViewSource={onViewSource}
+        />
+        <ClinicalAssertionSide
+          assertion={conflict.negative_assertion}
+          source={negativeSource}
+          label={t("conflict.denied")}
+          onViewSource={onViewSource}
+        />
+      </div>
+      <p className="rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
+        {t("conflict.boundary")}
+      </p>
+      {role !== "clinician" ? (
+        <p
+          className="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+          data-testid="clinical-conflict-read-only"
+        >
+          {t("conflict.staffReadOnly")}
+        </p>
+      ) : conflict.status === "open" ? (
+        <form
+          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit();
+          }}
+        >
+          <label className="block text-sm font-semibold text-slate-700">
+            {t("conflict.resolution")}
+            <select
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              value={resolution}
+              onChange={(event) =>
+                onResolution(event.target.value as ClinicalConflictResolution)
+              }
+              aria-label={t("conflict.resolution")}
+              disabled={busy}
+            >
+              <option value="confirmed_present">
+                {t("conflict.confirmPresent")}
+              </option>
+              <option value="confirmed_absent">
+                {t("conflict.confirmAbsent")}
+              </option>
+              <option value="needs_more_information">
+                {t("conflict.moreInfo")}
+              </option>
+              <option value="entered_in_error">
+                {t("conflict.enteredError")}
+              </option>
+            </select>
+          </label>
+          <p className="text-xs leading-5 text-slate-500">
+            {t(confirmationKey)}
+          </p>
+          <Button type="submit" kind="primary" disabled={busy}>
+            {busy ? t("conflict.recording") : t("conflict.record")}
+          </Button>
+        </form>
+      ) : (
+        <p
+          className="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+          role="status"
+        >
+          {t("conflict.recorded")}
+        </p>
+      )}
     </section>
   );
 }
@@ -2452,9 +2726,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [source, setSource] = useState<ProvenanceSource | null>(null);
+  const [source, setSource] = useState<SourceSelection | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [focusEntryId, setFocusEntryId] = useState<string | null>(null);
+  const [conflictDrawerId, setConflictDrawerId] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<ClinicalConflict | null>(null);
+  const [conflictSources, setConflictSources] = useState<
+    Record<string, ClinicalAssertionSource>
+  >({});
+  const [conflictLoading, setConflictLoading] = useState(false);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const [conflictStale, setConflictStale] = useState(false);
+  const [conflictSuccess, setConflictSuccess] = useState<string | null>(null);
+  const [conflictBusy, setConflictBusy] = useState(false);
+  const [conflictResolution, setConflictResolution] =
+    useState<ClinicalConflictResolution>("needs_more_information");
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const [commentsEntryId, setCommentsEntryId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -2493,6 +2780,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const translationRef = useRef(t);
   const taskTitleInputRef = useRef<HTMLInputElement>(null);
   const taskReturnFocusRef = useRef<HTMLElement | null>(null);
+  const conflictResolutionRef = useRef<HTMLSelectElement>(null);
+  const conflictRequestRef = useRef(0);
+  const impressionSignatureRef = useRef<string | null>(null);
+  const patientDataReadyRef = useRef(false);
   commentsEntryIdRef.current = commentsEntryId;
   editingEntryIdRef.current = editingEntryId;
   translationRef.current = t;
@@ -2524,6 +2815,18 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     commentsReturnFocusRef.current = null;
     taskReturnFocusRef.current = null;
     setSource(null);
+    conflictRequestRef.current += 1;
+    setConflictDrawerId(null);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(false);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictBusy(false);
+    setConflictResolution("needs_more_information");
+    setFeedbackNotice(null);
+    impressionSignatureRef.current = null;
     setContext(null);
     setCollaborators([]);
     setTasks([]);
@@ -2550,11 +2853,13 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setEditingText("");
     setRemoteUpdatePending(false);
     setMutationError(null);
+    patientDataReadyRef.current = false;
   }, [patientId, internal, user.id]);
 
   useEffect(() => {
     if (!patientId) return;
     let active = true;
+    patientDataReadyRef.current = false;
     setLoading(true);
     setLoadError(null);
     const requestedHighlightId = new URLSearchParams(
@@ -2632,11 +2937,56 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         },
       )
       .catch((error) => active && setLoadError(displayError(error, t)))
-      .finally(() => active && setLoading(false));
+      .finally(() => {
+        if (!active) return;
+        patientDataReadyRef.current = true;
+        setLoading(false);
+      });
     return () => {
       active = false;
     };
   }, [patientId, internal, refreshToken]);
+
+  useEffect(() => {
+    if (
+      !internal ||
+      !patientId ||
+      !patientDataReadyRef.current ||
+      loading ||
+      loadError
+    )
+      return;
+    const signature = [
+      patientId,
+      user.id,
+      ...glance.map(
+        (item) =>
+          (item.resource_type ?? "highlight") +
+          ":" +
+          item.id +
+          ":" +
+          item.display_priority +
+          ":" +
+          item.status,
+      ),
+    ].join("|");
+    if (impressionSignatureRef.current === signature) return;
+    impressionSignatureRef.current = signature;
+    const surfacedItems = glance.map((item) => ({
+      resource_type: item.resource_type ?? "highlight",
+      resource_id:
+        item.resource_type === "task" ? (item.task_id ?? item.id) : item.id,
+    }));
+    void api
+      .recordGlanceImpression(patientId, {
+        idempotency_key: createOpaqueIdempotencyKey("glance-impression"),
+        requested_limit: glance.length > 0 ? Math.min(6, glance.length) : 6,
+        surfaced_items: surfacedItems,
+      })
+      .catch(() => {
+        // Impression telemetry is non-blocking and intentionally console-free.
+      });
+  }, [glance, internal, loadError, loading, patientId, user.id]);
 
   useEffect(() => {
     setPinnedItems(new Set());
@@ -2756,6 +3106,93 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const selectedEntry =
     timeline.find((entry) => entry.id === commentsEntryId) ?? null;
 
+  async function loadConflictSources(detail: ClinicalConflict) {
+    const [positive, negative] = await Promise.all([
+      api.assertionSource(detail.positive_assertion.id),
+      api.assertionSource(detail.negative_assertion.id),
+    ]);
+    setConflictSources({
+      [detail.positive_assertion.id]: positive,
+      [detail.negative_assertion.id]: negative,
+    });
+  }
+
+  async function openConflict(conflictId: string) {
+    const requestId = conflictRequestRef.current + 1;
+    conflictRequestRef.current = requestId;
+    setConflictDrawerId(conflictId);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(true);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictResolution("needs_more_information");
+    setSource(null);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("patient", patientId);
+    nextUrl.searchParams.delete("highlight");
+    window.history.replaceState(
+      {},
+      "",
+      nextUrl.pathname + nextUrl.search + nextUrl.hash,
+    );
+    try {
+      const detail = await api.clinicalConflict(conflictId);
+      if (requestId !== conflictRequestRef.current) return;
+      setConflict(detail);
+      setConflictResolution(detail.resolution ?? "needs_more_information");
+      await loadConflictSources(detail);
+    } catch (error) {
+      if (requestId === conflictRequestRef.current) {
+        setConflictError(displayError(error, t));
+      }
+    } finally {
+      if (requestId === conflictRequestRef.current) setConflictLoading(false);
+    }
+  }
+
+  function closeConflict() {
+    conflictRequestRef.current += 1;
+    setConflictDrawerId(null);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(false);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictBusy(false);
+  }
+
+  async function openAssertionSource(assertionId: string) {
+    if (!patientId) return;
+    setSourceLoading(true);
+    setMutationError(null);
+    try {
+      const result = await api.assertionSource(assertionId);
+      setSource(result);
+      setFocusEntryId(result.source_entry_id);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("patient", patientId);
+      nextUrl.searchParams.delete("highlight");
+      window.history.replaceState(
+        {},
+        "",
+        nextUrl.pathname + nextUrl.search + nextUrl.hash,
+      );
+      window.setTimeout(() => {
+        scrollToElement(
+          document.getElementById("timeline-entry-" + result.source_entry_id),
+        );
+      }, 0);
+      window.setTimeout(() => setFocusEntryId(null), 2400);
+    } catch (error) {
+      setMutationError(displayError(error, t));
+    } finally {
+      setSourceLoading(false);
+    }
+  }
+
   async function openSource(item: GlanceItem) {
     setSourceLoading(true);
     setMutationError(null);
@@ -2838,6 +3275,43 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       setMutationError(displayError(error, t));
     } finally {
       setSourceLoading(false);
+    }
+  }
+
+  async function submitConflictDecision() {
+    if (!conflict) return;
+    setConflictBusy(true);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    try {
+      const updated = await api.adjudicateClinicalConflict(
+        conflict.id,
+        conflict.version,
+        conflictResolution,
+      );
+      setConflict(updated);
+      setConflictResolution(updated.resolution ?? "needs_more_information");
+      await loadConflictSources(updated);
+      setConflictSuccess(t("conflict.recorded"));
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setConflictError(t("conflict.stale"));
+        setConflictStale(true);
+        try {
+          const latest = await api.clinicalConflict(conflict.id);
+          setConflict(latest);
+          setConflictResolution(latest.resolution ?? "needs_more_information");
+          await loadConflictSources(latest);
+        } catch (refreshError) {
+          setConflictError(displayError(refreshError, t));
+        }
+      } else {
+        setConflictError(displayError(error, t));
+      }
+    } finally {
+      setConflictBusy(false);
     }
   }
 
@@ -3154,7 +3628,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       await api.reviewHighlight(item.id, status);
       setRefreshToken((value) => value + 1);
-      if (source?.highlight.id === item.id) {
+      if (sourceHighlightId(source) === item.id) {
         setSource(null);
         window.history.replaceState({}, "", "?patient=" + patientId);
       }
@@ -3169,11 +3643,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setFeedbackBusyId(item.id);
     setMutationError(null);
     try {
-      await api.feedback(
+      const result = await api.feedback(
         item.id,
         eventType,
         `ui:${eventType}:${item.id}:${Date.now()}`,
       );
+      if (result.applied_to_profile === false) {
+        setFeedbackNotice(t("conflict.feedbackNotice"));
+      } else {
+        setFeedbackNotice(null);
+      }
       setPinnedItems((current) => {
         const next = new Set(current);
         if (eventType === "pinned") next.add(item.id);
@@ -3436,191 +3915,274 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                   {t("top.count", { count: glance.length })}
                 </p>
               </div>
+              {feedbackNotice && (
+                <p
+                  className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"
+                  role="status"
+                  aria-live="polite"
+                  data-testid="protected-feedback-notice"
+                >
+                  {feedbackNotice}
+                </p>
+              )}
               {glance.length === 0 ? (
                 <p className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-white/70 p-5 text-sm text-slate-500">
                   {t("top.empty")}
                 </p>
               ) : (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {glance.map((item) => (
-                    <article
-                      key={item.id}
-                      data-testid="glance-item"
-                      className="rounded-2xl border border-white bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Pill
-                            tone={
-                              item.status === "suggested" ||
-                              item.status === "conflict_review"
-                                ? "amber"
-                                : "green"
-                            }
-                          >
-                            {t(statusKeys[item.status] ?? "status.accepted")}
-                          </Pill>
-                          <Pill
-                            tone={
-                              item.item_kind === "action" ||
-                              item.item_kind === "flag"
-                                ? "amber"
-                                : "slate"
-                            }
-                          >
-                            {t(
-                              itemKindKeys[item.item_kind] ??
-                                "itemKind.information",
+                  {glance.map((item) => {
+                    const isProtectedConflict =
+                      item.clinical_conflict_id !== null &&
+                      item.clinical_conflict_id !== undefined;
+                    return (
+                      <article
+                        key={item.id}
+                        data-testid="glance-item"
+                        data-protected-conflict={
+                          isProtectedConflict || undefined
+                        }
+                        className="rounded-2xl border border-white bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Pill
+                              tone={
+                                item.status === "suggested" ||
+                                item.status === "conflict_review"
+                                  ? "amber"
+                                  : "green"
+                              }
+                            >
+                              {t(statusKeys[item.status] ?? "status.accepted")}
+                            </Pill>
+                            <Pill
+                              tone={
+                                item.item_kind === "action" ||
+                                item.item_kind === "flag"
+                                  ? "amber"
+                                  : "slate"
+                              }
+                            >
+                              {t(
+                                itemKindKeys[item.item_kind] ??
+                                  "itemKind.information",
+                              )}
+                            </Pill>
+                            {isProtectedConflict && (
+                              <>
+                                <Pill tone="amber">
+                                  {t("conflict.cardTitle")}
+                                </Pill>
+                                <Pill tone="amber">
+                                  {t("conflict.needsReview")}
+                                </Pill>
+                              </>
                             )}
-                          </Pill>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400">
-                          {t("top.priority", {
-                            priority: item.display_priority,
-                          })}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
-                        {item.content_summary}
-                      </p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">
-                        {item.risk_reason}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        <Pill tone={item.risk_level ? "red" : "slate"}>
-                          {item.risk_level
-                            ? t("top.explicitRisk", { risk: item.risk_level })
-                            : t("top.noRisk")}
-                        </Pill>
-                        <span
-                          className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
-                          data-testid="glance-action"
-                        >
-                          {t("top.action", {
-                            label: item.action_label ?? t("top.noActionLabel"),
-                            state: t(
-                              actionStateKeys[item.action_state] ??
-                                "actionState.notApplicable",
-                            ),
-                          })}
-                        </span>
-                      </div>
-                      <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
-                        <summary
-                          className="cursor-pointer font-semibold text-slate-700"
-                          data-testid="ranking-details"
-                        >
-                          {t("ranking.why")}{" "}
-                          <span className="font-normal text-slate-500">
-                            {t("ranking.disclaimer")}
-                          </span>
-                        </summary>
-                        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
-                          <dt>{t("ranking.base")}</dt>
-                          <dd className="text-right font-semibold">
-                            {item.base_priority}
-                          </dd>
-                          <dt>{t("ranking.recency")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.recency_contribution}
-                          </dd>
-                          <dt>{t("ranking.explicitRisk")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.explicit_risk_contribution}
-                          </dd>
-                          <dt>{t("ranking.openAction")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.unresolved_action_contribution}
-                          </dd>
-                          <dt>{t("ranking.confirmation")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.clinician_confirmation_contribution}
-                          </dd>
-                          <dt>{t("ranking.adaptive")}</dt>
-                          <dd className="text-right font-semibold">
-                            {item.adaptive_feedback_adjustment >= 0 ? "+" : ""}
-                            {item.adaptive_feedback_adjustment}
-                          </dd>
-                          <dt className="font-semibold text-slate-800">
-                            {t("ranking.final")}
-                          </dt>
-                          <dd className="text-right font-bold text-blue-700">
-                            {item.display_priority}
-                          </dd>
-                        </dl>
-                      </details>
-                      <p className="mt-3 text-xs font-semibold text-blue-700">
-                        {t(
-                          sourceLabelKeys[item.source_label] ??
-                            "sourceKind.manual",
-                        )}
-                      </p>
-                      {item.resource_type === "task" &&
-                        item.assigned_to_display_name && (
-                          <p className="mt-2 text-xs text-slate-500">
-                            {t("task.assignedTo", {
-                              name: item.assigned_to_display_name,
+                          </div>
+                          <span className="text-xs font-semibold text-slate-400">
+                            {t("top.priority", {
+                              priority: item.display_priority,
                             })}
-                          </p>
-                        )}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {item.resource_type === "task" && item.task_id ? (
-                          <Button
-                            kind="secondary"
-                            onClick={() => focusTask(item.task_id ?? "")}
-                          >
-                            {t("button.openTask")}
-                          </Button>
-                        ) : (
-                          <Button
-                            kind="secondary"
-                            onClick={() => void openSource(item)}
-                            disabled={sourceLoading}
-                          >
-                            {t("button.openSource")}
-                          </Button>
-                        )}
-                        {role !== "admin" && (
-                          <Button
-                            kind="quiet"
-                            onClick={() =>
-                              void sendFeedback(
-                                item,
-                                pinnedItems.has(item.id)
-                                  ? "unpinned"
-                                  : "pinned",
-                              )
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
+                          {item.content_summary}
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          {isProtectedConflict
+                            ? t("conflict.floorNotice")
+                            : item.risk_reason}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <Pill
+                            tone={
+                              isProtectedConflict
+                                ? "amber"
+                                : item.risk_level
+                                  ? "red"
+                                  : "slate"
                             }
-                            disabled={feedbackBusyId === item.id}
                           >
-                            {pinnedItems.has(item.id)
-                              ? t("button.unpin")
-                              : t("button.pin")}
-                          </Button>
-                        )}
-                        {role === "clinician" &&
-                          (item.status === "suggested" ||
-                            item.status === "conflict_review") && (
-                            <>
-                              <Button
-                                kind="primary"
-                                onClick={() => void review(item, "accepted")}
-                                disabled={mutationBusy}
-                              >
-                                {t("button.accept")}
-                              </Button>
-                              <Button
-                                kind="danger"
-                                onClick={() => void review(item, "rejected")}
-                                disabled={mutationBusy}
-                              >
-                                {t("button.reject")}
-                              </Button>
-                            </>
+                            {isProtectedConflict
+                              ? t("conflict.protectedAttention")
+                              : item.risk_level
+                                ? t("top.explicitRisk", {
+                                    risk: item.risk_level,
+                                  })
+                                : t("top.noRisk")}
+                          </Pill>
+                          <span
+                            className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
+                            data-testid="glance-action"
+                          >
+                            {t("top.action", {
+                              label:
+                                item.action_label ?? t("top.noActionLabel"),
+                              state: t(
+                                actionStateKeys[item.action_state] ??
+                                  "actionState.notApplicable",
+                              ),
+                            })}
+                          </span>
+                        </div>
+                        <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                          <summary
+                            className="cursor-pointer font-semibold text-slate-700"
+                            data-testid="ranking-details"
+                          >
+                            {t("ranking.why")}{" "}
+                            <span className="font-normal text-slate-500">
+                              {isProtectedConflict
+                                ? t("conflict.protectedAttention")
+                                : t("ranking.disclaimer")}
+                            </span>
+                          </summary>
+                          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
+                            <dt>{t("ranking.base")}</dt>
+                            <dd className="text-right font-semibold">
+                              {item.base_priority}
+                            </dd>
+                            <dt>{t("ranking.recency")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.recency_contribution}
+                            </dd>
+                            <dt>{t("ranking.explicitRisk")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.explicit_risk_contribution}
+                            </dd>
+                            <dt>{t("ranking.openAction")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.unresolved_action_contribution}
+                            </dd>
+                            <dt>{t("ranking.confirmation")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.clinician_confirmation_contribution}
+                            </dd>
+                            <dt>{t("ranking.adaptive")}</dt>
+                            <dd className="text-right font-semibold">
+                              {item.adaptive_feedback_adjustment >= 0
+                                ? "+"
+                                : ""}
+                              {item.adaptive_feedback_adjustment}
+                            </dd>
+                            {isProtectedConflict && (
+                              <>
+                                <dt>{t("ranking.preFloor")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {item.ranking_explanation.pre_floor ??
+                                    item.display_priority}
+                                </dd>
+                                <dt>{t("ranking.safetyFloor")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {item.ranking_explanation.safety_floor ??
+                                    item.safety_floor ??
+                                    0}
+                                </dd>
+                                <dt>{t("ranking.floorApplied")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {(item.ranking_explanation.floor_applied ??
+                                    0) === 1
+                                    ? t("ranking.floorYes")
+                                    : t("ranking.floorNo")}
+                                </dd>
+                              </>
+                            )}
+                            <dt className="font-semibold text-slate-800">
+                              {t("ranking.final")}
+                            </dt>
+                            <dd className="text-right font-bold text-blue-700">
+                              {item.display_priority}
+                            </dd>
+                          </dl>
+                        </details>
+                        <p className="mt-3 text-xs font-semibold text-blue-700">
+                          {t(
+                            sourceLabelKeys[item.source_label] ??
+                              "sourceKind.manual",
                           )}
-                      </div>
-                    </article>
-                  ))}
+                        </p>
+                        {item.resource_type === "task" &&
+                          item.assigned_to_display_name && (
+                            <p className="mt-2 text-xs text-slate-500">
+                              {t("task.assignedTo", {
+                                name: item.assigned_to_display_name,
+                              })}
+                            </p>
+                          )}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {isProtectedConflict && item.clinical_conflict_id && (
+                            <Button
+                              kind="primary"
+                              onClick={() =>
+                                void openConflict(
+                                  item.clinical_conflict_id as string,
+                                )
+                              }
+                              disabled={conflictLoading}
+                            >
+                              {t("conflict.review")}
+                            </Button>
+                          )}
+                          {item.resource_type === "task" && item.task_id ? (
+                            <Button
+                              kind="secondary"
+                              onClick={() => focusTask(item.task_id ?? "")}
+                            >
+                              {t("button.openTask")}
+                            </Button>
+                          ) : (
+                            <Button
+                              kind="secondary"
+                              onClick={() => void openSource(item)}
+                              disabled={sourceLoading}
+                            >
+                              {t("button.openSource")}
+                            </Button>
+                          )}
+                          {role !== "admin" && (
+                            <Button
+                              kind="quiet"
+                              onClick={() =>
+                                void sendFeedback(
+                                  item,
+                                  pinnedItems.has(item.id)
+                                    ? "unpinned"
+                                    : "pinned",
+                                )
+                              }
+                              disabled={feedbackBusyId === item.id}
+                            >
+                              {pinnedItems.has(item.id)
+                                ? t("button.unpin")
+                                : t("button.pin")}
+                            </Button>
+                          )}
+                          {role === "clinician" &&
+                            !isProtectedConflict &&
+                            (item.status === "suggested" ||
+                              item.status === "conflict_review") && (
+                              <>
+                                <Button
+                                  kind="primary"
+                                  onClick={() => void review(item, "accepted")}
+                                  disabled={mutationBusy}
+                                >
+                                  {t("button.accept")}
+                                </Button>
+                                <Button
+                                  kind="danger"
+                                  onClick={() => void review(item, "rejected")}
+                                  disabled={mutationBusy}
+                                >
+                                  {t("button.reject")}
+                                </Button>
+                              </>
+                            )}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -3895,6 +4457,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             titleInputRef={taskTitleInputRef}
             error={taskError}
             focusedTaskId={taskFocusId}
+          />
+        </ContextualDrawer>
+      )}
+      {internal && (
+        <ContextualDrawer
+          open={conflictDrawerId !== null}
+          title={t("conflict.title")}
+          closeLabel={t("conflict.close")}
+          onClose={closeConflict}
+          initialFocusRef={conflictResolutionRef}
+          testId="clinical-conflict-drawer"
+        >
+          <ClinicalConflictReviewPanel
+            conflict={conflict}
+            sources={conflictSources}
+            role={role}
+            loading={conflictLoading}
+            error={conflictError}
+            stale={conflictStale}
+            success={conflictSuccess}
+            busy={conflictBusy}
+            resolution={conflictResolution}
+            onResolution={setConflictResolution}
+            onSubmit={() => void submitConflictDecision()}
+            onViewSource={openAssertionSource}
           />
         </ContextualDrawer>
       )}

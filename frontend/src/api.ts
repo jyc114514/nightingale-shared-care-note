@@ -2,6 +2,9 @@ import type {
   AIJob,
   AIProviderInfo,
   ApiErrorShape,
+  ClinicalAssertionSource,
+  ClinicalConflict,
+  ClinicalConflictResolution,
   Comment,
   ContextRefresh,
   PatientContext,
@@ -10,6 +13,8 @@ import type {
   FeedbackEventType,
   GlanceItem,
   ImportanceFeedback,
+  GlanceImpressionBatch,
+  GlanceExposureSummary,
   Me,
   MentionUser,
   Patient,
@@ -122,6 +127,45 @@ export const api = {
     }),
   glance: (patientId: string) =>
     request<GlanceItem[]>(`/patients/${patientId}/glance`),
+  clinicalConflicts: (patientId: string) =>
+    request<ClinicalConflict[]>(`/patients/${patientId}/clinical-conflicts`),
+  clinicalConflict: (conflictId: string) =>
+    request<ClinicalConflict>(`/clinical-conflicts/${conflictId}`),
+  assertionSource: (assertionId: string) =>
+    request<ClinicalAssertionSource>(
+      `/clinical-assertions/${assertionId}/source`,
+    ),
+  adjudicateClinicalConflict: (
+    conflictId: string,
+    expectedVersion: number,
+    resolution: ClinicalConflictResolution,
+  ) =>
+    request<ClinicalConflict>(`/clinical-conflicts/${conflictId}/adjudicate`, {
+      method: "PATCH",
+      ...json({ expected_version: expectedVersion, resolution }),
+    }),
+  recordGlanceImpression: (
+    patientId: string,
+    payload: {
+      idempotency_key: string;
+      requested_limit: number;
+      surfaced_items: Array<{
+        resource_type: "highlight" | "task";
+        resource_id: string;
+      }>;
+    },
+  ) =>
+    request<GlanceImpressionBatch>(
+      `/patients/${patientId}/glance-impressions`,
+      {
+        method: "POST",
+        ...json(payload),
+      },
+    ),
+  glanceExposureSummary: (patientId: string) =>
+    request<GlanceExposureSummary>(
+      `/patients/${patientId}/glance-impressions/summary`,
+    ),
   source: (highlightId: string) =>
     request<ProvenanceSource>(`/highlights/${highlightId}/source`),
   comments: (entryId: string) =>

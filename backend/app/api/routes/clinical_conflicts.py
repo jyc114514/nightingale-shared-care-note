@@ -16,6 +16,7 @@ from app.models import (
 )
 from app.schemas.clinical import (
     ClinicalAssertionOut,
+    ClinicalAssertionSourceOut,
     ClinicalConflictAdjudication,
     ClinicalConflictOut,
 )
@@ -29,6 +30,10 @@ from app.services.clinical_conflicts import (
     ClinicalConflictConcurrencyError,
     ClinicalConflictStateError,
     adjudicate_clinical_conflict,
+)
+from app.services.clinical_assertions import (
+    AssertionSourceValidationError,
+    get_clinical_assertion_source,
 )
 
 
@@ -122,6 +127,14 @@ def list_clinical_conflicts(
             .order_by(ClinicalConflict.created_at, ClinicalConflict.id)
         )
     )
+    status_order = {"open": 0, "adjudicated": 1, "superseded": 2}
+    conflicts.sort(
+        key=lambda conflict: (
+            status_order.get(enum_value(conflict.status), 99),
+            conflict.created_at,
+            conflict.id,
+        )
+    )
     return [clinical_conflict_out(db, conflict) for conflict in conflicts]
 
 
@@ -133,6 +146,57 @@ def get_clinical_conflict(
 ) -> ClinicalConflictOut:
     _, conflict = _get_scoped_conflict(db, user=user, conflict_id=conflict_id)
     return clinical_conflict_out(db, conflict)
+
+
+@router.get(
+    "/clinical-assertions/{assertion_id}/source",
+    response_model=ClinicalAssertionSourceOut,
+)
+def get_clinical_assertion_source_route(
+    assertion_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ClinicalAssertionSourceOut:
+    assertion = db.get(ClinicalAssertion, assertion_id)
+    if assertion is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clinical assertion not found",
+        )
+    context = get_patient_context(db, user, assertion.patient_id)
+    require_internal(context)
+    if assertion.clinic_id != context.clinic_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Clinical assertion not found",
+        )
+    try:
+        source = get_clinical_assertion_source(db, assertion_id)
+    except AssertionSourceValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Clinical assertion source could not be verified",
+        ) from exc
+    return ClinicalAssertionSourceOut(
+        assertion=ClinicalAssertionOut.model_validate(source.assertion),
+        source_entry_id=source.entry.id,
+        source_version_id=source.version.id,
+        version_number=source.version.version_number,
+        current_entry_version=source.entry.current_version,
+        version_content=source.version.content,
+        entry_type=enum_value(source.entry.entry_type),
+        source_kind=enum_value(source.entry.source_kind),
+        source_reference=source.entry.source_reference,
+        author_role=source.version.created_by_role,
+        author_id=source.version.created_by_user_id,
+        occurred_at=source.entry.occurred_at,
+        quote=source.assertion.quote,
+        start_offset=source.assertion.start_offset,
+        end_offset=source.assertion.end_offset,
+        quote_sha256=source.assertion.quote_sha256,
+        offset_unit=cast(Literal["unicode_codepoint"], source.assertion.offset_unit),
+        source_is_current_version=(source.version.version_number == source.entry.current_version),
+    )
 
 
 @router.patch(

@@ -81,6 +81,8 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "transcript_segments",
             "clinical_assertions",
             "clinical_conflicts",
+            "glance_impression_batches",
+            "glance_impression_items",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -138,6 +140,31 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "resolution",
             "status",
         } <= conflict_columns
+        impression_batch_columns = {
+            column["name"] for column in database_inspector.get_columns("glance_impression_batches")
+        }
+        assert {
+            "actor_user_id",
+            "algorithm_version",
+            "requested_limit",
+            "eligible_count",
+            "stored_candidate_count",
+            "surfaced_count",
+            "candidate_truncated",
+        } <= impression_batch_columns
+        impression_item_columns = {
+            column["name"] for column in database_inspector.get_columns("glance_impression_items")
+        }
+        assert {
+            "resource_type",
+            "resource_id",
+            "feature_signature",
+            "candidate_rank",
+            "surfaced",
+            "display_priority",
+            "safety_class",
+            "safety_floor",
+        } <= impression_item_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -150,7 +177,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0011_real_clinic_safety"
+                == "0012_glance_impressions"
             )
     finally:
         engine.dispose()
@@ -205,7 +232,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0011_real_clinic_safety"
+                == "0012_glance_impressions"
             )
     finally:
         engine.dispose()
@@ -238,11 +265,36 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
                     "WHERE entry_type LIKE 'ai_%'"
                 )
             ).mappings()
-            ai_by_type = {row["entry_type"]: row for row in ai_rows}
-        assert ai_by_type["ai_doctor_consult_summary"]["occurred_at"].startswith("2026-02-06")
-        assert ai_by_type["ai_nurse_consult_summary"]["occurred_at"].startswith("2026-08-24")
-        assert ai_by_type["ai_patient_session_summary"]["occurred_at"].startswith("2026-08-20")
-        assert all(row["source_reference"] for row in ai_by_type.values())
+            ai_by_reference = {row["source_reference"]: row for row in ai_rows}
+            allergy_rows = list(
+                connection.execute(
+                    text(
+                        "SELECT entry_type, source_reference FROM entries "
+                        "WHERE source_reference IN "
+                        "('synthetic-allergy-nurse-note', "
+                        "'synthetic-allergy-patient-session')"
+                    )
+                ).mappings()
+            )
+            assertion_count = connection.execute(
+                text("SELECT COUNT(*) FROM clinical_assertions")
+            ).scalar_one()
+            clinical_conflict_count = connection.execute(
+                text("SELECT COUNT(*) FROM clinical_conflicts")
+            ).scalar_one()
+        assert ai_by_reference["synthetic-doctor-consult-2026-02-06"]["occurred_at"].startswith(
+            "2026-02-06"
+        )
+        assert ai_by_reference["synthetic-nurse-consult-2026-08-24"]["occurred_at"].startswith(
+            "2026-08-24"
+        )
+        assert ai_by_reference["synthetic-patient-session-2026-08-20"]["occurred_at"].startswith(
+            "2026-08-20"
+        )
+        assert all(row["source_reference"] for row in ai_rows)
+        assert len(allergy_rows) == 2
+        assert assertion_count == 2
+        assert clinical_conflict_count == 1
     finally:
         engine.dispose()
 

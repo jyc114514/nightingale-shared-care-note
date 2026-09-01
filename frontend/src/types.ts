@@ -59,10 +59,13 @@ export type GlanceItem = {
   risk_reason: string;
   action_label: string | null;
   action_state: "open" | "completed" | "not_applicable";
-  source_entry_id: string;
-  source_version_id: string;
-  version_number: number;
-  current_entry_version: number;
+  clinical_conflict_id?: string | null;
+  safety_class?: string | null;
+  safety_floor?: number | null;
+  source_entry_id: string | null;
+  source_version_id: string | null;
+  version_number: number | null;
+  current_entry_version: number | null;
   source_label: string;
   entry_type: string;
   occurred_at: string;
@@ -127,8 +130,10 @@ export type ImportanceFeedback = {
     bounded_weight: number;
     updated_at: string;
     version: number;
-  };
+  } | null;
   ranking_explanation: Record<string, number>;
+  applied_to_profile: boolean;
+  suppression_reason: string | null;
 };
 
 export type ContextEntry = {
@@ -230,6 +235,129 @@ export type ProvenanceSource = {
   quote: string;
   start_offset: number;
   end_offset: number;
+};
+
+export type ClinicalAssertion = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  domain: "allergy";
+  concept_key: string;
+  polarity: "present" | "absent";
+  verification_status:
+    "unconfirmed" | "confirmed" | "refuted" | "entered_in_error";
+  criticality: "unable_to_assess" | "high";
+  source_entry_id: string;
+  source_version_id: string;
+  start_offset: number;
+  end_offset: number;
+  quote: string;
+  quote_sha256: string;
+  offset_unit: "unicode_codepoint";
+  asserted_by_role: TimelineRole;
+  asserted_by_user_id: string | null;
+  status: "active" | "superseded";
+  superseded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClinicalConflictResolution =
+  | "confirmed_present"
+  | "confirmed_absent"
+  | "needs_more_information"
+  | "entered_in_error";
+
+export type ClinicalConflict = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  conflict_type: "allergy_assertion_conflict";
+  status: "open" | "adjudicated" | "superseded";
+  positive_assertion_id: string;
+  negative_assertion_id: string;
+  version: number;
+  resolution: ClinicalConflictResolution | null;
+  adjudicated_by_user_id: string | null;
+  adjudicated_at: string | null;
+  created_at: string;
+  updated_at: string;
+  positive_assertion: ClinicalAssertion;
+  negative_assertion: ClinicalAssertion;
+};
+
+export type ClinicalAssertionSource = {
+  assertion: ClinicalAssertion;
+  source_entry_id: string;
+  source_version_id: string;
+  version_number: number;
+  current_entry_version: number;
+  version_content: string;
+  entry_type: string;
+  source_kind: string;
+  source_reference: string | null;
+  author_role: TimelineRole;
+  author_id: string | null;
+  occurred_at: string;
+  quote: string;
+  start_offset: number;
+  end_offset: number;
+  quote_sha256: string;
+  offset_unit: "unicode_codepoint";
+  source_is_current_version: boolean;
+};
+
+export type GlanceImpressionItem = {
+  id: string;
+  resource_type: "highlight" | "task";
+  resource_id: string;
+  feature_signature: string;
+  candidate_rank: number;
+  surfaced: boolean;
+  display_priority: number;
+  safety_class: string | null;
+  safety_floor: number | null;
+  created_at: string;
+};
+
+export type GlanceImpressionBatch = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  actor_user_id: string;
+  actor_role: Role;
+  idempotency_key: string;
+  algorithm_version: string;
+  requested_limit: number;
+  eligible_count: number;
+  stored_candidate_count: number;
+  surfaced_count: number;
+  candidate_truncated: boolean;
+  created_at: string;
+  items: GlanceImpressionItem[];
+};
+
+export type GlanceExposureSummary = {
+  patient_id: string;
+  algorithm_versions: string[];
+  batch_count: number;
+  eligible_candidate_count: number;
+  candidate_item_count: number;
+  surfaced_item_count: number;
+  truncated_batch_count: number;
+  feature_summaries: Array<{
+    feature_signature: string;
+    candidate_count: number;
+    surfaced_count: number;
+    exposure_rate: number;
+    protected_count: number;
+  }>;
+  safety_summaries: Array<{
+    safety_class: string;
+    candidate_count: number;
+    surfaced_count: number;
+    exposure_rate: number;
+  }>;
 };
 
 export type Comment = {
@@ -365,5 +493,11 @@ export type AIProviderInfo = {
 export type ApiErrorShape = {
   detail?:
     | string
-    | { message?: string; conflict_id?: string; actual_version?: number };
+    | {
+        message?: string;
+        conflict_id?: string;
+        actual_version?: number;
+        expected_version?: number;
+        attempted_resolution?: string;
+      };
 };

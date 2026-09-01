@@ -18,7 +18,15 @@ import {
   scrollToElement,
 } from "../src/App";
 import { en, zhCN } from "../src/i18n";
-import type { Me, Patient, ProvenanceSource, Version } from "../src/types";
+import type {
+  ClinicalAssertion,
+  ClinicalAssertionSource,
+  ClinicalConflict,
+  Me,
+  Patient,
+  ProvenanceSource,
+  Version,
+} from "../src/types";
 
 const staffUser: Me = {
   id: "staff-user",
@@ -36,6 +44,16 @@ const patientUser: Me = {
   display_name: "Sarah Patient",
   memberships: [],
   patient_ids: ["patient-a"],
+};
+
+const clinicianUser: Me = {
+  id: "clinician-user",
+  email: "clinician.a@clinic-a.test",
+  display_name: "Clinician A",
+  memberships: [
+    { clinic_id: "clinic-a", clinic_name: "Clinic A", role: "clinician" },
+  ],
+  patient_ids: [],
 };
 
 const patient = {
@@ -119,6 +137,135 @@ const glance = Array.from({ length: 6 }, (_, index) => ({
   quote: index === 0 ? "Pending renal panel" : `Synthetic item ${index + 1}`,
 }));
 
+const positiveAssertion: ClinicalAssertion = {
+  id: "assertion-positive",
+  clinic_id: "clinic-a",
+  patient_id: "patient-a",
+  domain: "allergy",
+  concept_key: "penicillin",
+  polarity: "present",
+  verification_status: "unconfirmed",
+  criticality: "unable_to_assess",
+  source_entry_id: "entry-staff",
+  source_version_id: "version-1",
+  start_offset: 0,
+  end_offset: 19,
+  quote: "Pending renal panel",
+  quote_sha256: "hash-positive",
+  offset_unit: "unicode_codepoint",
+  asserted_by_role: "staff",
+  asserted_by_user_id: "staff-user",
+  status: "active",
+  superseded_at: null,
+  created_at: "2026-08-25T08:00:00Z",
+  updated_at: "2026-08-25T08:00:00Z",
+};
+
+const negativeAssertion: ClinicalAssertion = {
+  id: "assertion-negative",
+  clinic_id: "clinic-a",
+  patient_id: "patient-a",
+  domain: "allergy",
+  concept_key: "all_drug_allergies",
+  polarity: "absent",
+  verification_status: "unconfirmed",
+  criticality: "unable_to_assess",
+  source_entry_id: "entry-ai",
+  source_version_id: "version-ai",
+  start_offset: 0,
+  end_offset: 18,
+  quote: "no known allergies",
+  quote_sha256: "hash-negative",
+  offset_unit: "unicode_codepoint",
+  asserted_by_role: "system",
+  asserted_by_user_id: null,
+  status: "active",
+  superseded_at: null,
+  created_at: "2026-08-24T10:00:00Z",
+  updated_at: "2026-08-24T10:00:00Z",
+};
+
+const clinicalConflict: ClinicalConflict = {
+  id: "clinical-conflict-1",
+  clinic_id: "clinic-a",
+  patient_id: "patient-a",
+  conflict_type: "allergy_assertion_conflict",
+  status: "open",
+  positive_assertion_id: positiveAssertion.id,
+  negative_assertion_id: negativeAssertion.id,
+  version: 1,
+  resolution: null,
+  adjudicated_by_user_id: null,
+  adjudicated_at: null,
+  created_at: "2026-08-25T10:00:00Z",
+  updated_at: "2026-08-25T10:00:00Z",
+  positive_assertion: positiveAssertion,
+  negative_assertion: negativeAssertion,
+};
+
+function assertionSource(
+  assertion: ClinicalAssertion,
+  versionContent: string,
+  entryType: string,
+  authorRole: "staff" | "system",
+): ClinicalAssertionSource {
+  return {
+    assertion,
+    source_entry_id: assertion.source_entry_id,
+    source_version_id: assertion.source_version_id,
+    version_number: 1,
+    current_entry_version: assertion.source_version_id === "version-1" ? 2 : 1,
+    version_content: versionContent,
+    entry_type: entryType,
+    source_kind: authorRole === "staff" ? "manual" : "patient_ai_session",
+    source_reference: "synthetic-source",
+    author_role: authorRole,
+    author_id: authorRole === "staff" ? "staff-user" : null,
+    occurred_at: assertion.created_at,
+    quote: assertion.quote,
+    start_offset: assertion.start_offset,
+    end_offset: assertion.end_offset,
+    quote_sha256: assertion.quote_sha256,
+    offset_unit: "unicode_codepoint",
+    source_is_current_version: assertion.source_version_id !== "version-1",
+  };
+}
+
+const protectedGlance = {
+  ...glance[0],
+  id: "conflict-highlight",
+  content_summary: "Pending renal panel",
+  item_kind: "flag",
+  status: "conflict_review",
+  ranking_explanation: {
+    ...glance[0].ranking_explanation,
+    pre_floor: 50,
+    safety_floor: 95,
+    floor_applied: 1,
+    final: 95,
+  },
+  display_priority: 95,
+  risk_level: null,
+  action_label: "Review allergy conflict",
+  action_state: "open",
+  clinical_conflict_id: clinicalConflict.id,
+  safety_class: "allergy_conflict",
+  safety_floor: 95,
+  source_entry_id: positiveAssertion.source_entry_id,
+  source_version_id: positiveAssertion.source_version_id,
+  version_number: 1,
+  current_entry_version: 2,
+  quote: positiveAssertion.quote,
+};
+
+const protectedGlanceResponse = [protectedGlance, ...glance.slice(1)];
+const needsMoreConflict: ClinicalConflict = {
+  ...clinicalConflict,
+  version: 2,
+  resolution: "needs_more_information",
+  updated_at: "2026-08-25T10:01:00Z",
+};
+
 const context = {
   patient_id: "patient-a",
   policy_version: "gate-d-v1",
@@ -182,6 +329,14 @@ function renderApp() {
   );
 }
 
+function getProtectedCard(): HTMLElement {
+  const card = screen
+    .getAllByTestId("glance-item")
+    .find((element) => element.dataset.protectedConflict === "true");
+  if (!card) throw new Error("protected conflict card not found");
+  return card;
+}
+
 function mockAuthenticatedApi(
   user = staffUser,
   sourceOptions: {
@@ -200,9 +355,18 @@ function mockAuthenticatedApi(
     voiceAudioContentType?: string;
     voiceAudioDelayMs?: number;
     versionsResponse?: Version[];
+    glanceResponse?: unknown;
+    clinicalConflictResponse?: ClinicalConflict;
+    latestClinicalConflictResponse?: ClinicalConflict;
+    assertionSources?: Record<string, ClinicalAssertionSource>;
+    adjudicationResponse?: ClinicalConflict;
+    adjudicationStatus?: number;
+    impressionStatus?: number;
+    feedbackResponse?: unknown;
   } = {},
 ) {
   let timelineCallCount = 0;
+  let clinicalConflictCallCount = 0;
   const fetchMock = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -218,7 +382,52 @@ function mockAuthenticatedApi(
             : timeline,
         );
       }
-      if (url.endsWith("/glance")) return response(glance);
+      if (url.endsWith("/glance"))
+        return response(sourceOptions.glanceResponse ?? glance);
+      if (url.includes("/clinical-assertions/") && url.endsWith("/source")) {
+        const assertionId =
+          url.split("/clinical-assertions/")[1]?.split("/source")[0] ?? "";
+        return response(sourceOptions.assertionSources?.[assertionId] ?? {});
+      }
+      if (url.includes("/clinical-conflicts/") && url.endsWith("/adjudicate")) {
+        if (sourceOptions.adjudicationStatus) {
+          return response(
+            {
+              detail: {
+                message: "Clinical conflict version is stale",
+                actual_version: 2,
+              },
+            },
+            sourceOptions.adjudicationStatus,
+          );
+        }
+        return response(
+          sourceOptions.adjudicationResponse ??
+            sourceOptions.clinicalConflictResponse ??
+            {},
+        );
+      }
+      if (url.includes("/clinical-conflicts/"))
+        return response(
+          ++clinicalConflictCallCount > 1
+            ? (sourceOptions.latestClinicalConflictResponse ??
+                sourceOptions.clinicalConflictResponse ??
+                {})
+            : (sourceOptions.clinicalConflictResponse ??
+                sourceOptions.latestClinicalConflictResponse ??
+                {}),
+        );
+      if (url.endsWith("/glance-impressions") && init?.method === "POST") {
+        return response({}, sourceOptions.impressionStatus ?? 200);
+      }
+      if (url.includes("/highlights/") && url.endsWith("/feedback")) {
+        return response(
+          sourceOptions.feedbackResponse ?? {
+            applied_to_profile: true,
+            suppression_reason: null,
+          },
+        );
+      }
       if (url.endsWith("/mentionable-users"))
         return response([
           { user_id: "staff-user", display_name: "Staff A", role: "staff" },
@@ -1037,6 +1246,256 @@ describe("Gate B shared care note", () => {
       6,
     );
     expect(screen.getAllByRole("button", { name: "Comments" }).length).toBe(2);
+  });
+
+  it("renders a protected conflict card without generic review controls", async () => {
+    mockAuthenticatedApi(staffUser, {
+      glanceResponse: protectedGlanceResponse,
+      clinicalConflictResponse: clinicalConflict,
+      feedbackResponse: {
+        applied_to_profile: false,
+        suppression_reason: "protected_safety_class",
+      },
+      assertionSources: {
+        [positiveAssertion.id]: assertionSource(
+          positiveAssertion,
+          "Pending renal panel requires coordination.",
+          "staff_note",
+          "staff",
+        ),
+        [negativeAssertion.id]: assertionSource(
+          negativeAssertion,
+          "no known allergies noted.",
+          "ai_patient_session_summary",
+          "system",
+        ),
+      },
+    });
+    renderApp();
+    await screen.findByText("Conflicting allergy information");
+    const card = getProtectedCard();
+    expect(card).toHaveTextContent("Conflicting allergy information");
+    expect(card).toHaveTextContent("Protected attention");
+    expect(card).toHaveTextContent("Needs clinician review");
+    expect(within(card).queryByRole("button", { name: "Accept" })).toBeNull();
+    expect(within(card).queryByRole("button", { name: "Reject" })).toBeNull();
+    fireEvent.click(within(card).getByTestId("ranking-details"));
+    expect(card).toHaveTextContent("Before minimum");
+    expect(card).toHaveTextContent("Minimum display priority");
+    expect(card).toHaveTextContent("Minimum applied");
+    expect(card).toHaveTextContent(
+      "This unresolved allergy conflict has a deterministic minimum display priority.",
+    );
+
+    fireEvent.click(within(card).getByRole("button", { name: "Pin" }));
+    expect(
+      await screen.findByTestId("protected-feedback-notice"),
+    ).toHaveTextContent(
+      "This protected safety item does not train preference ranking while unresolved.",
+    );
+    fireEvent.click(
+      within(card).getByRole("button", { name: "Review conflict" }),
+    );
+    const drawer = await screen.findByTestId("clinical-conflict-drawer");
+    expect(drawer).toHaveTextContent("Allergy conflict review");
+    expect(drawer).toHaveTextContent("Allergy reported");
+    expect(drawer).toHaveTextContent("Allergy denied");
+    expect(drawer).toHaveTextContent(
+      "It has not decided which one is clinically correct.",
+    );
+    expect(drawer).toHaveTextContent(
+      "Read-only for Staff. A clinician must record the clinical decision.",
+    );
+    expect(
+      within(drawer).queryByRole("button", {
+        name: "Record clinical decision",
+      }),
+    ).toBeNull();
+
+    const reported = within(drawer).getByTestId("clinical-assertion-present");
+    await fireEvent.click(
+      within(reported).getByRole("button", { name: /View source/ }),
+    );
+    expect(
+      await screen.findByRole("region", { name: "Original source" }),
+    ).toBeVisible();
+    const sourcePanel = screen.getByRole("region", { name: "Original source" });
+    expect(within(sourcePanel).getByTestId("source-quote")).toHaveTextContent(
+      "Pending renal panel",
+    );
+    const denied = within(drawer).getByTestId("clinical-assertion-absent");
+    await fireEvent.click(
+      within(denied).getByRole("button", { name: /View source/ }),
+    );
+    await waitFor(() =>
+      expect(within(sourcePanel).getByTestId("source-quote")).toHaveTextContent(
+        "no known allergies",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close source" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Close conflict review" }),
+    );
+  });
+
+  it("lets a clinician record a cautious conflict decision", async () => {
+    const fetchMock = mockAuthenticatedApi(clinicianUser, {
+      glanceResponse: protectedGlanceResponse,
+      clinicalConflictResponse: clinicalConflict,
+      adjudicationResponse: needsMoreConflict,
+      assertionSources: {
+        [positiveAssertion.id]: assertionSource(
+          positiveAssertion,
+          "Pending renal panel requires coordination.",
+          "staff_note",
+          "staff",
+        ),
+        [negativeAssertion.id]: assertionSource(
+          negativeAssertion,
+          "no known allergies noted.",
+          "ai_patient_session_summary",
+          "system",
+        ),
+      },
+    });
+    renderApp();
+    await screen.findByText("Conflicting allergy information");
+    const card = getProtectedCard();
+    fireEvent.click(
+      within(card).getByRole("button", { name: "Review conflict" }),
+    );
+    const drawer = await screen.findByTestId("clinical-conflict-drawer");
+    const decision = await within(drawer).findByLabelText("Clinical decision");
+    expect(decision).toHaveValue("needs_more_information");
+    fireEvent.change(decision, { target: { value: "needs_more_information" } });
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: "Record clinical decision" }),
+    );
+    await waitFor(() => expect(drawer).toHaveTextContent("Decision recorded."));
+    const adjudicationCall = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).includes("/clinical-conflicts/") &&
+        String(input).endsWith("/adjudicate") &&
+        init?.method === "PATCH",
+    );
+    expect(adjudicationCall).toBeDefined();
+    expect(JSON.parse(String(adjudicationCall?.[1]?.body))).toEqual({
+      expected_version: 1,
+      resolution: "needs_more_information",
+    });
+    expect(drawer).toHaveTextContent("Review version 2");
+  });
+
+  it("keeps the conflict drawer open and refreshes after an adjudication 409", async () => {
+    mockAuthenticatedApi(clinicianUser, {
+      glanceResponse: protectedGlanceResponse,
+      clinicalConflictResponse: clinicalConflict,
+      latestClinicalConflictResponse: needsMoreConflict,
+      adjudicationStatus: 409,
+      assertionSources: {
+        [positiveAssertion.id]: assertionSource(
+          positiveAssertion,
+          "Pending renal panel requires coordination.",
+          "staff_note",
+          "staff",
+        ),
+        [negativeAssertion.id]: assertionSource(
+          negativeAssertion,
+          "no known allergies noted.",
+          "ai_patient_session_summary",
+          "system",
+        ),
+      },
+    });
+    renderApp();
+    await screen.findByText("Conflicting allergy information");
+    const card = getProtectedCard();
+    fireEvent.click(
+      within(card).getByRole("button", { name: "Review conflict" }),
+    );
+    const drawer = await screen.findByTestId("clinical-conflict-drawer");
+    fireEvent.change(
+      await within(drawer).findByLabelText("Clinical decision"),
+      {
+        target: { value: "confirmed_absent" },
+      },
+    );
+    fireEvent.click(
+      within(drawer).getByRole("button", { name: "Record clinical decision" }),
+    );
+    expect(
+      await within(drawer).findByTestId("clinical-conflict-stale"),
+    ).toHaveTextContent("This conflict was updated by another clinician.");
+    expect(drawer).toHaveTextContent("Review version 2");
+    expect(within(drawer).getByLabelText("Clinical decision")).toHaveValue(
+      "needs_more_information",
+    );
+  });
+
+  it("records one metadata-only Glance impression after render", async () => {
+    const fetchMock = mockAuthenticatedApi();
+    renderApp();
+    await screen.findByText(/6 items need attention/);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([input, init]) =>
+            String(input).endsWith("/glance-impressions") &&
+            init?.method === "POST",
+        ),
+      ).toHaveLength(1),
+    );
+    const impressionCall = fetchMock.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith("/glance-impressions") &&
+        init?.method === "POST",
+    );
+    const body = JSON.parse(String(impressionCall?.[1]?.body));
+    expect(body.requested_limit).toBe(6);
+    expect(body.surfaced_items).toHaveLength(6);
+    expect(JSON.stringify(body)).not.toContain("Pending renal panel");
+    expect(JSON.stringify(body)).not.toContain("risk_reason");
+    expect(JSON.stringify(body)).not.toContain("quote");
+  });
+
+  it("does not duplicate an impression for an unchanged SSE refresh", async () => {
+    const eventSource = installFakeEventSource();
+    const fetchMock = mockAuthenticatedApi();
+    renderApp();
+    await screen.findByText(/6 items need attention/);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([input, init]) =>
+            String(input).endsWith("/glance-impressions") &&
+            init?.method === "POST",
+        ),
+      ).toHaveLength(1),
+    );
+    eventSource.emit("entry");
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).endsWith("/timeline"),
+        ).length,
+      ).toBeGreaterThan(1),
+    );
+    await new Promise((resolve) => window.setTimeout(resolve, 20));
+    expect(
+      fetchMock.mock.calls.filter(
+        ([input, init]) =>
+          String(input).endsWith("/glance-impressions") &&
+          init?.method === "POST",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("keeps Glance usable when impression telemetry fails", async () => {
+    mockAuthenticatedApi(staffUser, { impressionStatus: 503 });
+    renderApp();
+    expect(await screen.findByTestId("top-card")).toBeVisible();
+    await screen.findByText(/6 items need attention/);
+    expect(screen.getByText(/6 items need attention/)).toBeVisible();
   });
 
   it("keeps History rows on aligned columns and labels the current row", async () => {

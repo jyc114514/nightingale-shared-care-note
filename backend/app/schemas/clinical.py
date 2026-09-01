@@ -73,3 +73,24 @@ class ClinicalConflictAdjudication(BaseModel):
     ]
 
     model_config = ConfigDict(extra="ignore")
+
+
+class ClinicalAssertionSourceOut(BaseModel):
+    assertion: ClinicalAssertionOut
+    source_entry_id: str
+    source_version_id: str
+    version_number: int
+    current_entry_version: int
+    version_content: str
+    entry_type: str
+    source_kind: str
+    source_reference: str | None
+    author_role: str
+    author_id: str | None
+    occurred_at: datetime
+    quote: str
+    start_offset: int
+    end_offset: int
+    quote_sha256: str
+    offset_unit: Literal["unicode_codepoint"]
+    source_is_current_version: bool

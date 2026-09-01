@@ -76,6 +76,17 @@ class AssertionSyncResult:
     conflict_ids: tuple[str, ...]
 
 
+class AssertionSourceValidationError(ValueError):
+    """Raised when an assertion no longer resolves to a trusted immutable source."""
+
+
+@dataclass(frozen=True)
+class AssertionSourceContext:
+    assertion: ClinicalAssertion
+    entry: Entry
+    version: EntryVersion
+
+
 @dataclass(frozen=True)
 class _Pattern:
     polarity: str
@@ -246,6 +257,39 @@ def extract_allergy_assertions(content: str) -> ExtractionResult:
         ):
             return ExtractionResult((), ("assertion_span_invalid",))
     return ExtractionResult(selected)
+
+
+def get_clinical_assertion_source(
+    db: Session,
+    assertion_id: str,
+) -> AssertionSourceContext:
+    """Resolve and revalidate an assertion's exact immutable source on every read."""
+
+    row = db.execute(
+        select(ClinicalAssertion, Entry, EntryVersion)
+        .join(Entry, Entry.id == ClinicalAssertion.source_entry_id)
+        .join(EntryVersion, EntryVersion.id == ClinicalAssertion.source_version_id)
+        .where(ClinicalAssertion.id == assertion_id)
+    ).one_or_none()
+    if row is None:
+        raise AssertionSourceValidationError("assertion_source_not_found")
+    assertion, entry, version = row
+    if (
+        version.entry_id != entry.id
+        or assertion.source_entry_id != entry.id
+        or assertion.source_version_id != version.id
+        or assertion.clinic_id != entry.clinic_id
+        or assertion.patient_id != entry.patient_id
+        or version.entry_id != assertion.source_entry_id
+        or assertion.offset_unit != OFFSET_UNIT
+        or assertion.start_offset < 0
+        or assertion.end_offset <= assertion.start_offset
+        or assertion.end_offset > len(version.content)
+        or version.content[assertion.start_offset : assertion.end_offset] != assertion.quote
+        or assertion.quote_sha256 != sha256(assertion.quote.encode("utf-8")).hexdigest()
+    ):
+        raise AssertionSourceValidationError("assertion_source_invalid")
+    return AssertionSourceContext(assertion=assertion, entry=entry, version=version)
 
 
 def sync_assertions_for_entry_version(
