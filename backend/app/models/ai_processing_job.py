@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, Float, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, new_id, utcnow
@@ -29,6 +29,7 @@ class AIProcessingJob(Base):
     source_reference: Mapped[str] = mapped_column(String(200), nullable=False)
     redacted_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
     error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    retry_after_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
     entry_id: Mapped[str | None] = mapped_column(ForeignKey("entries.id"), nullable=True)
     highlight_id: Mapped[str | None] = mapped_column(ForeignKey("highlights.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -30,6 +30,7 @@ class AIJobOut(BaseModel):
     input_hash: str
     source_reference: str
     error_code: str | None
+    retry_after_seconds: float | None
     entry_id: str | None
     highlight_id: str | None
     created_at: datetime
@@ -44,6 +45,24 @@ class AIProviderOut(BaseModel):
     model: str
     configured: bool
     mode: Literal["fixture", "deepseek"]
+
+
+class AIProviderStatusOut(BaseModel):
+    """Safe per-patient provider availability metadata for internal users."""
+
+    provider_name: str
+    model: str
+    mode: Literal["fixture", "deepseek"]
+    configured: bool
+    availability: Literal["available", "degraded", "temporarily_unavailable"]
+    circuit_state: Literal["closed", "open", "half_open"]
+    retry_after_seconds: float | None
+    last_failure_code: str | None
+    consecutive_failures: int
+    new_suggestions_available: bool
+    existing_records_available: bool
+    observed_at: datetime
+    limitations: list[str]
 
 
 AIJobStatus = Literal[

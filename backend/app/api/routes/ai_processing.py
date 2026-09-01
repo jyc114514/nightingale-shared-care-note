@@ -1,5 +1,7 @@
 """Authenticated local AI processing endpoint; provider work stays off Glance reads."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,13 +14,21 @@ from app.api.dependencies import (
 from app.config import Settings, get_settings
 from app.db.session import get_db
 from app.models import AIProcessingJob, ClinicMembership, User
-from app.schemas.ai import AIJobOut, AIProcessingRequest, AIProviderOut
+from app.schemas.ai import (
+    AIJobOut,
+    AIProcessingRequest,
+    AIProviderOut,
+    AIProviderStatusOut,
+)
 from app.services.ai_processing import AIIdempotencyConflict, process_ai_job
 from app.ai.provider import ProviderError, get_provider_info
 from app.services.authorization import get_patient_context, require_internal
+from app.services.provider_resilience import provider_status_for_clinic
+from app.observability.safe_logging import safe_event
 
 
 router = APIRouter(tags=["ai-processing"])
+_LOGGER = logging.getLogger("nightingale")
 
 
 def require_processing_role(actor_role: str) -> None:
@@ -90,6 +100,53 @@ def get_ai_provider_info(
         model=info.model,
         configured=info.configured,
         mode=info.mode,
+    )
+
+
+@router.get(
+    "/patients/{patient_id}/ai-processing/provider-status",
+    response_model=AIProviderStatusOut,
+)
+def get_ai_provider_status(
+    patient_id: str,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    request_id: str = Depends(get_request_id),
+    app_settings: Settings = Depends(get_settings),
+) -> AIProviderStatusOut:
+    context = get_patient_context(db, user, patient_id)
+    require_internal(context)
+    result = provider_status_for_clinic(
+        db,
+        clinic_id=context.clinic_id,
+        app_settings=app_settings,
+    )
+    safe_event(
+        _LOGGER,
+        "provider_status_checked",
+        request_id=request_id,
+        clinic_id=context.clinic_id,
+        patient_id=patient_id,
+        provider_name=result.provider_name,
+        status=result.availability,
+        error_code=result.last_failure_code,
+        retry_after_seconds=result.retry_after_seconds,
+        circuit_state=result.circuit_state,
+    )
+    return AIProviderStatusOut(
+        provider_name=result.provider_name,
+        model=result.model,
+        mode=result.mode,
+        configured=result.configured,
+        availability=result.availability,
+        circuit_state=result.circuit_state,
+        retry_after_seconds=result.retry_after_seconds,
+        last_failure_code=result.last_failure_code,
+        consecutive_failures=result.consecutive_failures,
+        new_suggestions_available=result.new_suggestions_available,
+        existing_records_available=result.existing_records_available,
+        observed_at=result.observed_at,
+        limitations=list(result.limitations),
     )
 
 

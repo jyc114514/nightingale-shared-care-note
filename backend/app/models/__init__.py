@@ -2,6 +2,7 @@
 
 from app.models.audit_log import AuditLog
 from app.models.ai_processing_job import AIProcessingJob
+from app.models.ai_provider_circuit import AIProviderCircuit
 from app.models.archival_summary import ArchivalSummary
 from app.models.archival_summary_source import ArchivalSummarySource
 from app.models.clinical_assertion import ClinicalAssertion
@@ -52,6 +53,7 @@ from app.models.voice_session import VoiceSession
 __all__ = [
     "AuditLog",
     "AIProcessingJob",
+    "AIProviderCircuit",
     "ArchivalSummary",
     "ArchivalSummarySource",
     "Clinic",

@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     deepseek_api_key: SecretStr | None = None
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-v4-flash"
-    deepseek_timeout_seconds: float = 20.0
+    deepseek_timeout_seconds: float = 8.0
+    deepseek_total_budget_seconds: float = 12.0
+    deepseek_max_attempts: int = 2
+    deepseek_circuit_failure_threshold: int = 3
+    deepseek_circuit_cooldown_seconds: float = 60.0
     deepseek_max_tokens: int = 600
     voice_provider: str = "disabled"
     voice_model: str = "turbo"
@@ -56,6 +60,17 @@ class Settings(BaseSettings):
             raise ValueError("SESSION_TTL_MINUTES must be positive")
         if self.deepseek_timeout_seconds <= 0 or self.deepseek_timeout_seconds > 120:
             raise ValueError("DEEPSEEK_TIMEOUT_SECONDS must be between 0 and 120")
+        if self.deepseek_total_budget_seconds < 0.1 or self.deepseek_total_budget_seconds > 120:
+            raise ValueError("DEEPSEEK_TOTAL_BUDGET_SECONDS must be between 0.1 and 120")
+        if not 1 <= self.deepseek_max_attempts <= 3:
+            raise ValueError("DEEPSEEK_MAX_ATTEMPTS must be between 1 and 3")
+        if not 1 <= self.deepseek_circuit_failure_threshold <= 10:
+            raise ValueError("DEEPSEEK_CIRCUIT_FAILURE_THRESHOLD must be between 1 and 10")
+        if (
+            self.deepseek_circuit_cooldown_seconds < 1
+            or self.deepseek_circuit_cooldown_seconds > 3600
+        ):
+            raise ValueError("DEEPSEEK_CIRCUIT_COOLDOWN_SECONDS must be between 1 and 3600")
         if self.deepseek_max_tokens <= 0 or self.deepseek_max_tokens > 4096:
             raise ValueError("DEEPSEEK_MAX_TOKENS must be between 1 and 4096")
         voice_provider = self.voice_provider.strip().lower()
