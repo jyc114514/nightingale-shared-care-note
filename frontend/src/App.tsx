@@ -26,6 +26,7 @@ import type {
   GlanceItem,
   AIJob,
   AIProviderInfo,
+  AIProviderStatus,
   Me,
   MentionUser,
   Patient,
@@ -2228,13 +2229,18 @@ const aiScribeExamples: Record<
 
 function AIScribePanel({
   providerInfo,
+  providerStatus,
+  providerStatusLoading,
   providerError,
   job,
   busy,
   onSubmit,
   onOpenSource,
+  onRefreshStatus,
 }: {
   providerInfo: AIProviderInfo | null;
+  providerStatus: AIProviderStatus | null;
+  providerStatusLoading: boolean;
   providerError: string | null;
   job: AIJob | null;
   busy: boolean;
@@ -2245,6 +2251,7 @@ function AIScribePanel({
     idempotency_key: string;
   }) => Promise<void>;
   onOpenSource: (job: AIJob) => void;
+  onRefreshStatus: () => void;
 }) {
   const { t } = useI18n();
   const [interactionType, setInteractionType] = useState<AIScribeInteraction>(
@@ -2292,6 +2299,72 @@ function AIScribePanel({
       <p className="mt-3 rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-amber-950">
         {t("ai.warning")}
       </p>
+      {providerStatus && (
+        <section
+          className={`mt-3 rounded-xl border p-3 text-sm ${
+            providerStatus.availability === "available"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : providerStatus.availability === "degraded"
+                ? "border-amber-200 bg-amber-50 text-amber-950"
+                : "border-slate-300 bg-slate-100 text-slate-800"
+          }`}
+          aria-label={t("ai.availability")}
+          data-testid="ai-provider-status"
+          data-availability={providerStatus.availability}
+        >
+          <p className="font-semibold">
+            {providerStatus.availability === "available"
+              ? t("ai.available")
+              : providerStatus.availability === "degraded"
+                ? t("ai.degraded")
+                : t("ai.unavailable")}
+          </p>
+          {providerStatus.availability !== "available" && (
+            <p className="mt-2 leading-6">{t("ai.existingAvailable")}</p>
+          )}
+          {providerStatus.availability === "temporarily_unavailable" &&
+            providerStatus.retry_after_seconds !== null &&
+            providerStatus.retry_after_seconds > 0 && (
+              <p className="mt-2 leading-6">
+                {t("ai.retryAfter", {
+                  seconds: Math.ceil(providerStatus.retry_after_seconds),
+                })}
+              </p>
+            )}
+          {providerStatus.availability === "temporarily_unavailable" && (
+            <p className="mt-2 text-xs leading-5 opacity-80">
+              {t("ai.newSuggestionsPaused")}
+            </p>
+          )}
+          <Button
+            kind="quiet"
+            onClick={onRefreshStatus}
+            disabled={providerStatusLoading}
+          >
+            {providerStatusLoading
+              ? t("ai.checkingAvailability")
+              : t("ai.checkAvailability")}
+          </Button>
+        </section>
+      )}
+      {!providerStatus && providerError && (
+        <section
+          className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+          aria-label={t("ai.availability")}
+          data-testid="ai-provider-status-unknown"
+        >
+          <p className="font-semibold">{t("ai.statusUnknown")}</p>
+          <Button
+            kind="quiet"
+            onClick={onRefreshStatus}
+            disabled={providerStatusLoading}
+          >
+            {providerStatusLoading
+              ? t("ai.checkingAvailability")
+              : t("ai.checkAvailability")}
+          </Button>
+        </section>
+      )}
       <details
         className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-3 text-xs"
         data-testid="ai-technical-details"
@@ -2355,7 +2428,15 @@ function AIScribePanel({
           />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" kind="primary" disabled={busy || !text.trim()}>
+          <Button
+            type="submit"
+            kind="primary"
+            disabled={
+              busy ||
+              !text.trim() ||
+              providerStatus?.new_suggestions_available === false
+            }
+          >
             {busy ? t("ai.generating") : t("ai.generate")}
           </Button>
           {busy && (
@@ -2394,9 +2475,18 @@ function AIScribePanel({
               )}
             </div>
           ) : job.status.startsWith("failed") ? (
-            <p className="mt-3 text-rose-700" role="alert">
-              {t("ai.safeError")}
-            </p>
+            <div className="mt-3 space-y-2 text-rose-700" role="alert">
+              <p>{t("ai.safeError")}</p>
+              {job.retry_after_seconds !== null &&
+                job.retry_after_seconds !== undefined &&
+                job.retry_after_seconds > 0 && (
+                  <p>
+                    {t("ai.retryAfter", {
+                      seconds: Math.ceil(job.retry_after_seconds),
+                    })}
+                  </p>
+                )}
+            </div>
           ) : (
             <p className="mt-3 text-slate-600">{t("ai.processing")}</p>
           )}
@@ -2762,6 +2852,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [aiProviderInfo, setAIProviderInfo] = useState<AIProviderInfo | null>(
     null,
   );
+  const [aiProviderStatus, setAIProviderStatus] =
+    useState<AIProviderStatus | null>(null);
+  const [aiProviderStatusLoading, setAIProviderStatusLoading] = useState(false);
   const [aiProviderError, setAIProviderError] = useState<string | null>(null);
   const [aiJob, setAIJob] = useState<AIJob | null>(null);
   const [aiBusy, setAIBusy] = useState(false);
@@ -2995,18 +3088,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const canUseAIScribe = role === "staff" || role === "clinician";
 
   useEffect(() => {
-    if (!canUseAIScribe) {
+    if (!canUseAIScribe || !patientId) {
       setAIProviderInfo(null);
+      setAIProviderStatus(null);
+      setAIProviderStatusLoading(false);
       setAIProviderError(null);
       return;
     }
+    let active = true;
     setAIProviderInfo(null);
+    setAIProviderStatus(null);
+    setAIProviderStatusLoading(true);
     setAIProviderError(null);
     void api
       .aiProvider()
-      .then(setAIProviderInfo)
-      .catch((error) => setAIProviderError(displayError(error, t)));
-  }, [canUseAIScribe, t, user.id]);
+      .then((result) => active && setAIProviderInfo(result))
+      .catch((error) => active && setAIProviderError(displayError(error, t)));
+    void api
+      .aiProviderStatus(patientId)
+      .then((result) => active && setAIProviderStatus(result))
+      .catch((error) => active && setAIProviderError(displayError(error, t)))
+      .finally(() => active && setAIProviderStatusLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [canUseAIScribe, patientId, t, user.id]);
 
   useEffect(() => {
     let active = true;
@@ -3315,6 +3421,19 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     }
   }
 
+  async function refreshAIProviderStatus() {
+    if (!patientId || !canUseAIScribe) return;
+    setAIProviderStatusLoading(true);
+    setAIProviderError(null);
+    try {
+      setAIProviderStatus(await api.aiProviderStatus(patientId));
+    } catch (error) {
+      setAIProviderError(displayError(error, t));
+    } finally {
+      setAIProviderStatusLoading(false);
+    }
+  }
+
   async function submitAIScribe(payload: {
     interaction_type:
       | "ai_doctor_consult_summary"
@@ -3331,6 +3450,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       const job = await api.submitAIProcessing(patientId, payload);
       setAIJob(job);
+      if (job.status === "failed_provider") {
+        void refreshAIProviderStatus();
+      }
       if (job.status === "completed") {
         setPendingAIEntryId(job.entry_id);
         setRefreshToken((value) => value + 1);
@@ -3338,6 +3460,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       }
     } catch (error) {
       setAIProviderError(displayError(error, t));
+      void refreshAIProviderStatus();
     } finally {
       setAIBusy(false);
     }
@@ -3888,11 +4011,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           {canUseAIScribe && patientId && (
             <AIScribePanel
               providerInfo={aiProviderInfo}
+              providerStatus={aiProviderStatus}
+              providerStatusLoading={aiProviderStatusLoading}
               providerError={aiProviderError}
               job={aiJob}
               busy={aiBusy}
               onSubmit={submitAIScribe}
               onOpenSource={openAIJobSource}
+              onRefreshStatus={() => void refreshAIProviderStatus()}
             />
           )}
 

@@ -42,6 +42,19 @@ export const en = {
   "ai.ready": "Ready for review",
   "ai.processingStatus": "In progress",
   "ai.failed": "Could not be prepared",
+  "ai.availability": "Suggestion availability",
+  "ai.available": "AI-assisted suggestions are available.",
+  "ai.degraded": "AI-assisted updates are experiencing temporary failures.",
+  "ai.unavailable": "New AI-assisted suggestions are temporarily unavailable.",
+  "ai.statusUnknown":
+    "Suggestion availability is temporarily unknown. Existing records remain available.",
+  "ai.existingAvailable":
+    "Existing care records, Glance items, tasks, comments and source links remain available.",
+  "ai.retryAfter": "Try again after {{seconds}} seconds.",
+  "ai.checkAvailability": "Check availability",
+  "ai.checkingAvailability": "Checking availability...",
+  "ai.newSuggestionsPaused":
+    "New suggestions are paused while the service recovers.",
   "voice.panel": "Voice note",
   "voice.title": "Review a pre-recorded care conversation",
   "voice.warning":

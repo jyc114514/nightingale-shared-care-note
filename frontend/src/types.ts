@@ -476,6 +476,7 @@ export type AIJob = {
   input_hash: string;
   source_reference: string;
   error_code: string | null;
+  retry_after_seconds: number | null;
   entry_id: string | null;
   highlight_id: string | null;
   created_at: string;
@@ -488,6 +489,27 @@ export type AIProviderInfo = {
   model: string;
   configured: boolean;
   mode: "fixture" | "deepseek";
+};
+
+export type AIProviderAvailability =
+  "available" | "degraded" | "temporarily_unavailable";
+
+export type AIProviderCircuitState = "closed" | "open" | "half_open";
+
+export type AIProviderStatus = {
+  provider_name: string;
+  model: string;
+  mode: "fixture" | "deepseek";
+  configured: boolean;
+  availability: AIProviderAvailability;
+  circuit_state: AIProviderCircuitState;
+  retry_after_seconds: number | null;
+  last_failure_code: string | null;
+  consecutive_failures: number;
+  new_suggestions_available: boolean;
+  existing_records_available: boolean;
+  observed_at: string;
+  limitations: string[];
 };
 
 export type ApiErrorShape = {

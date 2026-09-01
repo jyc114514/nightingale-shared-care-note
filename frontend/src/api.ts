@@ -1,6 +1,7 @@
 import type {
   AIJob,
   AIProviderInfo,
+  AIProviderStatus,
   ApiErrorShape,
   ClinicalAssertionSource,
   ClinicalConflict,
@@ -268,6 +269,10 @@ export const api = {
     }),
   aiJob: (jobId: string) => request<AIJob>(`/ai-processing/${jobId}`),
   aiProvider: () => request<AIProviderInfo>("/ai-processing/provider"),
+  aiProviderStatus: (patientId: string) =>
+    request<AIProviderStatus>(
+      `/patients/${patientId}/ai-processing/provider-status`,
+    ),
   eventsUrl: (patientId: string) =>
     `${apiBaseUrl}/patients/${patientId}/events`,
   voiceProvider: () => request<VoiceProviderInfo>("/voice/provider"),
