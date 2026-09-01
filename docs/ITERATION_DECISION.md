@@ -1,0 +1,164 @@
+# Round 1 iteration decision
+
+Baseline: 573f897a69864707f64b1846b2802a2674f69597
+
+Round: 1 of 10
+
+Decision: implement one closed, source-anchored allergy safety vertical slice in the backend.
+
+## Why Scenario 13 plus Scenario 15
+
+Scenario 13 is the clearest semantic trust gap: the current system preserves both notes but
+cannot distinguish present from absent allergy assertions or show the contradiction as one
+reviewable object. Scenario 15 explains why a safety item cannot be treated like an ordinary
+preference: an interaction-driven ranking signal is subject to exposure selection and fatigue.
+
+Together they justify a small invariant:
+
+    A detected allergy contradiction is a clinician-review item with immutable dual sources.
+    Ordinary preference feedback may be recorded as evidence, but it cannot train that item
+    below a deterministic safety floor.
+
+This is an attention and provenance control, not diagnosis, confidence calibration, or
+treatment advice.
+
+## Why one vertical slice
+
+The released application already has immutable EntryVersion records, exact code-point
+provenance, clinic authorization, materialized Glance rows, bounded feedback, and metadata-only
+audit/events. A narrow allergy slice can reuse these primitives and be independently tested
+without pretending that generic clinical NLP is solved.
+
+Adding a small number of well-defined fields and two services is more falsifiable than
+adding a broad classifier whose behavior cannot be audited. The new tables preserve source
+records and can be rebuilt from immutable versions.
+
+## Why allergy-only
+
+Round 1 supports only penicillin and only explicit patterns:
+
+- penicillin allergy
+- allergic to penicillin
+- allergy to penicillin
+- not allergic to penicillin
+- denies penicillin allergy
+- no known allergies
+- no known drug allergies
+
+The output is a present/absent assertion with an exact source span. Drug names outside this
+vocabulary, uncertain language, family history, cannot-rule-out language, double negation,
+malformed Unicode, and unresolved multi-interpretation text abstain safely.
+
+This closed vocabulary gives the test suite a complete semantic contract. It is intentionally
+not medication normalization, entity linking, temporal reasoning, or a general medical NLP
+engine.
+
+## Why not general clinical NLP
+
+General clinical NLP would require a terminology source, negation and temporality evaluation,
+section/context handling, multilingual support, calibration, error review, and a much larger
+false-positive/false-negative test set. A regex that appears to pass a demo is not evidence
+of safe clinical interpretation. Round 1 therefore uses deterministic extraction plus explicit
+abstention, and documents unsupported language rather than guessing.
+
+## Why not trilingual ASR, WhatsApp, or streaming
+
+The current Voice feature is a bounded prerecorded synthetic fixture with prepared transcript
+segments. It does not establish ASR inference, speaker diarization, code-switching, Hokkien,
+Malay, noisy capture, or real PHI-audio redaction. WhatsApp/SMS delivery and streaming safety
+monitoring would add identity, retention, delivery, and real-time correctness boundaries.
+They are independent projects and remain deferred.
+
+## What “safety floor” means
+
+The safety floor is a deterministic lower bound on display priority for an internally marked
+allergy safety item. The calculation is:
+
+    pre_floor =
+        base + recency + explicit risk + unresolved action
+        + clinician confirmation + adaptive feedback
+
+    final = clamp(max(pre_floor, safety_floor), 0, 100)
+
+For ordinary highlights, safety_floor is absent and the previous ranking behavior remains.
+The ranking explanation records every contribution, pre_floor, safety_floor, whether the
+floor was applied, and final.
+
+Round 1 uses 95.0 for an open allergy conflict. This number is an attention policy for the
+prototype, not a medical risk probability.
+
+## What the safety floor does not mean
+
+- It is not a diagnosis, severity score, confidence score, or treatment recommendation.
+- It does not decide whether the nurse or patient is clinically correct.
+- It does not turn an AI/provider response into a trusted source.
+- It does not delete, rewrite, or supersede canonical notes by itself.
+- It does not prevent a clinician from adjudicating the conflict.
+- It does not replace PostgreSQL RLS, application authorization, logging controls, or human review.
+
+The LLM/provider cannot set safety_class or safety_floor. Only the deterministic internal
+conflict service and clinician adjudication path may set these fields.
+
+## Phase 2 scope
+
+The backend-only implementation adds:
+
+1. ClinicalAssertion with clinic/patient scope, polarity, closed concept, immutable source
+   version, exact code-point offsets, quote hash, verification status, and lifecycle status.
+2. ClinicalConflict with deterministic positive/negative pair ordering, versioned clinician
+   adjudication, dual provenance, and preserved resolution history.
+3. Protected conflict-review Highlight and materialized Glance fields.
+4. Ranking pre-floor/floor explanation and protected feedback suppression.
+5. Typed internal list/detail/adjudication APIs with server-side patient and clinic checks.
+6. Real application tests for extraction, abstention, persistence, conflict lifecycle,
+   authorization, stale adjudication, provenance, ranking, and protected feedback.
+7. A new 0011 Alembic migration. Older migrations remain unchanged.
+
+Assertion derivation runs after a successful immutable entry version write and outside the
+Glance read path. If derivation fails, the human-authored entry remains committed and only a
+safe metadata audit status is retained.
+
+## Deferred work
+
+- phone/OTP or magic-link patient onboarding
+- PostgreSQL RLS and full tenant-defense-in-depth
+- application-wide log sanitization and hosted retention review
+- clinic admin onboarding
+- multilingual ASR, streaming capture, WhatsApp/SMS delivery
+- dosage/medication normalization and patient publication/recall
+- impression/exposure logging and learning calibration
+- general clinical NLP, embeddings, LLM classification
+- frontend UI, Render deployment, Voice changes, DeepSeek calls, and demo work
+
+## Demo narrative
+
+The backend evidence narrative is deliberately modest:
+
+1. Two immutable synthetic records contain different penicillin allergy assertions.
+2. The system extracts both exact source spans and opens one protected conflict.
+3. Glance keeps the conflict visible with a documented display floor; negative feedback is
+   recorded but does not lower the floor or change the clinic preference profile.
+4. A clinician sees both immutable sources and adjudicates with expected_version.
+5. A stale adjudication returns 409; the attempted resolution code is retained as safe
+   metadata, and all original sources remain available.
+
+This does not claim an automated diagnosis or real-clinic safety certification.
+
+## Rollback strategy
+
+The implementation is additive:
+
+- older Alembic revisions are not edited;
+- new tables/nullable columns can be removed by the 0011 downgrade in an isolated database;
+- canonical entries, EntryVersion records, highlights, and audit rows are not deleted by the
+  runtime conflict service;
+- the iteration branch can be abandoned without changing local main or the 72h-submission tag;
+- no remote push or production database operation is part of this round.
+
+If migration compatibility or source-preservation tests fail, stop at the current checkpoint,
+retain the failing evidence, and do not trade away the existing Gate A-C behavior.
+
+## Explicit boundary
+
+Inspired by FHIR semantics for allergy/intolerance and detected-issue style review, but not
+FHIR-compliant. This is a closed synthetic vertical slice with no clinical production claim.
