@@ -299,6 +299,20 @@ section records the newer release-candidate deployment.
 | FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | in progress | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
 | FINAL-PACKAGING | Source ZIP, submission ZIP, manifest, and explicit exclusion checks | pending | `deliverables/submission/` |
 
+## Round 1 / real-clinic backend safety evidence — 2026-09-01
+
+These additive rows record the new local iteration. Earlier Phase 0–9 rows retain their
+original commit-specific evidence and are not rewritten by this checkpoint.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| REAL-CLINIC-ASSERTION | Closed-vocabulary penicillin assertions use immutable source versions, exact Unicode-codepoint spans, quote hashes, safe abstention, idempotent persistence, and superseded revision lifecycle | passed | [clinical_assertions.py](../backend/app/services/clinical_assertions.py), [test_clinical_assertions.py](../backend/tests/test_clinical_assertions.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+| REAL-CLINIC-CONFLICT | Same-clinic/patient active present/absent assertions open one deterministic dual-provenance conflict and preserve original sources | passed | [clinical_conflicts.py](../backend/app/services/clinical_conflicts.py), [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-SAFETY-FLOOR | Protected allergy conflict/confirmed-allergy highlights retain a deterministic 95.0 display floor with explicit ranking explanation fields | passed | [importance.py](../backend/app/services/importance.py), [glance.py](../backend/app/services/glance.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+| REAL-CLINIC-PROTECTED-FEEDBACK | Protected feedback is recorded/audited but is excluded from preference-profile learning; ordinary feedback remains bounded and clinic scoped | passed | [importance.py](../backend/app/services/importance.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-RBAC | Staff read/internal scope, clinician-only adjudication, patient denial, and foreign-clinic not-found behavior are enforced by the API | passed | [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [authorization.py](../backend/app/services/authorization.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-MIGRATION | Additive 0011 schema reaches head, passes Alembic check, legacy/downgrade paths, and migration-backed application fixtures without create_all | passed with disclosed prototype boundary | [0011_real_clinic_safety.py](../backend/migrations/versions/0011_real_clinic_safety.py), [test_migrations.py](../backend/tests/test_migrations.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

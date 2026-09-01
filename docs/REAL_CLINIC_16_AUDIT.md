@@ -392,6 +392,15 @@ conflict test at this baseline.
 
 Round 1 decision: Implemented now in Phase 2, strictly limited to the closed synthetic slice.
 
+Baseline status: DOES NOT — no clinical assertion or semantic conflict path existed.
+
+Round 1 improvement: The backend now extracts closed-vocabulary penicillin assertions,
+preserves exact immutable provenance, opens dual-source conflicts, protects the Glance item,
+and exposes clinician CAS adjudication.
+
+Remaining limitation: This is not general allergy/medication NLP, multilingual reasoning,
+temporality resolution, or a clinical truth engine; unsupported and ambiguous text abstains.
+
 ## Scenario 8 — Model hangs 45 seconds
 
 Status: PARTIAL
@@ -745,6 +754,15 @@ It does not cover a protected safety floor at this baseline.
 
 Round 1 decision: Improved now through the Phase 2 safety floor.
 
+Baseline status: PARTIAL — display priority was explainable and bounded, but it was not a
+medical risk score and had no protected floor.
+
+Round 1 improvement: Ranking explanations now expose pre-floor, safety floor, floor-applied,
+and final values; an internally assigned allergy safety class keeps the item at or above 95.0.
+
+Remaining limitation: The floor is an attention policy, not a calibrated risk/confidence
+measure; ordinary ranking still requires future evaluation and clinician review.
+
 ## Scenario 15 — Exposure bias and fatigue
 
 Status: PARTIAL
@@ -797,6 +815,16 @@ baseline.
 
 Round 1 decision: Partially implemented now through protected-feedback suppression; impression
 logging deferred.
+
+Baseline status: PARTIAL — only surfaced items generated feedback, with no impression
+denominator or safety protection.
+
+Round 1 improvement: Feedback events for protected safety highlights are retained and audited
+but have applied_to_profile=false and suppression_reason=protected_safety_class; their floor
+and source fields remain unchanged.
+
+Remaining limitation: Impression/exposure logging, calibration, fatigue signals, and offline
+evaluation remain deferred; only the selected safety class is protected in this round.
 
 ## Scenario 16 — Edited source provenance
 
