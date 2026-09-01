@@ -83,6 +83,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "clinical_conflicts",
             "glance_impression_batches",
             "glance_impression_items",
+            "ai_provider_circuits",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -165,6 +166,24 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "safety_class",
             "safety_floor",
         } <= impression_item_columns
+        job_columns = {
+            column["name"] for column in database_inspector.get_columns("ai_processing_jobs")
+        }
+        assert "retry_after_seconds" in job_columns
+        circuit_columns = {
+            column["name"] for column in database_inspector.get_columns("ai_provider_circuits")
+        }
+        assert {
+            "clinic_id",
+            "provider_name",
+            "state",
+            "consecutive_failures",
+            "failure_threshold",
+            "cooldown_seconds",
+            "open_until",
+            "last_failure_code",
+            "version",
+        } <= circuit_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -177,7 +196,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0012_glance_impressions"
+                == "0013_ai_provider_resilience"
             )
     finally:
         engine.dispose()
@@ -232,7 +251,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0012_glance_impressions"
+                == "0013_ai_provider_resilience"
             )
     finally:
         engine.dispose()

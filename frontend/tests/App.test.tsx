@@ -347,6 +347,7 @@ function mockAuthenticatedApi(
     commentsDelayMs?: number;
     commentsStatus?: number;
     aiProviderResponse?: unknown;
+    aiProviderStatusResponse?: unknown;
     aiJobResponse?: unknown;
     voiceProviderResponse?: unknown;
     voiceSamplesResponse?: unknown;
@@ -464,6 +465,24 @@ function mockAuthenticatedApi(
             mode: "fixture",
           },
         );
+      if (url.endsWith("/ai-processing/provider-status"))
+        return response(
+          sourceOptions.aiProviderStatusResponse ?? {
+            provider_name: "fixture-redacted-v1",
+            model: "deterministic-local",
+            mode: "fixture",
+            configured: true,
+            availability: "available",
+            circuit_state: "closed",
+            retry_after_seconds: null,
+            last_failure_code: null,
+            consecutive_failures: 0,
+            new_suggestions_available: true,
+            existing_records_available: true,
+            observed_at: "2026-08-26T00:00:00Z",
+            limitations: [],
+          },
+        );
       if (url.endsWith("/ai-processing") && init?.method === "POST") {
         return response(
           sourceOptions.aiJobResponse ?? {
@@ -477,6 +496,7 @@ function mockAuthenticatedApi(
             input_hash: "hash",
             source_reference: "synthetic-source",
             error_code: null,
+            retry_after_seconds: null,
             entry_id: "entry-ai-new",
             highlight_id: null,
             created_at: "2026-08-26T00:00:00Z",
@@ -841,6 +861,68 @@ describe("Gate B shared care note", () => {
     expect(failedResult).not.toHaveTextContent("provider_auth_failed");
     expect(failedResult).not.toHaveTextContent(".nightingale-local.json");
     expect(failedResult).not.toHaveTextContent("api.txt");
+  });
+
+  it("shows a visible degraded mode without a fixture fallback", async () => {
+    const fetchMock = mockAuthenticatedApi(staffUser, {
+      aiProviderResponse: {
+        provider_name: "deepseek-v4-flash",
+        model: "deepseek-v4-flash",
+        configured: true,
+        mode: "deepseek",
+      },
+      aiProviderStatusResponse: {
+        provider_name: "deepseek-v4-flash",
+        model: "deepseek-v4-flash",
+        mode: "deepseek",
+        configured: true,
+        availability: "temporarily_unavailable",
+        circuit_state: "open",
+        retry_after_seconds: 60,
+        last_failure_code: "provider_circuit_open",
+        consecutive_failures: 3,
+        new_suggestions_available: false,
+        existing_records_available: true,
+        observed_at: "2026-08-26T00:00:00Z",
+        limitations: [
+          "Provider calls are synchronous and there is no durable queue or automatic replay.",
+        ],
+      },
+    });
+    renderApp();
+    const panel = await screen.findByTestId("ai-scribe-panel");
+    const status = await within(panel).findByTestId("ai-provider-status");
+    expect(status).toHaveAttribute(
+      "data-availability",
+      "temporarily_unavailable",
+    );
+    expect(status).toHaveTextContent(
+      "New AI-assisted suggestions are temporarily unavailable.",
+    );
+    expect(status).toHaveTextContent(
+      "Existing care records, Glance items, tasks, comments and source links remain available.",
+    );
+    expect(status).toHaveTextContent("Try again after 60 seconds.");
+    expect(status).not.toHaveTextContent("provider_circuit_open");
+    expect(status).not.toHaveTextContent("deepseek-v4-flash");
+    expect(
+      within(panel).getByRole("button", { name: "Create suggestion" }),
+    ).toBeDisabled();
+    const statusCallsBefore = fetchMock.mock.calls.filter(([input]) =>
+      String(input).endsWith("/ai-processing/provider-status"),
+    ).length;
+    fireEvent.click(
+      within(status).getByRole("button", { name: "Check availability" }),
+    );
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).endsWith("/ai-processing/provider-status"),
+        ).length,
+      ).toBe(statusCallsBefore + 1),
+    );
+    expect(screen.getByTestId("top-card")).toBeInTheDocument();
+    expect(screen.getByText("Pending renal panel")).toBeInTheDocument();
   });
 
   it("shows a Voice note with segments and source navigation", async () => {
@@ -1937,7 +2019,7 @@ describe("Gate B shared care note", () => {
   });
 
   it("does not expose internal Glance or comments to a patient session", async () => {
-    mockAuthenticatedApi(patientUser);
+    const fetchMock = mockAuthenticatedApi(patientUser);
     renderApp();
     expect(await screen.findByText("Your care summary")).toBeInTheDocument();
     expect(
@@ -1947,5 +2029,10 @@ describe("Gate B shared care note", () => {
       screen.queryByRole("button", { name: "Comments" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId("ai-scribe-panel")).not.toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).endsWith("/ai-processing/provider-status"),
+      ),
+    ).toBe(false);
   });
 });

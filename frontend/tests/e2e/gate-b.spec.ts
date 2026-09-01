@@ -909,3 +909,159 @@ test("Scenario D - protected allergy conflict stays reviewable and private", asy
     await patientContext.close();
   }
 });
+
+test("Scenario E - provider outage degrades AI without erasing care context", async ({
+  page,
+  browser,
+}, testInfo) => {
+  let providerStatusCalls = 0;
+  await page.route(
+    "**/patients/*/ai-processing/provider-status",
+    async (route) => {
+      providerStatusCalls += 1;
+      const temporarilyUnavailable = providerStatusCalls > 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          provider_name: "deepseek-v4-flash",
+          model: "deepseek-v4-flash",
+          mode: "deepseek",
+          configured: true,
+          availability: temporarilyUnavailable
+            ? "temporarily_unavailable"
+            : "degraded",
+          circuit_state: temporarilyUnavailable ? "open" : "closed",
+          retry_after_seconds: temporarilyUnavailable ? 12 : null,
+          last_failure_code: temporarilyUnavailable
+            ? "provider_circuit_open"
+            : "provider_timeout",
+          consecutive_failures: temporarilyUnavailable ? 3 : 1,
+          new_suggestions_available: !temporarilyUnavailable,
+          existing_records_available: true,
+          observed_at: "2026-09-02T00:00:00Z",
+          limitations: [
+            "Provider calls are synchronous and there is no durable queue or automatic replay.",
+          ],
+        }),
+      });
+    },
+  );
+  await page.route("**/patients/*/ai-processing", async (route) => {
+    if (route.request().method() !== "POST") {
+      await route.continue();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "synthetic-failed-job",
+        clinic_id: "synthetic-clinic",
+        patient_id: "synthetic-patient",
+        interaction_type: "ai_doctor_consult_summary",
+        provider_name: "deepseek-v4-flash",
+        status: "failed_provider",
+        idempotency_key: "synthetic-failed-job-key",
+        input_hash: "synthetic-hash",
+        source_reference: "redacted-reference",
+        error_code: "provider_timeout",
+        retry_after_seconds: 12,
+        entry_id: null,
+        highlight_id: null,
+        created_at: "2026-09-02T00:00:00Z",
+        updated_at: "2026-09-02T00:00:00Z",
+        completed_at: "2026-09-02T00:00:12Z",
+      }),
+    });
+  });
+
+  await login(page, "staff.a@clinic-a.test");
+  const panel = page.getByTestId("ai-scribe-panel");
+  const status = page.getByTestId("ai-provider-status");
+  await expect(status).toHaveAttribute("data-availability", "degraded");
+  await expect(status).toContainText(
+    "AI-assisted updates are experiencing temporary failures.",
+  );
+  await expect(
+    panel.getByRole("button", { name: "Create suggestion" }),
+  ).toBeEnabled();
+  const glance = page.getByTestId("top-card");
+  await expect(glance).toBeVisible();
+  await expect(glance).toContainText("6 items need attention");
+
+  await panel.getByRole("button", { name: "Create suggestion" }).click();
+  const failedJob = page.getByTestId("ai-job-result");
+  await expect(failedJob).toContainText(
+    "The suggestion could not be created. Your existing record was not changed.",
+  );
+  await expect(failedJob).toContainText("Try again after 12 seconds.");
+  await expect(status).toHaveAttribute(
+    "data-availability",
+    "temporarily_unavailable",
+  );
+  await expect(status).toContainText(
+    "New AI-assisted suggestions are temporarily unavailable.",
+  );
+  await expect(status).toContainText(
+    "Existing care records, Glance items, tasks, comments and source links remain available.",
+  );
+  await expect(panel).not.toContainText("provider_timeout");
+  await expect(panel).not.toContainText("deepseek-v4-flash");
+  await expect(glance).toContainText("6 items need attention");
+
+  const sourceCard = page.getByTestId("glance-item").first();
+  await sourceCard.getByRole("button", { name: "Open source" }).click();
+  await expect(
+    page.getByRole("region", { name: "Original source", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close source" }).click();
+  const staff = await staffEntry(page);
+  const timelineEntry = page.getByTestId("timeline-entry-" + staff.id);
+  await expect(
+    timelineEntry.getByRole("button", { name: "Comments" }),
+  ).toBeVisible();
+  await expect(
+    timelineEntry.getByRole("button", { name: "History" }),
+  ).toBeVisible();
+  await timelineEntry.getByRole("button", { name: "Comments" }).click();
+  await expect(page.getByTestId("comments-drawer")).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
+  await timelineEntry.getByRole("button", { name: "Assign task" }).click();
+  await expect(page.getByTestId("task-drawer")).toBeVisible();
+  await page.getByRole("button", { name: "Close tasks" }).click();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: screenshotPath(testInfo.project.name, "scenario-e-degraded.png"),
+    fullPage: false,
+  });
+
+  const patientContext = await browser.newContext({
+    baseURL: "http://127.0.0.1:5173",
+  });
+  const patientPage = await patientContext.newPage();
+  try {
+    await login(patientPage, "sarah.patient@clinic-a.test");
+    await expect(patientPage.getByText("Your care summary")).toBeVisible();
+    await expect(patientPage.getByText("temporarily unavailable")).toHaveCount(
+      0,
+    );
+    await expect(patientPage.getByText("AI-assisted updates")).toHaveCount(0);
+    await expect(patientPage.getByTestId("ai-scribe-panel")).toHaveCount(0);
+    expect(
+      await patientPage.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await patientPage.screenshot({
+      path: screenshotPath(testInfo.project.name, "scenario-e-patient.png"),
+      fullPage: false,
+    });
+  } finally {
+    await patientContext.close();
+  }
+});

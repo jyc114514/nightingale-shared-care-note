@@ -6,6 +6,8 @@ import httpx
 import pytest
 
 from app.config import Settings, normalize_database_url
+from app.ai.deepseek import DeepSeekProvider, ProviderError
+from pydantic import SecretStr
 from app.main import create_app
 
 
@@ -77,6 +79,39 @@ def test_production_validation_requires_secure_hosting_values() -> None:
     )
     with pytest.raises(ValueError, match="disabled, fixture, or local_whisper"):
         unknown.validate_runtime_security()
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("deepseek_total_budget_seconds", 0.09, "TOTAL_BUDGET"),
+        ("deepseek_total_budget_seconds", 121, "TOTAL_BUDGET"),
+        ("deepseek_max_attempts", 0, "MAX_ATTEMPTS"),
+        ("deepseek_max_attempts", 4, "MAX_ATTEMPTS"),
+        ("deepseek_circuit_failure_threshold", 0, "FAILURE_THRESHOLD"),
+        ("deepseek_circuit_cooldown_seconds", 0, "COOLDOWN_SECONDS"),
+    ],
+)
+def test_external_provider_resilience_settings_are_bounded(
+    field: str, value: float | int, message: str
+) -> None:
+    settings = Settings()
+    setattr(settings, field, value)
+    with pytest.raises(ValueError, match=message):
+        settings.validate_runtime_security()
+
+
+def test_deepseek_provider_rejects_invalid_budget_and_attempt_count() -> None:
+    with pytest.raises(ProviderError, match="invalid_total_budget"):
+        DeepSeekProvider(
+            SecretStr("synthetic-key"),
+            total_budget_seconds=0.09,
+        )
+    with pytest.raises(ProviderError, match="invalid_max_attempts"):
+        DeepSeekProvider(
+            SecretStr("synthetic-key"),
+            max_attempts=4,
+        )
 
 
 def test_render_configuration_keeps_voice_fixture_outside_the_docker_image() -> None:
