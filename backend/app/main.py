@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes.auth import router as auth_router
 from app.api.routes.ai_processing import router as ai_processing_router
 from app.api.routes.comments import router as comments_router
+from app.api.routes.clinical_conflicts import router as clinical_conflicts_router
 from app.api.routes.context import router as context_router
 from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
@@ -68,6 +69,7 @@ def create_app(static_directory: Path | None = None) -> FastAPI:
     application.include_router(events_router)
     application.include_router(gate_b_router)
     application.include_router(comments_router)
+    application.include_router(clinical_conflicts_router)
     application.include_router(conflicts_router)
     application.include_router(context_router)
     application.include_router(tasks_router)

@@ -21,6 +21,7 @@ from app.services.entries import enum_value, record_audit
 
 
 MAX_ADAPTIVE_ADJUSTMENT = 12.0
+ALLOWED_SAFETY_CLASSES = frozenset({"allergy_conflict", "confirmed_allergy"})
 POSITIVE_EVENTS = frozenset(
     {
         FeedbackEventType.ACCEPTED.value,
@@ -47,6 +48,10 @@ class RankingBreakdown:
     unresolved_action_contribution: float
     clinician_confirmation_contribution: float
     adaptive_feedback_adjustment: float
+    pre_floor: float
+    safety_class: str | None
+    safety_floor: float | None
+    floor_applied: bool
     final_display_priority: float
 
     @property
@@ -58,6 +63,9 @@ class RankingBreakdown:
             "unresolved_action": self.unresolved_action_contribution,
             "clinician_confirmation": self.clinician_confirmation_contribution,
             "adaptive_feedback": self.adaptive_feedback_adjustment,
+            "pre_floor": self.pre_floor,
+            "safety_floor": self.safety_floor or 0.0,
+            "floor_applied": 1.0 if self.floor_applied else 0.0,
             "final": self.final_display_priority,
         }
 
@@ -65,7 +73,7 @@ class RankingBreakdown:
 @dataclass(frozen=True)
 class FeedbackResult:
     event: HighlightFeedbackEvent
-    profile: ImportanceProfile
+    profile: ImportanceProfile | None
     projection: PatientGlanceItem | None
     created: bool
 
@@ -125,6 +133,7 @@ def calculate_ranking(
     """Calculate a bounded display ranking without changing clinical source fields."""
 
     base = float(highlight.display_priority)
+    recency = _recency_contribution(entry.occurred_at)
     risk = 12.0 if highlight.risk_level else 0.0
     action = 15.0 if enum_value(highlight.action_state) == "open" else 0.0
     confirmed = (
@@ -139,29 +148,36 @@ def calculate_ranking(
     adaptive = max(
         -MAX_ADAPTIVE_ADJUSTMENT, min(MAX_ADAPTIVE_ADJUSTMENT, adaptive_feedback_adjustment)
     )
+    safety_class = getattr(highlight, "safety_class", None)
+    safety_floor = getattr(highlight, "safety_floor", None)
+    if safety_class is not None and safety_class not in ALLOWED_SAFETY_CLASSES:
+        raise ValueError("Unsupported safety class")
+    if safety_floor is not None and not 0.0 <= float(safety_floor) <= 100.0:
+        raise ValueError("Safety floor must be between 0 and 100")
+    if safety_class is None and safety_floor is not None:
+        raise ValueError("Safety floor requires a safety class")
+    pre_floor = round(base + recency + risk + action + confirmed + adaptive, 3)
+    floor_applied = safety_floor is not None and pre_floor < float(safety_floor)
+    floor_limited = max(pre_floor, float(safety_floor)) if safety_floor is not None else pre_floor
     final = max(
         0.0,
         min(
             100.0,
-            round(
-                base
-                + _recency_contribution(entry.occurred_at)
-                + risk
-                + action
-                + confirmed
-                + adaptive,
-                3,
-            ),
+            round(floor_limited, 3),
         ),
     )
     return RankingBreakdown(
         feature_signature=feature_signature(highlight, entry),
         base_priority=base,
-        recency_contribution=_recency_contribution(entry.occurred_at),
+        recency_contribution=recency,
         explicit_risk_contribution=risk,
         unresolved_action_contribution=action,
         clinician_confirmation_contribution=confirmed,
         adaptive_feedback_adjustment=adaptive,
+        pre_floor=pre_floor,
+        safety_class=safety_class,
+        safety_floor=float(safety_floor) if safety_floor is not None else None,
+        floor_applied=floor_applied,
         final_display_priority=final,
     )
 
@@ -256,29 +272,31 @@ def record_feedback_event(
         if existing.highlight_id != highlight.id or existing.event_type != event_value:
             raise FeedbackIdempotencyConflict("idempotency_key_reused_for_different_feedback")
         profile = _profile(db, highlight.clinic_id, key)
-        if profile is None:
+        if existing.applied_to_profile and profile is None:
             raise RuntimeError("Feedback profile is missing for an existing event")
         projection = db.get(PatientGlanceItem, highlight.id)
         return FeedbackResult(event=existing, profile=profile, projection=projection, created=False)
 
+    protected = highlight.safety_class is not None
     profile = _profile(db, highlight.clinic_id, key)
-    if profile is None:
-        profile = ImportanceProfile(clinic_id=highlight.clinic_id, feature_key=key)
-        db.add(profile)
-        db.flush()
-    if event_value in POSITIVE_EVENTS:
-        profile.positive_count += 1
-    else:
-        profile.negative_count += 1
-    profile.bounded_weight = max(
-        -MAX_ADAPTIVE_ADJUSTMENT,
-        min(
-            MAX_ADAPTIVE_ADJUSTMENT,
-            float(profile.positive_count - profile.negative_count) * 2.0,
-        ),
-    )
-    profile.version += 1
-    profile.updated_at = utcnow()
+    if not protected:
+        if profile is None:
+            profile = ImportanceProfile(clinic_id=highlight.clinic_id, feature_key=key)
+            db.add(profile)
+            db.flush()
+        if event_value in POSITIVE_EVENTS:
+            profile.positive_count += 1
+        else:
+            profile.negative_count += 1
+        profile.bounded_weight = max(
+            -MAX_ADAPTIVE_ADJUSTMENT,
+            min(
+                MAX_ADAPTIVE_ADJUSTMENT,
+                float(profile.positive_count - profile.negative_count) * 2.0,
+            ),
+        )
+        profile.version += 1
+        profile.updated_at = utcnow()
     event = HighlightFeedbackEvent(
         clinic_id=highlight.clinic_id,
         patient_id=highlight.patient_id,
@@ -288,23 +306,27 @@ def record_feedback_event(
         event_type=event_value,
         feature_signature=key,
         idempotency_key=idempotency_key,
+        applied_to_profile=not protected,
+        suppression_reason="protected_safety_class" if protected else None,
     )
     db.add(event)
     db.flush()
-    refresh_feature_projections(db, clinic_id=highlight.clinic_id, feature_key=key)
+    if not protected:
+        refresh_feature_projections(db, clinic_id=highlight.clinic_id, feature_key=key)
     record_audit(
         db,
         clinic_id=highlight.clinic_id,
         patient_id=highlight.patient_id,
         actor_user_id=actor_user_id,
         actor_role=actor_role,
-        action="importance_feedback_recorded",
+        action="protected_feedback_suppressed" if protected else "importance_feedback_recorded",
         entity_type="highlight_feedback_event",
         entity_id=event.id,
         request_id=request_id,
     )
     db.commit()
     db.refresh(event)
-    db.refresh(profile)
+    if profile is not None:
+        db.refresh(profile)
     projection = db.get(PatientGlanceItem, highlight.id)
     return FeedbackResult(event=event, profile=profile, projection=projection, created=True)

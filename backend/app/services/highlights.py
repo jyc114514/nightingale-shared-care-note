@@ -92,9 +92,17 @@ def create_highlight_record(
     request_id: str,
     reviewed_by_user_id: str | None = None,
     reviewed_at: datetime | None = None,
+    clinical_conflict_id: str | None = None,
+    safety_class: str | None = None,
+    safety_floor: float | None = None,
+    commit: bool = True,
 ) -> Highlight:
     source = get_source_context(db, source_version_id)
     validate_span(source.version.content, start_offset, end_offset, quote)
+    if safety_floor is not None and not 0.0 <= safety_floor <= 100.0:
+        raise ValueError("Safety floor must be between 0 and 100")
+    if safety_class is None and safety_floor is not None:
+        raise ValueError("Safety floor requires a safety class")
     highlight = Highlight(
         clinic_id=source.entry.clinic_id,
         patient_id=source.entry.patient_id,
@@ -112,6 +120,9 @@ def create_highlight_record(
         risk_reason=risk_reason,
         action_label=action_label,
         action_state=enum_value(action_state),
+        clinical_conflict_id=clinical_conflict_id,
+        safety_class=safety_class,
+        safety_floor=safety_floor,
         created_by_user_id=created_by_user_id,
         created_by_role=created_by_role,
         reviewed_by_user_id=reviewed_by_user_id,
@@ -131,8 +142,9 @@ def create_highlight_record(
         entity_id=highlight.id,
         request_id=request_id,
     )
-    db.commit()
-    db.refresh(highlight)
+    if commit:
+        db.commit()
+        db.refresh(highlight)
     return highlight
 
 
@@ -146,6 +158,10 @@ def review_highlight(
 ) -> Highlight:
     if status is HighlightStatus.SUGGESTED:
         raise HighlightValidationError("Review status must be a human decision")
+    if highlight.safety_class is not None:
+        raise HighlightValidationError(
+            "Protected safety highlights require clinical conflict adjudication"
+        )
     reviewed_at = utcnow()
     highlight.status = status.value
     highlight.reviewed_by_user_id = reviewer_user_id

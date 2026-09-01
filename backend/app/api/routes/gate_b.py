@@ -192,6 +192,9 @@ def glance(
                     risk_reason=highlight_item.risk_reason,
                     action_label=highlight_item.action_label,
                     action_state=highlight_item.action_state,
+                    clinical_conflict_id=highlight_item.clinical_conflict_id,
+                    safety_class=highlight_item.safety_class,
+                    safety_floor=highlight_item.safety_floor,
                     source_entry_id=highlight_item.source_entry_id,
                     source_version_id=highlight_item.source_version_id,
                     version_number=highlight_item.version_number,
@@ -429,13 +432,23 @@ def feedback_highlight(
     explanation = (
         json.loads(projection.ranking_explanation)
         if projection is not None
-        else {"adaptive_feedback": result.profile.bounded_weight}
+        else {
+            "adaptive_feedback": result.profile.bounded_weight
+            if result.profile is not None
+            else 0.0
+        }
     )
     return HighlightFeedbackOut(
         event_id=result.event.id,
         event_type=FeedbackEventType(result.event.event_type),
         created=result.created,
         feature_signature=result.event.feature_signature,
-        profile=ImportanceProfileOut.model_validate(result.profile),
+        profile=(
+            ImportanceProfileOut.model_validate(result.profile)
+            if result.profile is not None
+            else None
+        ),
         ranking_explanation=explanation,
+        applied_to_profile=result.event.applied_to_profile,
+        suppression_reason=result.event.suppression_reason,
     )

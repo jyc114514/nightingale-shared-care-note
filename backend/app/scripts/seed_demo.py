@@ -32,6 +32,7 @@ from app.models import (
     User,
 )
 from app.services.entries import create_entry_record, record_audit
+from app.services.clinical_assertions import sync_entry_assertions_safely
 from app.services.archival import refresh_archival_summaries
 from app.services.highlights import create_highlight_record
 from app.services.glance import sync_highlight_projection
@@ -123,6 +124,7 @@ def ensure_entry(
         )
     )
     if entry is not None:
+        written_version: EntryVersion | None = None
         current_version = db.scalar(
             select(EntryVersion).where(
                 EntryVersion.entry_id == entry.id,
@@ -135,16 +137,15 @@ def ensure_entry(
             next_version = entry.current_version + 1
             entry.current_version = next_version
             entry.updated_at = utcnow()
-            db.add(
-                EntryVersion(
-                    entry_id=entry.id,
-                    version_number=next_version,
-                    content=content,
-                    created_by_user_id=created_by_user_id,
-                    created_by_role=created_by_role,
-                    base_version=current_version.version_number,
-                )
+            written_version = EntryVersion(
+                entry_id=entry.id,
+                version_number=next_version,
+                content=content,
+                created_by_user_id=created_by_user_id,
+                created_by_role=created_by_role,
+                base_version=current_version.version_number,
             )
+            db.add(written_version)
             record_audit(
                 db,
                 clinic_id=clinic.id,
@@ -162,6 +163,15 @@ def ensure_entry(
         entry.source_kind = source_kind or entry.source_kind
         entry.source_reference = source_reference
         db.commit()
+        if written_version is not None:
+            db.refresh(entry)
+            sync_entry_assertions_safely(
+                db,
+                entry=entry,
+                version=written_version,
+                request_id=request_id,
+            )
+            db.refresh(entry)
         return entry
     return create_entry_record(
         db,
