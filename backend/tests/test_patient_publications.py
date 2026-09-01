@@ -81,6 +81,29 @@ def test_dosage_boundary_cases_are_fail_closed(content: str, expected: str) -> N
 
 
 @pytest.mark.parametrize(
+    ("content", "expected"),
+    [
+        ("METFORMIN 500 MG TWICE DAILY", "matched"),
+        ("metformin 500mg twice daily", "matched"),
+        ("Take metformin 500 mg twice daily as needed.", "unsupported"),
+        ("Take metformin 500 mg twice daily PRN.", "unsupported"),
+        ("Taper metformin 500 mg twice daily.", "unsupported"),
+        ("Take metformin 500 mg twice daily then stop.", "unsupported"),
+        ("Increase metformin 500 mg twice daily next week.", "unsupported"),
+        ("Take metformin 500 mg twice daily by mouth.", "unsupported"),
+        ("Take metformin 500 mg twice daily (oral route).", "unsupported"),
+        ("继续 metformin 500 mg 每日两次。", "unsupported"),
+        ("Take metformin 500.0 mg twice daily.", "unsupported"),
+        ("Take metformin 500 mg every morning.", "unsupported"),
+    ],
+)
+def test_dosage_context_edges_remain_outside_the_supported_slice(
+    content: str, expected: str
+) -> None:
+    assert extract_dosage(content).status.value == expected
+
+
+@pytest.mark.parametrize(
     ("source", "draft", "expected", "severity"),
     [
         (

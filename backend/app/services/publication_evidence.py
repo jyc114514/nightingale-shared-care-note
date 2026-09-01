@@ -30,6 +30,12 @@ NUMBER_UNIT_RE = re.compile(
     r"(?:mg|mcg|micrograms?|g|units?)\b",
     re.IGNORECASE,
 )
+UNSUPPORTED_DOSAGE_CONTEXT_RE = re.compile(
+    r"\b(?:prn|as needed|taper(?:ing)?|then stop|stop after|increase|decrease|reduce|"
+    r"by mouth|oral)\b",
+    re.IGNORECASE,
+)
+NON_ENGLISH_CONTEXT_RE = re.compile(r"[\u3400-\u9fff]")
 
 
 def sha256_text(value: str) -> str:
@@ -87,6 +93,10 @@ def extract_dosage(text: str) -> DosageObservation:
         match = dosage_like[0] if dosage_like else supported[0]
         return _observation_from_match(match, status=PublicationEvidenceStatus.AMBIGUOUS)
     if supported:
+        if UNSUPPORTED_DOSAGE_CONTEXT_RE.search(text) or NON_ENGLISH_CONTEXT_RE.search(text):
+            return _observation_from_match(
+                supported[0], status=PublicationEvidenceStatus.UNSUPPORTED
+            )
         return _observation_from_match(supported[0])
     if dosage_like:
         return _observation_from_match(dosage_like[0], status=PublicationEvidenceStatus.UNSUPPORTED)
