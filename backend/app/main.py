@@ -21,6 +21,8 @@ from app.api.routes.patients import router as patients_router
 from app.api.routes.tasks import router as tasks_router
 from app.api.routes.voice import router as voice_router
 from app.config import settings
+from app.middleware.safe_exceptions import SafeExceptionMiddleware
+from app.observability.safe_logging import configure_safe_logging
 
 
 def _mount_frontend(application: FastAPI, static_directory: Path) -> None:
@@ -53,8 +55,10 @@ def _mount_frontend(application: FastAPI, static_directory: Path) -> None:
 def create_app(static_directory: Path | None = None) -> FastAPI:
     """Build the application, optionally attaching a production SPA directory."""
 
+    configure_safe_logging()
     settings.validate_runtime_security()
     application = FastAPI(title="Nightingale", version="0.4.0")
+    application.add_middleware(SafeExceptionMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origin_list,
