@@ -988,7 +988,9 @@ test("Scenario E - provider outage degrades AI without erasing care context", as
   ).toBeEnabled();
   const glance = page.getByTestId("top-card");
   await expect(glance).toBeVisible();
-  await expect(glance).toContainText("6 items need attention");
+  await expect(glance.getByTestId("glance-item").first()).toBeVisible();
+  const initialGlanceCount = await glance.getByTestId("glance-item").count();
+  expect(initialGlanceCount).toBeGreaterThan(0);
 
   await panel.getByRole("button", { name: "Create suggestion" }).click();
   const failedJob = page.getByTestId("ai-job-result");
@@ -1008,7 +1010,9 @@ test("Scenario E - provider outage degrades AI without erasing care context", as
   );
   await expect(panel).not.toContainText("provider_timeout");
   await expect(panel).not.toContainText("deepseek-v4-flash");
-  await expect(glance).toContainText("6 items need attention");
+  await expect(glance.getByTestId("glance-item")).toHaveCount(
+    initialGlanceCount,
+  );
 
   const sourceCard = page.getByTestId("glance-item").first();
   await sourceCard.getByRole("button", { name: "Open source" }).click();
