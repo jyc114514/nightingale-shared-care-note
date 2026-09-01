@@ -162,3 +162,45 @@ retain the failing evidence, and do not trade away the existing Gate A-C behavio
 
 Inspired by FHIR semantics for allergy/intolerance and detected-issue style review, but not
 FHIR-compliant. This is a closed synthetic vertical slice with no clinical production claim.
+
+# Round 2/10 iteration decision
+
+Baseline: `3ed7be5249c677fdfc4c78d1ad7d6a46b4cfd545`
+
+Round: 2 of 10
+
+Decision: Turn the Round 1 allergy safety slice into an observable, reviewable product path,
+without broadening the clinical vocabulary or claiming an unbiased learning system.
+
+## Selected work
+
+1. Add only the new `0012_glance_impressions` migration. Previous migrations, the requirements
+   brief, dependency lockfiles, and the 72-hour submission tag remain unchanged.
+2. Centralize the Glance candidate snapshot and six-item selection so the read path and exposure
+   telemetry share deterministic ordering without writes, provider calls, or ranking recompute.
+3. Add an internal, idempotent exposure API that stores candidate rank/surface metadata, safety
+   floor metadata, and feature signatures without quote, content, patient name, or risk text.
+4. Add an assertion-source endpoint that revalidates exact immutable version, span, quote hash,
+   clinic, and patient before returning source data.
+5. Make generic highlight Accept/Reject reject protected clinical conflicts; give clinicians a
+   separate versioned four-option adjudication path and give Staff equal-weight read-only source
+   views.
+6. Add the protected Glance card and contextual conflict drawer, then verify desktop/mobile
+   source navigation, stale CAS handling, and Patient privacy in a real browser.
+
+## What this round can claim
+
+The local synthetic app now measures which bounded candidates were eligible and surfaced, while
+keeping protected safety feedback out of preference learning. It proves exposure data capture and
+source/decision integrity for the penicillin slice. It does not claim inverse-propensity scoring,
+counterfactual debiasing, calibrated confidence, general clinical NLP, or production compliance.
+
+## Evidence and stop boundary
+
+The local run at application/test checkpoint `803733d` reports 101 backend tests with 89%
+coverage, 43 frontend Vitest tests, 16 core Playwright checks across 1440x900 and 390x844, and a
+real-TCP SQLite warm-path P95 of 83.045 ms with zero errors. The run also passes Ruff, format,
+mypy, pip check, Alembic check, fresh
+migration/seed idempotency, frontend lint/format/type-check/build, and source/UI screenshot
+review. Round 2 stops before deployment, GitHub push, DeepSeek, Voice changes, patient
+publication, video/PDF/ZIP regeneration, RLS, and broad clinical NLP.

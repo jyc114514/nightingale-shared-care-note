@@ -66,11 +66,25 @@ Pop-Location
 Remove-Item Env:DEMO_SEED_PASSWORD
 ```
 
-The seed creates two synthetic clinics, five users, two synthetic patients, seven entries, three
-distinct system AI-scribed entry types, five source-linked highlights/materialized Glance rows,
-a threaded internal comment fixture, and a derived archival summary with immutable source
-pointers. Re-running it preserves aggregate counts. Mentions and tasks are created through the
-clinic-scoped collaboration APIs so the seed remains deterministic and read-only by default.
+The seed creates two synthetic clinics, five users, two synthetic patients, nine entries, three
+distinct system AI-scribed entry types, six source-linked highlights/materialized Glance rows,
+two source-anchored penicillin assertions with one protected conflict, a threaded internal
+comment fixture, and a derived archival summary with immutable source pointers. Re-running it
+preserves aggregate counts. Mentions and tasks are created through the clinic-scoped
+collaboration APIs so the seed remains deterministic and read-only by default.
+
+### Round 2 local safety and exposure iteration
+
+The current local iteration adds Alembic `0012_glance_impressions`, a shared provider-free Glance
+candidate builder, metadata-only exposure impressions, and a protected dual-source allergy
+conflict review drawer. Staff can inspect both sources but cannot adjudicate; clinicians use a
+versioned decision with database CAS; patients receive none of the conflict, assertion, or
+impression data. Exposure records contain candidate/surface metadata only and are an observable
+denominator for later evaluation; they do not claim IPS, counterfactual correction, or unbiased
+self-learning. The local evidence is recorded in
+[`round2_conflict_ui_exposure.md`](docs/evidence/round2_conflict_ui_exposure.md) and
+[`round2_warm_path.md`](docs/evidence/round2_warm_path.md). This iteration remains local-only:
+it does not push, deploy, call DeepSeek, or change Voice.
 
 ## Gate B API and UI
 

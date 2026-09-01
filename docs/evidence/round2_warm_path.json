@@ -1,0 +1,25 @@
+{
+  "commit": "803733d",
+  "database": "file-backed SQLite local approximation",
+  "dataset": {
+    "benchmark_entries": 208,
+    "benchmark_highlights": 208,
+    "patients": 26
+  },
+  "metrics": {
+    "concurrency": 10,
+    "error_count": 0,
+    "max_ms": 137.349,
+    "p50_ms": 64.165,
+    "p95_ms": 83.045,
+    "p99_ms": 99.848,
+    "request_count": 1000,
+    "response_item_count": 6,
+    "warmup_error_count": 0,
+    "warmup_requests": 50
+  },
+  "python": "3.10.20",
+  "target_met": true,
+  "target_p95_ms": 300,
+  "transport": "real TCP HTTP via Uvicorn and httpx.Client"
+}

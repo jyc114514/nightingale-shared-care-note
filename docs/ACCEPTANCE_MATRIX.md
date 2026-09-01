@@ -313,6 +313,23 @@ original commit-specific evidence and are not rewritten by this checkpoint.
 | REAL-CLINIC-RBAC | Staff read/internal scope, clinician-only adjudication, patient denial, and foreign-clinic not-found behavior are enforced by the API | passed | [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [authorization.py](../backend/app/services/authorization.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
 | REAL-CLINIC-MIGRATION | Additive 0011 schema reaches head, passes Alembic check, legacy/downgrade paths, and migration-backed application fixtures without create_all | passed with disclosed prototype boundary | [0011_real_clinic_safety.py](../backend/migrations/versions/0011_real_clinic_safety.py), [test_migrations.py](../backend/tests/test_migrations.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
 
+## Round 2 / conflict UI and Glance exposure evidence - 2026-09-01
+
+These additive rows record the second local iteration. Earlier Phase 0-9 and Round 1 rows retain
+their historical wording and commit-specific evidence.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND2-MIGRATION | New 0012 tables for bounded metadata-only Glance impression batches/items; fresh upgrade, downgrade/re-upgrade, legacy repair, and `alembic check` remain green without `create_all` | passed | [0012_glance_impressions.py](../backend/migrations/versions/0012_glance_impressions.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND2-CANDIDATES | Glance GET and impression POST share one provider-free deterministic candidate snapshot, six-item selection, eligible count, and 500-row storage cap | passed | [glance_read.py](../backend/app/services/glance_read.py), [gate_b.py](../backend/app/api/routes/gate_b.py), [round2_conflict_ui_exposure.md](evidence/round2_conflict_ui_exposure.md) |
+| ROUND2-IMPRESSIONS | Internal idempotent impression POST/summary APIs validate duplicate/mismatched/invalid surfaces, preserve candidate metadata only, report truncation, and do not expose patient text | passed | [impressions.py](../backend/app/services/impressions.py), [impressions.py](../backend/app/api/routes/impressions.py), [test_impressions.py](../backend/tests/test_impressions.py) |
+| ROUND2-ASSERTION-SOURCE | Clinical assertion source API revalidates clinic/patient, immutable version, exact Unicode span, quote hash, and safe corruption errors; old source survives later edits | passed | [clinical_assertions.py](../backend/app/services/clinical_assertions.py), [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| ROUND2-PROTECTED-REVIEW | Protected allergy conflicts cannot use generic Accept/Reject; card exposes protected attention/floor labels and feedback suppression; Staff is read-only and Clinician has four CAS decisions | passed | [App.tsx](../frontend/src/App.tsx), [highlights.py](../backend/app/services/highlights.py), [round2_conflict_ui_exposure.md](evidence/round2_conflict_ui_exposure.md) |
+| ROUND2-PRIVACY | Patient UI makes no conflict/assertion/impression calls and direct protected endpoints return 403; Clinic B remains isolated | passed | [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py), [test_impressions.py](../backend/tests/test_impressions.py), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+| ROUND2-BROWSER | Scenario D source replacement, dual drawer, Staff read-only, clinician stale 409/refresh, and patient privacy pass at 1440x900 and 390x844; screenshots reviewed | passed | [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [Scenario D screenshots](../artifacts/gate-b/) |
+| ROUND2-PERF | Real Uvicorn TCP warm path at `803733d`: 50 warm-up, 1,000 requests, concurrency 10, zero errors, P50 64.165 ms, P95 83.045 ms, P99 99.848 ms, max 137.349 ms, six items | passed with disclosed prototype boundary | [round2_warm_path.md](evidence/round2_warm_path.md), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
+| ROUND2-REAL-CLINIC-AUDIT | Scenario 13 improves from DOES NOT to PARTIAL; Scenarios 14 and 15 remain PARTIAL because the slice is bounded and exposure data is not debiasing/calibration | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

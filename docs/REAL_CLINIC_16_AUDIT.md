@@ -29,7 +29,7 @@ that does not yet exist. A passing test is cited only for the behavior it actual
 
 ## Scenario 1 — Patient has no email
 
-Status: DOES NOT
+Status: PARTIAL
 
 Severity: High
 
@@ -701,6 +701,18 @@ adjudication, all four resolution codes, and source preservation.
 
 Round 1 decision: Implemented now in Phase 2.
 
+Round 2 update (2026-09-01): The bounded penicillin slice is now a reviewable product path.
+`ClinicalAssertion` records preserve exact immutable source versions and code-point spans;
+`ClinicalConflict` pairs the present and absent assertions; and the protected Glance card opens
+a dual-source drawer. Staff is read-only, while a clinician records one of four decisions with a
+database compare-and-swap version check. Scenario D exercises both source links, the drawer, a
+real stale `409`, and patient denial.
+
+Remaining limitation: this is still only an explicit synthetic penicillin vocabulary. It is not
+general allergy/medication NLP, diagnosis, clinical truth calibration, multilingual extraction, or
+production safety certification. The status therefore remains PARTIAL rather than a claim that
+the full real-clinic scenario is solved.
+
 ## Scenario 14 — Meaningful risk/confidence/importance
 
 Status: PARTIAL
@@ -762,6 +774,12 @@ and final values; an internally assigned allergy safety class keeps the item at 
 
 Remaining limitation: The floor is an attention policy, not a calibrated risk/confidence
 measure; ordinary ranking still requires future evaluation and clinician review.
+
+Round 2 update (2026-09-01): Protected cards now expose product labels for the conflict, minimum
+display priority, pre-floor value, floor value, and whether the floor was applied. Generic
+Accept/Reject controls are withheld for protected conflicts, and protected Pin/Unpin feedback is
+retained without changing the preference profile. The floor remains an attention policy, not a
+calibrated medical risk or confidence score.
 
 ## Scenario 15 — Exposure bias and fatigue
 
@@ -825,6 +843,13 @@ and source fields remain unchanged.
 
 Remaining limitation: Impression/exposure logging, calibration, fatigue signals, and offline
 evaluation remain deferred; only the selected safety class is protected in this round.
+
+Round 2 update (2026-09-01): Impression batches now record the bounded eligible candidate set,
+rank, surfaced flag, feature signature, display priority, and safety metadata through an
+idempotent internal API. Candidate storage is capped at 500 and reports truncation; the frontend
+posts one opaque snapshot after a successful rendered Glance load and treats telemetry failure as
+non-blocking. The summary provides a denominator for future analysis, but no IPS, counterfactual
+correction, exposure-duration signal, calibration, or claim of unbiased self-learning is made.
 
 ## Scenario 16 — Edited source provenance
 
