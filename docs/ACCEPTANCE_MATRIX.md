@@ -45,6 +45,9 @@ Current total: **Mandatory 25/25 passed**. Deliverables: **5/5 present**, with D
 `passed with disclosed prototype boundary`: the original MP4 was supplied by the user and its
 content QA was explicitly waived for this pass. This is not a claim that Codex watched the video.
 
+Round 4 adds a separate adversarial safety record for Scenario 12; it does not silently convert
+the bounded portal gate into a general clinical or delivery claim.
+
 ## Phase 0 recorded evidence — 2026-08-25
 
 These rows record only the repository/environment scaffold. Product requirements above remain
@@ -298,6 +301,109 @@ section records the newer release-candidate deployment.
 | FINAL-VIDEO | Original MP4 supplied by the user; file metadata/hash are recorded and content QA is explicitly waived by the user; no Codex full-watch claim | passed with disclosed prototype boundary | [final video QA](evidence/final_demo_video_qa.md) |
 | FINAL-CLEAN-CLONE | Final source commit clean-clone rehearsal | in progress | [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
 | FINAL-PACKAGING | Source ZIP, submission ZIP, manifest, and explicit exclusion checks | pending | `deliverables/submission/` |
+
+## Round 1 / real-clinic backend safety evidence — 2026-09-01
+
+These additive rows record the new local iteration. Earlier Phase 0–9 rows retain their
+original commit-specific evidence and are not rewritten by this checkpoint.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| REAL-CLINIC-ASSERTION | Closed-vocabulary penicillin assertions use immutable source versions, exact Unicode-codepoint spans, quote hashes, safe abstention, idempotent persistence, and superseded revision lifecycle | passed | [clinical_assertions.py](../backend/app/services/clinical_assertions.py), [test_clinical_assertions.py](../backend/tests/test_clinical_assertions.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+| REAL-CLINIC-CONFLICT | Same-clinic/patient active present/absent assertions open one deterministic dual-provenance conflict and preserve original sources | passed | [clinical_conflicts.py](../backend/app/services/clinical_conflicts.py), [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-SAFETY-FLOOR | Protected allergy conflict/confirmed-allergy highlights retain a deterministic 95.0 display floor with explicit ranking explanation fields | passed | [importance.py](../backend/app/services/importance.py), [glance.py](../backend/app/services/glance.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+| REAL-CLINIC-PROTECTED-FEEDBACK | Protected feedback is recorded/audited but is excluded from preference-profile learning; ordinary feedback remains bounded and clinic scoped | passed | [importance.py](../backend/app/services/importance.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-RBAC | Staff read/internal scope, clinician-only adjudication, patient denial, and foreign-clinic not-found behavior are enforced by the API | passed | [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [authorization.py](../backend/app/services/authorization.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| REAL-CLINIC-MIGRATION | Additive 0011 schema reaches head, passes Alembic check, legacy/downgrade paths, and migration-backed application fixtures without create_all | passed with disclosed prototype boundary | [0011_real_clinic_safety.py](../backend/migrations/versions/0011_real_clinic_safety.py), [test_migrations.py](../backend/tests/test_migrations.py), [round1_backend_safety.md](evidence/round1_backend_safety.md) |
+
+## Round 2 / conflict UI and Glance exposure evidence - 2026-09-01
+
+These additive rows record the second local iteration. Earlier Phase 0-9 and Round 1 rows retain
+their historical wording and commit-specific evidence.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND2-MIGRATION | New 0012 tables for bounded metadata-only Glance impression batches/items; fresh upgrade, downgrade/re-upgrade, legacy repair, and `alembic check` remain green without `create_all` | passed | [0012_glance_impressions.py](../backend/migrations/versions/0012_glance_impressions.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND2-CANDIDATES | Glance GET and impression POST share one provider-free deterministic candidate snapshot, six-item selection, eligible count, and 500-row storage cap | passed | [glance_read.py](../backend/app/services/glance_read.py), [gate_b.py](../backend/app/api/routes/gate_b.py), [round2_conflict_ui_exposure.md](evidence/round2_conflict_ui_exposure.md) |
+| ROUND2-IMPRESSIONS | Internal idempotent impression POST/summary APIs validate duplicate/mismatched/invalid surfaces, preserve candidate metadata only, report truncation, and do not expose patient text | passed | [impressions.py](../backend/app/services/impressions.py), [impressions.py](../backend/app/api/routes/impressions.py), [test_impressions.py](../backend/tests/test_impressions.py) |
+| ROUND2-ASSERTION-SOURCE | Clinical assertion source API revalidates clinic/patient, immutable version, exact Unicode span, quote hash, and safe corruption errors; old source survives later edits | passed | [clinical_assertions.py](../backend/app/services/clinical_assertions.py), [clinical_conflicts.py](../backend/app/api/routes/clinical_conflicts.py), [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py) |
+| ROUND2-PROTECTED-REVIEW | Protected allergy conflicts cannot use generic Accept/Reject; card exposes protected attention/floor labels and feedback suppression; Staff is read-only and Clinician has four CAS decisions | passed | [App.tsx](../frontend/src/App.tsx), [highlights.py](../backend/app/services/highlights.py), [round2_conflict_ui_exposure.md](evidence/round2_conflict_ui_exposure.md) |
+| ROUND2-PRIVACY | Patient UI makes no conflict/assertion/impression calls and direct protected endpoints return 403; Clinic B remains isolated | passed | [test_clinical_conflicts.py](../backend/tests/test_clinical_conflicts.py), [test_impressions.py](../backend/tests/test_impressions.py), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts) |
+| ROUND2-BROWSER | Scenario D source replacement, dual drawer, Staff read-only, clinician stale 409/refresh, and patient privacy pass at 1440x900 and 390x844; screenshots reviewed | passed | [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [Scenario D screenshots](../artifacts/gate-b/) |
+| ROUND2-PERF | Real Uvicorn TCP warm path at `803733d`: 50 warm-up, 1,000 requests, concurrency 10, zero errors, P50 64.165 ms, P95 83.045 ms, P99 99.848 ms, max 137.349 ms, six items | passed with disclosed prototype boundary | [round2_warm_path.md](evidence/round2_warm_path.md), [benchmark_warm_path.py](../backend/app/scripts/benchmark_warm_path.py) |
+| ROUND2-REAL-CLINIC-AUDIT | Scenario 13 improves from DOES NOT to PARTIAL; Scenarios 14 and 15 remain PARTIAL because the slice is bounded and exposure data is not debiasing/calibration | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
+
+## Round 3 / safe failure, provider resilience, and PHI logging evidence - 2026-09-02
+
+These additive rows record the third local iteration. Earlier Phase 0-9 and Round 1-2 rows retain
+their historical wording and commit-specific evidence.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND3-MIGRATION | New 0013 adds persistent clinic/provider circuit state and AI job retry metadata; fresh, downgrade/re-upgrade, writable copy of the existing 0012 database, and `alembic check` pass | passed with local-database permission note | [0013_ai_provider_resilience.py](../backend/migrations/versions/0013_ai_provider_resilience.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND3-LOGGING | Allowlisted JSON safe events, defensive PHI/credential/control sanitizer, generic exception boundary, and explicit non-recursive log audit pass negative leak tests | passed | [safe_logging.py](../backend/app/observability/safe_logging.py), [safe_exceptions.py](../backend/app/middleware/safe_exceptions.py), [audit_phi_logs.py](../backend/app/scripts/audit_phi_logs.py), [test_safe_logging.py](../backend/tests/test_safe_logging.py) |
+| ROUND3-ORDERING | `ai_job_created` -> `ai_redaction_completed` -> provider call -> safe completion/failure -> provenance completion is tested; redaction failure has zero provider calls | passed | [ai_processing.py](../backend/app/services/ai_processing.py), [test_provider_resilience.py](../backend/tests/test_provider_resilience.py) |
+| ROUND3-BUDGET | Optional external provider uses 8s attempt timeout, 12s monotonic total budget, max 2 attempts, and no blind retry for auth/balance/429/invalid output | passed | [deepseek.py](../backend/app/ai/deepseek.py), [ROUND3_SAFE_FAILURE_DESIGN.md](ROUND3_SAFE_FAILURE_DESIGN.md), [test_provider_resilience.py](../backend/tests/test_provider_resilience.py) |
+| ROUND3-CIRCUIT | Persistent closed/open/half_open circuit is clinic/provider scoped, threshold 3, cooldown 60s, one CAS probe, success reset, failure reopen, and fixture bypass | passed | [provider_resilience.py](../backend/app/services/provider_resilience.py), [test_provider_resilience.py](../backend/tests/test_provider_resilience.py) |
+| ROUND3-STATUS | Internal patient-scoped provider status returns safe availability/circuit/retry metadata; Patient is denied and no key/base URL/response body is exposed | passed | [ai_processing.py](../backend/app/api/routes/ai_processing.py), [test_provider_resilience.py](../backend/tests/test_provider_resilience.py) |
+| ROUND3-DEGRADED-UI | Bilingual degraded/circuit-open AI panel shows no fallback, preserves existing workspace, supports bounded Check availability, and keeps Patient UI private | passed | [App.tsx](../frontend/src/App.tsx), [App.test.tsx](../frontend/tests/App.test.tsx), [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [PROVIDER_DEGRADED_MODE.md](PROVIDER_DEGRADED_MODE.md) |
+| ROUND3-BROWSER | Scenario E passes at desktop/mobile; timeout/503 is route-mocked, existing source/comments/tasks/history remain usable, and Patient sees no outage details | passed | [gate-b.spec.ts](../frontend/tests/e2e/gate-b.spec.ts), [round3_safe_failure_logging.md](evidence/round3_safe_failure_logging.md) |
+| ROUND3-PERF | Warm Glance: 1,000 TCP requests, concurrency 10, zero errors, P50 56.818 ms, P95 70.639 ms, P99 93.048 ms, max 107.593 ms; circuit-open: 100 requests, P50 16.721 ms, P95 17.911 ms, P99 18.111 ms, max 20.628 ms, zero measured provider calls | passed with disclosed local approximation boundary | [round3_safe_failure_logging.md](evidence/round3_safe_failure_logging.md), [benchmark_circuit_failfast.py](../backend/app/scripts/benchmark_circuit_failfast.py) |
+| ROUND3-AUDIT-STATUS | #3 remains PARTIAL (local logging only); #4 SURVIVES strengthened; #8 remains PARTIAL (synchronous); #9 remains PARTIAL (no durable queue/replay) | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
+
+## Round 4 / patient publication gate evidence - 2026-09-02
+
+These additive rows record the bounded Scenario 12 implementation. The original 25-item
+Mandatory total remains unchanged; the real-clinic audit status is explicitly `PARTIAL` because
+the dosage grammar is narrow and external delivery is not implemented.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND4-DESIGN | State machine distinguishes internal suggestion acceptance, draft, clinician approval, portal publication, recall, correction, supersession, and entered-in-error | passed with disclosed prototype boundary | [ROUND4_PATIENT_PUBLICATION_DESIGN.md](ROUND4_PATIENT_PUBLICATION_DESIGN.md), [PATIENT_PUBLICATION_BOUNDARY.md](PATIENT_PUBLICATION_BOUNDARY.md) |
+| ROUND4-MIGRATION | New `0014_patient_publications` schema adds workflow, immutable content versions, and deterministic source evidence without editing `0001`–`0013`; Alembic head/check and downgrade/re-upgrade pass | passed | [0014_patient_publications.py](../backend/migrations/versions/0014_patient_publications.py), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND4-DOSAGE | Synthetic metformin integer-mg dosage evidence uses immutable source/version and Unicode-codepoint offsets; mismatch, ambiguity, unsupported grammar, and source changes fail closed | passed | [publication_evidence.py](../backend/app/services/publication_evidence.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-WORKFLOW | Staff prepare/edit, Clinician approve/publish/recall/correct, workflow CAS `409`, audit metadata, and no Accept→Publish shortcut pass through the real API | passed | [patient_publications.py](../backend/app/services/patient_publications.py), [patient_publications.py](../backend/app/api/routes/patient_publications.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-PATIENT-PROJECTION | Patient receives only current published content or safe withdrawal/correction notices; internal source, raw AI, workflow/evidence/history IDs are absent; legacy timeline remains unchanged | passed | [patients.py](../backend/app/api/routes/patients.py), [patient_publications.py](../backend/app/api/routes/patient_publications.py), [test_patient_publications.py](../backend/tests/test_patient_publications.py) |
+| ROUND4-UI | Bilingual internal publication drawer shows exact source, dosage status, draft history, role boundary, explicit publish confirmation, recall/correction controls, and Patient projection | passed | [App.tsx](../frontend/src/App.tsx), [App.test.tsx](../frontend/tests/App.test.tsx) |
+| ROUND4-BROWSER | Scenario F passes at 1440×900 and 390×844: wrong dosage block, Patient privacy, approval→publish, recall, correction, and two-context stale approval | passed | [patient-publication.spec.ts](../frontend/tests/e2e/patient-publication.spec.ts) |
+| ROUND4-PERF | Published-care real TCP path: 50 warm-up + 1,000 requests, concurrency 10, zero errors, P95 46.797 ms on local SQLite/Uvicorn | passed with disclosed local approximation boundary | [round4_patient_publication.md](evidence/round4_patient_publication.md), [round4_patient_publication_p95.json](evidence/round4_patient_publication_p95.json) |
+| ROUND4-AUDIT-STATUS | Scenario 12 improves from missing workflow to **PARTIAL** bounded portal gate; no external delivery/receipt/recall or general medication NLP is claimed | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
+
+## Round 5 / release-candidate integration evidence - 2026-09-02
+
+These rows reconcile Round 1–4 without adding clinical scope. Real PostgreSQL execution and
+external GitHub Actions remain pending Round 6 authorization; offline SQL is not execution
+evidence. Final video/PDF/ZIP artifacts are intentionally unchanged.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND5-TEMP-HYGIENE | Genuine Round pytest/Ruff/Playwright artifacts identified; removable generated outputs deleted, ACL-protected pytest directories preserved and narrowly ignored | passed with disclosed ACL note | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [.gitignore](../.gitignore) |
+| ROUND5-DIFF-AUDIT | Round 1–4 migrations, models, services, routes, frontend, tests, benchmarks, state/privacy distinctions and local/hosted claims reconciled | passed | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [route/privacy audit](evidence/round5_route_privacy_audit.md) |
+| ROUND5-MIGRATION-FRESH | Fresh SQLite 0001→0014, schema/FK inspection, seed twice, stable counts, and Alembic check pass | passed | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND5-MIGRATION-LEGACY | Disposable 0010/0011/0012/0013 → 0014 paths preserve old synthetic records and pass seed/check; downgrade data-loss behavior documented | passed with disposable-database boundary | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [round5_legacy_probe.py](../backend/app/scripts/round5_legacy_probe.py) |
+| ROUND5-POSTGRES-OFFLINE | PostgreSQL dialect offline SQL 0010→0014 contains publication/self-reference constraints and no SQLite temp token; fresh base→head limitation recorded | passed with disclosed offline limitation | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [real-clinic-postgres.yml](../.github/workflows/real-clinic-postgres.yml) |
+| ROUND5-POSTGRES-CI | PostgreSQL 18/Python 3.12 workflow prepared with current 0014 schema, seed, tests and static gates; not externally executed in Round 5 | ready — pending Round 6 external CI | [real-clinic-postgres.yml](../.github/workflows/real-clinic-postgres.yml) |
+| ROUND5-CLEAN-CLONE | Tracked-only clean clone v3 at `39ab0f0`: backend/frontend gates, launcher smoke, Gate B, Voice, and Scenario F pass at both viewports; clone cleanup has a documented Windows ACL note | passed with disclosed ACL note | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [clean-clone evidence](evidence/clean_clone_rehearsal.md) |
+| ROUND5-REGRESSION | Primary final run: 175 backend tests/85% coverage, 45 frontend tests, static quality, log audit, secret/history scan and port checks pass | passed with disclosed local-boundary evidence | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [route/privacy audit](evidence/round5_route_privacy_audit.md) |
+| ROUND5-DEMO | Scenario 13/15 primary safety path and Scenario 12 optional publication path documented with no new recording | passed | [REAL_CLINIC_DEMO_RUNBOOK.md](REAL_CLINIC_DEMO_RUNBOOK.md), [REAL_CLINIC_SCENARIO_DEMO.md](REAL_CLINIC_SCENARIO_DEMO.md) |
+| ROUND5-BRIEF | Round 1–5 iteration brief records baseline, scope, architecture, evidence and non-claims | passed | [REAL_CLINIC_ITERATION_BRIEF.md](REAL_CLINIC_ITERATION_BRIEF.md) |
+
+## Round 6 / external PostgreSQL 18 gate - 2026-09-02
+
+Round 6 performed the authorized external database gate on the iteration branch only. The first
+run exposed one optional-Voice static-check annotation issue; the bounded repair and second run
+passed. The final documentation commit also passed its exact-SHA run and `real-clinic-rc2` was
+created at that final commit. No `main` push, pull request, Render deploy, or production database
+was used in Round 6.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND6-BRANCH-PUSH | `codex/real-clinic-safety` pushed at `6de7f0c`; remote `main` remained `573f897`; push was non-force and no tag was moved | passed | [Round 6 gate](ROUND6_EXTERNAL_GATE.md), [Round 6 evidence](evidence/round6_postgres_ci.md) |
+| ROUND6-POSTGRES-CI | Exact commit `2af8073` passed the PostgreSQL 18/Python 3.12 workflow: fresh and downgrade/re-upgrade Alembic checks through `0014`, schema/index/FK assertions, seed twice, full backend tests, Ruff, mypy, and pip check | passed | [GitHub Actions run 33592195446](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33592195446), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-REPAIR-BOUNDARY | The only repair changed the `faster_whisper` optional import's mypy ignore code; migrations, requirements, runtime behavior, and data model were unchanged | passed | [providers.py](../backend/app/voice/providers.py), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-SECURITY-BOUNDARY | Remote branch tree has zero forbidden tracked artifacts; CI uses disposable synthetic values and no deployment step | passed | [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-FINAL-EVIDENCE | Documentation commit `eeff4cf` passed exact-SHA run `33592639722`; remote annotated `real-clinic-rc2` peels to that commit | passed | [round6_postgres_ci.md](evidence/round6_postgres_ci.md), [ROUND6_EXTERNAL_GATE.md](ROUND6_EXTERNAL_GATE.md) |
+| ROUND5-POSTGRES-CI-CLOSEOUT | The Round 5 prepared-workflow status is historical; Round 6 executed it successfully on real PostgreSQL 18 and recorded the final evidence/tag | passed | [Round 6 evidence](evidence/round6_postgres_ci.md) |
 
 ## Hard release gate
 

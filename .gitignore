@@ -50,3 +50,5 @@ Thumbs.db
 # Local logs and temporary files
 *.log
 *.tmp
+.pytest-tmp-round*/
+.ruff-cache-round*/

@@ -1,15 +1,23 @@
 import type {
   AIJob,
   AIProviderInfo,
+  AIProviderStatus,
   ApiErrorShape,
+  ClinicalAssertionSource,
+  ClinicalConflict,
+  ClinicalConflictResolution,
   Comment,
   ContextRefresh,
   PatientContext,
+  PatientCareUpdate,
+  PatientPublication,
   Conflict,
   Diff,
   FeedbackEventType,
   GlanceItem,
   ImportanceFeedback,
+  GlanceImpressionBatch,
+  GlanceExposureSummary,
   Me,
   MentionUser,
   Patient,
@@ -122,8 +130,120 @@ export const api = {
     }),
   glance: (patientId: string) =>
     request<GlanceItem[]>(`/patients/${patientId}/glance`),
+  clinicalConflicts: (patientId: string) =>
+    request<ClinicalConflict[]>(`/patients/${patientId}/clinical-conflicts`),
+  clinicalConflict: (conflictId: string) =>
+    request<ClinicalConflict>(`/clinical-conflicts/${conflictId}`),
+  assertionSource: (assertionId: string) =>
+    request<ClinicalAssertionSource>(
+      `/clinical-assertions/${assertionId}/source`,
+    ),
+  adjudicateClinicalConflict: (
+    conflictId: string,
+    expectedVersion: number,
+    resolution: ClinicalConflictResolution,
+  ) =>
+    request<ClinicalConflict>(`/clinical-conflicts/${conflictId}/adjudicate`, {
+      method: "PATCH",
+      ...json({ expected_version: expectedVersion, resolution }),
+    }),
+  recordGlanceImpression: (
+    patientId: string,
+    payload: {
+      idempotency_key: string;
+      requested_limit: number;
+      surfaced_items: Array<{
+        resource_type: "highlight" | "task";
+        resource_id: string;
+      }>;
+    },
+  ) =>
+    request<GlanceImpressionBatch>(
+      `/patients/${patientId}/glance-impressions`,
+      {
+        method: "POST",
+        ...json(payload),
+      },
+    ),
+  glanceExposureSummary: (patientId: string) =>
+    request<GlanceExposureSummary>(
+      `/patients/${patientId}/glance-impressions/summary`,
+    ),
   source: (highlightId: string) =>
     request<ProvenanceSource>(`/highlights/${highlightId}/source`),
+  patientPublications: (patientId: string) =>
+    request<PatientPublication[]>(
+      `/patients/${patientId}/patient-publications`,
+    ),
+  patientPublication: (publicationId: string) =>
+    request<PatientPublication>(`/patient-publications/${publicationId}`),
+  createPatientPublication: (entryId: string, content?: string) =>
+    request<PatientPublication>(`/entries/${entryId}/patient-publications`, {
+      method: "POST",
+      ...json(content === undefined ? {} : { content }),
+    }),
+  updatePatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+    content: string,
+  ) =>
+    request<PatientPublication>(`/patient-publications/${publicationId}`, {
+      method: "PATCH",
+      ...json({
+        expected_workflow_version: expectedWorkflowVersion,
+        content,
+      }),
+    }),
+  approvePatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/approve`,
+      {
+        method: "POST",
+        ...json({ expected_workflow_version: expectedWorkflowVersion }),
+      },
+    ),
+  publishPatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/publish`,
+      {
+        method: "POST",
+        ...json({ expected_workflow_version: expectedWorkflowVersion }),
+      },
+    ),
+  recallPatientPublication: (
+    publicationId: string,
+    expectedWorkflowVersion: number,
+    reasonCode:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/recall`,
+      {
+        method: "POST",
+        ...json({
+          expected_workflow_version: expectedWorkflowVersion,
+          reason_code: reasonCode,
+        }),
+      },
+    ),
+  createPatientPublicationCorrection: (publicationId: string) =>
+    request<PatientPublication>(
+      `/patient-publications/${publicationId}/corrections`,
+      { method: "POST", ...json({}) },
+    ),
+  publishedCare: (patientId: string) =>
+    request<{ updates: PatientCareUpdate[] }>(
+      `/patients/${patientId}/published-care`,
+    ),
   comments: (entryId: string) =>
     request<Comment[]>(`/entries/${entryId}/comments`),
   addComment: (
@@ -224,6 +344,10 @@ export const api = {
     }),
   aiJob: (jobId: string) => request<AIJob>(`/ai-processing/${jobId}`),
   aiProvider: () => request<AIProviderInfo>("/ai-processing/provider"),
+  aiProviderStatus: (patientId: string) =>
+    request<AIProviderStatus>(
+      `/patients/${patientId}/ai-processing/provider-status`,
+    ),
   eventsUrl: (patientId: string) =>
     `${apiBaseUrl}/patients/${patientId}/events`,
   voiceProvider: () => request<VoiceProviderInfo>("/voice/provider"),

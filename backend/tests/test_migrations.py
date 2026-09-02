@@ -79,6 +79,14 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "collaboration_events",
             "voice_sessions",
             "transcript_segments",
+            "clinical_assertions",
+            "clinical_conflicts",
+            "glance_impression_batches",
+            "glance_impression_items",
+            "ai_provider_circuits",
+            "patient_publications",
+            "patient_publication_versions",
+            "patient_publication_evidence",
         }
         entry_columns = {column["name"] for column in database_inspector.get_columns("entries")}
         assert {"occurred_at", "source_kind", "source_reference"} <= entry_columns
@@ -106,7 +114,119 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             "base_priority",
             "adaptive_feedback_adjustment",
             "ranking_explanation",
+            "clinical_conflict_id",
+            "safety_class",
+            "safety_floor",
         } <= glance_columns
+        feedback_columns = {
+            column["name"] for column in database_inspector.get_columns("highlight_feedback_events")
+        }
+        assert {"applied_to_profile", "suppression_reason"} <= feedback_columns
+        applied_to_profile = next(
+            column
+            for column in database_inspector.get_columns("highlight_feedback_events")
+            if column["name"] == "applied_to_profile"
+        )
+        assert applied_to_profile["nullable"] is False
+        assert str(applied_to_profile["default"]).lower() in {"1", "true"}
+        assertion_columns = {
+            column["name"] for column in database_inspector.get_columns("clinical_assertions")
+        }
+        assert {
+            "source_entry_id",
+            "source_version_id",
+            "start_offset",
+            "end_offset",
+            "quote_sha256",
+            "verification_status",
+            "status",
+        } <= assertion_columns
+        conflict_columns = {
+            column["name"] for column in database_inspector.get_columns("clinical_conflicts")
+        }
+        assert {
+            "positive_assertion_id",
+            "negative_assertion_id",
+            "version",
+            "resolution",
+            "status",
+        } <= conflict_columns
+        impression_batch_columns = {
+            column["name"] for column in database_inspector.get_columns("glance_impression_batches")
+        }
+        assert {
+            "actor_user_id",
+            "algorithm_version",
+            "requested_limit",
+            "eligible_count",
+            "stored_candidate_count",
+            "surfaced_count",
+            "candidate_truncated",
+        } <= impression_batch_columns
+        impression_item_columns = {
+            column["name"] for column in database_inspector.get_columns("glance_impression_items")
+        }
+        assert {
+            "resource_type",
+            "resource_id",
+            "feature_signature",
+            "candidate_rank",
+            "surfaced",
+            "display_priority",
+            "safety_class",
+            "safety_floor",
+        } <= impression_item_columns
+        job_columns = {
+            column["name"] for column in database_inspector.get_columns("ai_processing_jobs")
+        }
+        assert "retry_after_seconds" in job_columns
+        circuit_columns = {
+            column["name"] for column in database_inspector.get_columns("ai_provider_circuits")
+        }
+        assert {
+            "clinic_id",
+            "provider_name",
+            "state",
+            "consecutive_failures",
+            "failure_threshold",
+            "cooldown_seconds",
+            "open_until",
+            "last_failure_code",
+            "version",
+        } <= circuit_columns
+        publication_columns = {
+            column["name"] for column in database_inspector.get_columns("patient_publications")
+        }
+        assert {
+            "source_entry_id",
+            "source_version_id",
+            "state",
+            "content_version",
+            "workflow_version",
+            "severity_class",
+            "correction_of_publication_id",
+            "superseded_by_publication_id",
+            "approved_content_version",
+        } <= publication_columns
+        publication_version_columns = {
+            column["name"]
+            for column in database_inspector.get_columns("patient_publication_versions")
+        }
+        assert {"publication_id", "version_number", "content_sha256"} <= (
+            publication_version_columns
+        )
+        publication_evidence_columns = {
+            column["name"]
+            for column in database_inspector.get_columns("patient_publication_evidence")
+        }
+        assert {
+            "publication_version_id",
+            "source_version_id",
+            "start_offset",
+            "end_offset",
+            "quote_sha256",
+            "validation_status",
+        } <= publication_evidence_columns
         email_indexes = {
             index["name"]: index["unique"] for index in database_inspector.get_indexes("users")
         }
@@ -119,7 +239,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0010_postgres_compat"
+                == "0015_feedback_backward_compat"
             )
     finally:
         engine.dispose()
@@ -127,6 +247,17 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
 
 def test_migration_downgrade_and_reupgrade_are_reversible(migrated_database: str) -> None:
     downgraded = run_alembic(migrated_database, "downgrade", "0001_gate_a")
+    assert downgraded.returncode == 0, downgraded.stderr
+    upgraded = run_alembic(migrated_database, "upgrade", "head")
+    assert upgraded.returncode == 0, upgraded.stderr
+    checked = run_alembic(migrated_database, "check")
+    assert checked.returncode == 0, checked.stderr
+
+
+def test_feedback_compatibility_downgrade_and_reupgrade_are_disposable(
+    migrated_database: str,
+) -> None:
+    downgraded = run_alembic(migrated_database, "downgrade", "0014_patient_publications")
     assert downgraded.returncode == 0, downgraded.stderr
     upgraded = run_alembic(migrated_database, "upgrade", "head")
     assert upgraded.returncode == 0, upgraded.stderr
@@ -174,7 +305,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0010_postgres_compat"
+                == "0015_feedback_backward_compat"
             )
     finally:
         engine.dispose()
@@ -207,11 +338,55 @@ def test_seed_requires_migrations_and_is_idempotent(tmp_path: Path) -> None:
                     "WHERE entry_type LIKE 'ai_%'"
                 )
             ).mappings()
-            ai_by_type = {row["entry_type"]: row for row in ai_rows}
-        assert ai_by_type["ai_doctor_consult_summary"]["occurred_at"].startswith("2026-02-06")
-        assert ai_by_type["ai_nurse_consult_summary"]["occurred_at"].startswith("2026-08-24")
-        assert ai_by_type["ai_patient_session_summary"]["occurred_at"].startswith("2026-08-20")
-        assert all(row["source_reference"] for row in ai_by_type.values())
+            ai_by_reference = {row["source_reference"]: row for row in ai_rows}
+            allergy_rows = list(
+                connection.execute(
+                    text(
+                        "SELECT entry_type, source_reference FROM entries "
+                        "WHERE source_reference IN "
+                        "('synthetic-allergy-nurse-note', "
+                        "'synthetic-allergy-patient-session')"
+                    )
+                ).mappings()
+            )
+            assertion_count = connection.execute(
+                text("SELECT COUNT(*) FROM clinical_assertions")
+            ).scalar_one()
+            clinical_conflict_count = connection.execute(
+                text("SELECT COUNT(*) FROM clinical_conflicts")
+            ).scalar_one()
+            publication_rows = list(
+                connection.execute(
+                    text(
+                        "SELECT state, severity_class FROM patient_publications "
+                        "WHERE source_entry_id IN (SELECT id FROM entries "
+                        "WHERE source_reference = 'synthetic-medication-plan')"
+                    )
+                ).mappings()
+            )
+            publication_evidence_status = connection.execute(
+                text(
+                    "SELECT validation_status FROM patient_publication_evidence "
+                    "WHERE publication_id IN (SELECT id FROM patient_publications "
+                    "WHERE source_entry_id IN (SELECT id FROM entries "
+                    "WHERE source_reference = 'synthetic-medication-plan'))"
+                )
+            ).scalar_one()
+        assert ai_by_reference["synthetic-doctor-consult-2026-02-06"]["occurred_at"].startswith(
+            "2026-02-06"
+        )
+        assert ai_by_reference["synthetic-nurse-consult-2026-08-24"]["occurred_at"].startswith(
+            "2026-08-24"
+        )
+        assert ai_by_reference["synthetic-patient-session-2026-08-20"]["occurred_at"].startswith(
+            "2026-08-20"
+        )
+        assert all(row["source_reference"] for row in ai_rows)
+        assert len(allergy_rows) == 2
+        assert assertion_count == 2
+        assert clinical_conflict_count == 1
+        assert publication_rows == [{"state": "draft", "severity_class": "medication_dosage"}]
+        assert publication_evidence_status == "mismatch"
     finally:
         engine.dispose()
 

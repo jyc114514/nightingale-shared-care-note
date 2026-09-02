@@ -10,15 +10,20 @@ from fastapi.staticfiles import StaticFiles
 from app.api.routes.auth import router as auth_router
 from app.api.routes.ai_processing import router as ai_processing_router
 from app.api.routes.comments import router as comments_router
+from app.api.routes.clinical_conflicts import router as clinical_conflicts_router
 from app.api.routes.context import router as context_router
 from app.api.routes.conflicts import router as conflicts_router
 from app.api.routes.entries import router as entries_router
 from app.api.routes.events import router as events_router
 from app.api.routes.gate_b import router as gate_b_router
+from app.api.routes.impressions import router as impressions_router
 from app.api.routes.patients import router as patients_router
+from app.api.routes.patient_publications import router as patient_publications_router
 from app.api.routes.tasks import router as tasks_router
 from app.api.routes.voice import router as voice_router
 from app.config import settings
+from app.middleware.safe_exceptions import SafeExceptionMiddleware
+from app.observability.safe_logging import configure_safe_logging
 
 
 def _mount_frontend(application: FastAPI, static_directory: Path) -> None:
@@ -51,8 +56,10 @@ def _mount_frontend(application: FastAPI, static_directory: Path) -> None:
 def create_app(static_directory: Path | None = None) -> FastAPI:
     """Build the application, optionally attaching a production SPA directory."""
 
+    configure_safe_logging()
     settings.validate_runtime_security()
     application = FastAPI(title="Nightingale", version="0.4.0")
+    application.add_middleware(SafeExceptionMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origin_list,
@@ -64,10 +71,13 @@ def create_app(static_directory: Path | None = None) -> FastAPI:
     application.include_router(auth_router)
     application.include_router(ai_processing_router)
     application.include_router(patients_router)
+    application.include_router(patient_publications_router)
     application.include_router(entries_router)
     application.include_router(events_router)
     application.include_router(gate_b_router)
+    application.include_router(impressions_router)
     application.include_router(comments_router)
+    application.include_router(clinical_conflicts_router)
     application.include_router(conflicts_router)
     application.include_router(context_router)
     application.include_router(tasks_router)

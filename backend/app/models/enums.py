@@ -83,3 +83,72 @@ class TaskStatus(str, Enum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     DONE = "done"
+
+
+class PatientPublicationState(str, Enum):
+    DRAFT = "draft"
+    CLINICIAN_APPROVED = "clinician_approved"
+    PUBLISHED = "published"
+    RECALLED = "recalled"
+    SUPERSEDED = "superseded"
+    ENTERED_IN_ERROR = "entered_in_error"
+
+
+class PatientPublicationSeverity(str, Enum):
+    GENERAL = "general"
+    MEDICATION_DOSAGE = "medication_dosage"
+
+
+class PublicationEvidenceType(str, Enum):
+    MEDICATION_DOSAGE = "medication_dosage"
+
+
+class PublicationEvidenceStatus(str, Enum):
+    MATCHED = "matched"
+    MISMATCH = "mismatch"
+    AMBIGUOUS = "ambiguous"
+    UNSUPPORTED = "unsupported"
+    MISSING = "missing"
+
+
+class AssertionDomain(str, Enum):
+    ALLERGY = "allergy"
+
+
+class AssertionPolarity(str, Enum):
+    PRESENT = "present"
+    ABSENT = "absent"
+
+
+class AssertionVerificationStatus(str, Enum):
+    UNCONFIRMED = "unconfirmed"
+    CONFIRMED = "confirmed"
+    REFUTED = "refuted"
+    ENTERED_IN_ERROR = "entered_in_error"
+
+
+class AssertionCriticality(str, Enum):
+    UNABLE_TO_ASSESS = "unable_to_assess"
+    HIGH = "high"
+
+
+class AssertionStatus(str, Enum):
+    ACTIVE = "active"
+    SUPERSEDED = "superseded"
+
+
+class ClinicalConflictType(str, Enum):
+    ALLERGY_ASSERTION_CONFLICT = "allergy_assertion_conflict"
+
+
+class ClinicalConflictStatus(str, Enum):
+    OPEN = "open"
+    ADJUDICATED = "adjudicated"
+    SUPERSEDED = "superseded"
+
+
+class ClinicalConflictResolution(str, Enum):
+    CONFIRMED_PRESENT = "confirmed_present"
+    CONFIRMED_ABSENT = "confirmed_absent"
+    NEEDS_MORE_INFORMATION = "needs_more_information"
+    ENTERED_IN_ERROR = "entered_in_error"

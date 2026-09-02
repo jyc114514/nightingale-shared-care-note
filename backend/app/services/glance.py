@@ -44,6 +44,9 @@ def sync_highlight_projection(db: Session, highlight: Highlight) -> PatientGlanc
     projected.risk_reason = highlight.risk_reason
     projected.action_label = highlight.action_label
     projected.action_state = enum_value(highlight.action_state)
+    projected.clinical_conflict_id = highlight.clinical_conflict_id
+    projected.safety_class = highlight.safety_class
+    projected.safety_floor = highlight.safety_floor
     projected.version_number = version.version_number
     projected.current_entry_version = entry.current_version
     projected.source_label = source_label(entry)

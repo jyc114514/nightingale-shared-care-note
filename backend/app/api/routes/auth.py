@@ -50,7 +50,11 @@ def make_me_response(db: Session, user: User) -> MeResponse:
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def login(
     payload: LoginRequest,
     response: Response,
@@ -84,7 +88,7 @@ def login(
 @router.post(
     "/logout",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_allowed_origin)],
+    dependencies=[Depends(get_current_user), Depends(require_allowed_origin)],
 )
 def logout(response: Response) -> None:
     response.delete_cookie(key=SESSION_COOKIE, path="/")

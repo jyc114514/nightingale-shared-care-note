@@ -28,13 +28,18 @@ from app.models import (
     HighlightStatus,
     Patient,
     PatientGlanceItem,
+    PatientPublication,
+    PatientPublicationEvidence,
+    PatientPublicationVersion,
     PatientUserLink,
     User,
 )
 from app.services.entries import create_entry_record, record_audit
+from app.services.clinical_assertions import sync_entry_assertions_safely
 from app.services.archival import refresh_archival_summaries
 from app.services.highlights import create_highlight_record
 from app.services.glance import sync_highlight_projection
+from app.services.patient_publications import create_publication_draft
 
 
 def get_or_create_clinic(db: Session, name: str) -> Clinic:
@@ -115,14 +120,16 @@ def ensure_entry(
     source_kind: str | None = None,
     source_reference: str | None = None,
 ) -> Entry:
-    entry = db.scalar(
-        select(Entry).where(
-            Entry.patient_id == patient.id,
-            Entry.entry_type == entry_type.value,
-            Entry.created_by_user_id == created_by_user_id,
-        )
+    entry_query = select(Entry).where(
+        Entry.patient_id == patient.id,
+        Entry.entry_type == entry_type.value,
+        Entry.created_by_user_id == created_by_user_id,
     )
+    if source_reference is not None:
+        entry_query = entry_query.where(Entry.source_reference == source_reference)
+    entry = db.scalar(entry_query)
     if entry is not None:
+        written_version: EntryVersion | None = None
         current_version = db.scalar(
             select(EntryVersion).where(
                 EntryVersion.entry_id == entry.id,
@@ -135,16 +142,15 @@ def ensure_entry(
             next_version = entry.current_version + 1
             entry.current_version = next_version
             entry.updated_at = utcnow()
-            db.add(
-                EntryVersion(
-                    entry_id=entry.id,
-                    version_number=next_version,
-                    content=content,
-                    created_by_user_id=created_by_user_id,
-                    created_by_role=created_by_role,
-                    base_version=current_version.version_number,
-                )
+            written_version = EntryVersion(
+                entry_id=entry.id,
+                version_number=next_version,
+                content=content,
+                created_by_user_id=created_by_user_id,
+                created_by_role=created_by_role,
+                base_version=current_version.version_number,
             )
+            db.add(written_version)
             record_audit(
                 db,
                 clinic_id=clinic.id,
@@ -162,6 +168,15 @@ def ensure_entry(
         entry.source_kind = source_kind or entry.source_kind
         entry.source_reference = source_reference
         db.commit()
+        if written_version is not None:
+            db.refresh(entry)
+            sync_entry_assertions_safely(
+                db,
+                entry=entry,
+                version=written_version,
+                request_id=request_id,
+            )
+            db.refresh(entry)
         return entry
     return create_entry_record(
         db,
@@ -392,6 +407,21 @@ def seed_demo() -> dict[str, object]:
             source_kind="manual",
             source_reference="self-manual",
         )
+        dosage_source = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.STAFF_NOTE,
+            owner_role=EntryOwnerRole.STAFF,
+            visibility=EntryVisibility.INTERNAL,
+            content="Continue metformin 500 mg twice daily.",
+            created_by_user_id=staff_a.id,
+            created_by_role="staff",
+            request_id="seed-dosage-source",
+            occurred_at=demo_time("2026-08-25T07:30:00"),
+            source_kind="manual",
+            source_reference="synthetic-medication-plan",
+        )
         clinician_section = ensure_entry(
             db,
             clinic=clinic_a,
@@ -451,6 +481,36 @@ def seed_demo() -> dict[str, object]:
             occurred_at=demo_time("2026-08-20T10:00:00"),
             source_kind="patient_ai_session",
             source_reference="synthetic-patient-session-2026-08-20",
+        )
+        _allergy_nurse = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.STAFF_NOTE,
+            owner_role=EntryOwnerRole.STAFF,
+            visibility=EntryVisibility.INTERNAL,
+            content="Patient reports a penicillin allergy.",
+            created_by_user_id=staff_a.id,
+            created_by_role="staff",
+            request_id="seed-allergy-nurse",
+            occurred_at=demo_time("2026-08-24T09:00:00"),
+            source_kind="manual",
+            source_reference="synthetic-allergy-nurse-note",
+        )
+        _allergy_patient = ensure_entry(
+            db,
+            clinic=clinic_a,
+            patient=patient_a,
+            entry_type=EntryType.AI_PATIENT_SESSION_SUMMARY,
+            owner_role=EntryOwnerRole.SYSTEM,
+            visibility=EntryVisibility.INTERNAL,
+            content="I have no known drug allergies.",
+            created_by_user_id=None,
+            created_by_role="system",
+            request_id="seed-allergy-patient",
+            occurred_at=demo_time("2026-08-24T09:05:00"),
+            source_kind="patient_ai_session",
+            source_reference="synthetic-allergy-patient-session",
         )
         root_comment = ensure_comment(db, clinic_a, patient_a, ai_session, clinician_a)
         ensure_reply(
@@ -532,6 +592,16 @@ def seed_demo() -> dict[str, object]:
             created_by_user_id=None,
             request_id="seed-highlight-conflict",
         )
+        create_publication_draft(
+            db,
+            clinic_id=clinic_a.id,
+            patient_id=patient_a.id,
+            source_entry_id=dosage_source.id,
+            actor=staff_a,
+            actor_role="staff",
+            request_id="seed-publication-dosage",
+            content="Take metformin 1000 mg twice daily.",
+        )
         refresh_archival_summaries(
             db,
             clinic_id=clinic_a.id,
@@ -549,6 +619,9 @@ def seed_demo() -> dict[str, object]:
             "glance_items": db.query(PatientGlanceItem).count(),
             "archival_summaries": db.query(ArchivalSummary).count(),
             "archival_sources": db.query(ArchivalSummarySource).count(),
+            "patient_publications": db.query(PatientPublication).count(),
+            "patient_publication_versions": db.query(PatientPublicationVersion).count(),
+            "patient_publication_evidence": db.query(PatientPublicationEvidence).count(),
         }
         return {
             "clinic_ids": [clinic_a.id, clinic_b.id],

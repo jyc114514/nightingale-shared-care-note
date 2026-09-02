@@ -109,5 +109,7 @@ def get_provider(app_settings: Settings | None = None) -> AIProvider:
         base_url=config.deepseek_base_url or DEEPSEEK_DEFAULT_BASE_URL,
         model=config.deepseek_model,
         timeout_seconds=config.deepseek_timeout_seconds,
+        total_budget_seconds=config.deepseek_total_budget_seconds,
+        max_attempts=config.deepseek_max_attempts,
         max_tokens=config.deepseek_max_tokens,
     )

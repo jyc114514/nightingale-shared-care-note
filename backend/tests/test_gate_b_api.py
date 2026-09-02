@@ -269,6 +269,12 @@ async def test_foreign_origin_is_rejected_for_cookie_authenticated_writes(
     client: httpx.AsyncClient,
     demo_data: DemoData,
 ) -> None:
+    foreign_login = await client.post(
+        "/auth/login",
+        json={"email": "staff@clinic-a.test", "password": TEST_PASSWORD},
+        headers={"Origin": "https://evil.example"},
+    )
+    assert foreign_login.status_code == 403
     await login(client, "staff@clinic-a.test")
     foreign = await client.post(
         f"/entries/{demo_data.staff_note.id}/comments",

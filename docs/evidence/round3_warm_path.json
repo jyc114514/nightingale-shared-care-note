@@ -1,0 +1,25 @@
+{
+  "checkpoint": "481db06",
+  "database": "file-backed SQLite local approximation",
+  "dataset": {
+    "benchmark_entries": 208,
+    "benchmark_highlights": 208,
+    "patients": 26
+  },
+  "metrics": {
+    "concurrency": 10,
+    "error_count": 0,
+    "max_ms": 107.593,
+    "p50_ms": 56.818,
+    "p95_ms": 70.639,
+    "p99_ms": 93.048,
+    "request_count": 1000,
+    "response_item_count": 6,
+    "warmup_error_count": 0,
+    "warmup_requests": 50
+  },
+  "python": "3.10.20",
+  "target_met": true,
+  "target_p95_ms": 300,
+  "transport": "real TCP HTTP via Uvicorn and httpx.Client"
+}

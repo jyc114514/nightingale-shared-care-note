@@ -15,13 +15,22 @@ import { I18nProvider, LanguageToggle, useI18n } from "./i18n";
 import type { Locale, Translate, TranslationKey } from "./i18n/types";
 import type {
   Comment,
+  ClinicalAssertion,
+  ClinicalAssertionSource,
+  ClinicalConflict,
+  ClinicalConflictResolution,
   PatientContext,
+  PatientCareUpdate,
+  PatientPublication,
+  PatientPublicationState,
+  PublicationEvidenceStatus,
   Conflict,
   Diff,
   FeedbackEventType,
   GlanceItem,
   AIJob,
   AIProviderInfo,
+  AIProviderStatus,
   Me,
   MentionUser,
   Patient,
@@ -123,6 +132,13 @@ function formatDate(value: string, locale: Locale = "en") {
   }).format(new Date(value));
 }
 
+function createOpaqueIdempotencyKey(prefix: string) {
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    prefix + "-" + Date.now() + "-" + Math.random().toString(36).slice(2)
+  );
+}
+
 export function scrollToElement(element: HTMLElement | null) {
   if (!element || typeof element.scrollIntoView !== "function") return;
   const reducedMotion = window.matchMedia?.(
@@ -147,6 +163,18 @@ function displayError(
       return t("error.versionConflict", {
         version: error.body.detail.actual_version,
       });
+    }
+    if (
+      typeof error.body.detail === "object" &&
+      error.body.detail?.actual_workflow_version
+    ) {
+      return t("publication.stale");
+    }
+    if (
+      typeof error.body.detail === "object" &&
+      error.body.detail?.source_changed
+    ) {
+      return t("publication.sourceChanged");
     }
     if (context === "auth" && error.status === 401) return t("error.signIn");
     if (error.status === 401 || error.status === 403)
@@ -206,6 +234,18 @@ export function productizeProvenanceSource(source: ProvenanceSource) {
     start_offset: source.start_offset + offsetDelta,
     end_offset: source.end_offset + offsetDelta,
   };
+}
+
+type SourceSelection = ProvenanceSource | ClinicalAssertionSource;
+
+function isAssertionSource(
+  source: SourceSelection,
+): source is ClinicalAssertionSource {
+  return "assertion" in source;
+}
+
+function sourceHighlightId(source: SourceSelection | null) {
+  return source && !isAssertionSource(source) ? source.highlight.id : null;
 }
 
 export function exactCodepointSpan(
@@ -313,6 +353,7 @@ function Button({
   ariaExpanded,
   ariaControls,
   buttonRef,
+  dataTestId,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -323,6 +364,7 @@ function Button({
   ariaExpanded?: boolean;
   ariaControls?: string;
   buttonRef?: Ref<HTMLButtonElement>;
+  dataTestId?: string;
 }) {
   const styles = {
     primary: "border-blue-700 bg-blue-700 text-white hover:bg-blue-800",
@@ -341,6 +383,7 @@ function Button({
       aria-label={ariaLabel}
       aria-expanded={ariaExpanded}
       aria-controls={ariaControls}
+      data-testid={dataTestId}
       className={`min-h-11 rounded-lg border px-3 py-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50 ${styles[kind]}`}
     >
       {children}
@@ -923,7 +966,7 @@ function SourcePanel({
   source,
   onClose,
 }: {
-  source: ProvenanceSource | null;
+  source: SourceSelection | null;
   onClose: () => void;
 }) {
   const { locale, t } = useI18n();
@@ -945,7 +988,9 @@ function SourcePanel({
       </section>
     );
   }
-  const displaySource = productizeProvenanceSource(source);
+  const displaySource = isAssertionSource(source)
+    ? source
+    : productizeProvenanceSource(source);
   return (
     <section
       className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5"
@@ -1032,9 +1077,546 @@ function SourcePanel({
   );
 }
 
-function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
+const publicationStateKeys: Record<PatientPublicationState, TranslationKey> = {
+  draft: "publication.stateDraft",
+  clinician_approved: "publication.stateApproved",
+  published: "publication.statePublished",
+  recalled: "publication.stateRecalled",
+  superseded: "publication.stateSuperseded",
+  entered_in_error: "publication.stateEnteredInError",
+};
+
+const publicationEvidenceKeys: Record<
+  PublicationEvidenceStatus,
+  TranslationKey
+> = {
+  matched: "publication.statusMatched",
+  mismatch: "publication.statusMismatch",
+  ambiguous: "publication.statusAmbiguous",
+  unsupported: "publication.statusUnsupported",
+  missing: "publication.statusMissing",
+};
+
+function PublicationReviewPanel({
+  publication,
+  role,
+  loading,
+  error,
+  busy,
+  onEdit,
+  onApprove,
+  onPublish,
+  onRecall,
+  onCorrection,
+  onViewSource,
+  draftRef,
+}: {
+  publication: PatientPublication | null;
+  role: string;
+  loading: boolean;
+  error: string | null;
+  busy: boolean;
+  onEdit: (content: string) => Promise<void>;
+  onApprove: () => Promise<void>;
+  onPublish: () => Promise<void>;
+  onRecall: (
+    reason:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) => Promise<void>;
+  onCorrection: () => Promise<void>;
+  onViewSource: () => void;
+  draftRef: RefObject<HTMLTextAreaElement | null>;
+}) {
+  const { locale, t } = useI18n();
+  const [draft, setDraft] = useState("");
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [showSource, setShowSource] = useState(true);
+  const [recallReason, setRecallReason] = useState<
+    | "dosage_error"
+    | "clinical_correction"
+    | "entered_in_error"
+    | "other_safe_code"
+  >("clinical_correction");
+
+  useEffect(() => {
+    if (!publication) return;
+    setDraft(publication.current_content);
+    setConfirmPublish(false);
+    setShowSource(true);
+  }, [publication?.id, publication?.content_version]);
+
+  if (loading && !publication) {
+    return (
+      <p
+        className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800"
+        role="status"
+      >
+        {t("publication.loading")}
+      </p>
+    );
+  }
+  if (!publication) {
+    return error ? (
+      <p
+        className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+        role="alert"
+      >
+        {error}
+      </p>
+    ) : null;
+  }
+
+  const state = publication.state;
+  const editable =
+    (role === "staff" || role === "clinician") &&
+    (state === "draft" || state === "clinician_approved");
+  const dosageAllowsAdvance =
+    publication.dosage.status === "matched" ||
+    (publication.severity_class === "general" &&
+      publication.dosage.status === "missing");
+  const currentSource = publication.source.source_is_current_version;
+  const canApprove =
+    role === "clinician" &&
+    state === "draft" &&
+    dosageAllowsAdvance &&
+    currentSource;
+  const canPublish =
+    role === "clinician" &&
+    state === "clinician_approved" &&
+    dosageAllowsAdvance &&
+    currentSource;
+  const statusTone =
+    state === "published"
+      ? "green"
+      : state === "recalled" || state === "entered_in_error"
+        ? "red"
+        : "amber";
+  const dosageTone =
+    publication.dosage.status === "matched" ||
+    (publication.severity_class === "general" &&
+      publication.dosage.status === "missing")
+      ? "green"
+      : "red";
+  const currentContent = publication.current_content;
+
+  async function saveDraft() {
+    if (!draft.trim() || draft.trim() === currentContent) return;
+    await onEdit(draft.trim());
+  }
+
+  return (
+    <div className="space-y-4" data-testid="publication-review-panel">
+      {error && (
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid="publication-error"
+        >
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">
+            {t("publication.eyebrow")}
+          </p>
+          <p
+            className="mt-2 text-sm text-slate-600"
+            data-testid="publication-state"
+          >
+            {t("publication.stateLabel")}: {t(publicationStateKeys[state])}
+          </p>
+        </div>
+        <Pill tone={statusTone}>{t(publicationStateKeys[state])}</Pill>
+      </div>
+      <p
+        className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950"
+        data-testid="publication-accept-warning"
+      >
+        {t("publication.acceptDoesNotPublish")}
+      </p>
+
+      <section
+        className="rounded-2xl border border-blue-100 bg-blue-50/60 p-4"
+        data-testid="publication-source"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+              {t("publication.sourceTitle")}
+            </p>
+            <p className="mt-2 text-sm font-semibold text-slate-900">
+              {t(
+                entryTypeKeys[publication.source.entry_type] ??
+                  "entryType.systemEvent",
+              )}{" "}
+              · v{publication.source.version_number}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {formatDate(publication.source.occurred_at, locale)}
+            </p>
+          </div>
+          <Button
+            kind="secondary"
+            onClick={() => {
+              setShowSource((current) => !current);
+              onViewSource();
+            }}
+            dataTestId="publication-view-source"
+          >
+            {t("publication.viewSource")}
+          </Button>
+        </div>
+        {!currentSource && (
+          <p
+            className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-800"
+            role="alert"
+            data-testid="publication-source-changed"
+          >
+            {t("publication.sourceChanged")}
+          </p>
+        )}
+        {showSource && (
+          <blockquote className="mt-3 rounded-xl border border-blue-100 bg-white p-3 text-sm leading-7 text-slate-800">
+            {publication.source.quote ? (
+              <ExactSpanView
+                text={publication.source.version_content}
+                quote={publication.source.quote}
+                startOffset={publication.source.start_offset}
+                endOffset={publication.source.end_offset}
+              />
+            ) : (
+              publication.source.version_content
+            )}
+          </blockquote>
+        )}
+        <p className="mt-2 text-xs text-slate-500">
+          {t("publication.sourceIntegrity", {
+            unit: publication.source.offset_unit,
+          })}
+        </p>
+      </section>
+
+      <section
+        className={`rounded-2xl border p-4 ${dosageTone === "green" ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}
+        data-testid="publication-dosage"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-600">
+            {t("publication.dosageTitle")}
+          </p>
+          <Pill tone={dosageTone}>
+            {t(publicationEvidenceKeys[publication.dosage.status])}
+          </Pill>
+        </div>
+        <p
+          className="mt-3 text-sm leading-6 text-slate-700"
+          data-testid="publication-dosage-status"
+        >
+          {publication.dosage.status === "matched"
+            ? t("publication.dosageMatched")
+            : publication.severity_class === "general" &&
+                publication.dosage.status === "missing"
+              ? t("publication.dosageNotPresent")
+              : t("publication.dosageBlocked")}
+        </p>
+        <dl className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
+          <div>
+            <dt className="font-semibold">{t("publication.sourceDosage")}</dt>
+            <dd className="mt-1">
+              {publication.dosage.source_value ?? t("publication.none")}{" "}
+              {publication.dosage.source_unit ?? ""}{" "}
+              {publication.dosage.source_frequency ?? ""}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-semibold">{t("publication.draftDosage")}</dt>
+            <dd className="mt-1">
+              {publication.dosage.draft_value ?? t("publication.none")}{" "}
+              {publication.dosage.draft_unit ?? ""}{" "}
+              {publication.dosage.draft_frequency ?? ""}
+            </dd>
+          </div>
+        </dl>
+        {publication.dosage.status !== "matched" &&
+          !(
+            publication.severity_class === "general" &&
+            publication.dosage.status === "missing"
+          ) && (
+            <p
+              className="mt-3 text-xs font-semibold text-rose-800"
+              role="alert"
+              data-testid="publication-mismatch"
+            >
+              {t("publication.dosageBlocked")}
+            </p>
+          )}
+      </section>
+
+      {editable && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <label
+            className="block text-sm font-semibold text-slate-700"
+            htmlFor="publication-draft"
+          >
+            {t("publication.draftLabel")}
+            <textarea
+              id="publication-draft"
+              ref={draftRef}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              data-testid="publication-draft"
+              className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              kind="secondary"
+              onClick={() => void saveDraft()}
+              disabled={
+                busy || !draft.trim() || draft.trim() === currentContent
+              }
+              dataTestId="publication-save"
+            >
+              {busy ? t("publication.saving") : t("publication.save")}
+            </Button>
+            {role === "clinician" && state === "draft" && (
+              <Button
+                kind="primary"
+                onClick={() => void onApprove()}
+                disabled={busy || !canApprove}
+                dataTestId="publication-approve"
+              >
+                {t("publication.approve")}
+              </Button>
+            )}
+          </div>
+        </section>
+      )}
+
+      {role === "staff" &&
+        (state === "draft" || state === "clinician_approved") && (
+          <p
+            className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+            data-testid="publication-staff-boundary"
+          >
+            {t("publication.staffBoundary")}
+          </p>
+        )}
+
+      {state === "clinician_approved" && role === "clinician" && (
+        <section
+          className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+          data-testid="publication-approved-actions"
+        >
+          <p className="text-sm leading-6 text-emerald-900">
+            {t("publication.approvedExact", {
+              version:
+                publication.approved_content_version ??
+                publication.content_version,
+            })}
+          </p>
+          {!confirmPublish ? (
+            <Button
+              kind="primary"
+              onClick={() => setConfirmPublish(true)}
+              disabled={busy || !canPublish}
+              dataTestId="publication-publish"
+            >
+              {t("publication.publish")}
+            </Button>
+          ) : (
+            <div
+              className="mt-3 space-y-3"
+              data-testid="publication-publish-confirm"
+            >
+              <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+                {t("publication.publishConfirmation")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  kind="primary"
+                  onClick={() => void onPublish()}
+                  disabled={busy || !canPublish}
+                  dataTestId="publication-confirm-publish"
+                >
+                  {busy
+                    ? t("publication.publishing")
+                    : t("publication.confirmPublish")}
+                </Button>
+                <Button kind="quiet" onClick={() => setConfirmPublish(false)}>
+                  {t("publication.cancel")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {state === "published" && role === "clinician" && (
+        <section
+          className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
+          data-testid="publication-success"
+        >
+          <p className="text-sm font-semibold text-emerald-900">
+            {t("publication.publishedSuccess")}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              kind="danger"
+              onClick={() => void onRecall(recallReason)}
+              disabled={busy}
+              dataTestId="publication-recall"
+            >
+              {t("publication.recall")}
+            </Button>
+            <Button
+              kind="secondary"
+              onClick={() => void onCorrection()}
+              disabled={busy}
+              dataTestId="publication-correction"
+            >
+              {t("publication.createCorrection")}
+            </Button>
+          </div>
+          <label className="block text-xs font-semibold text-slate-700">
+            {t("publication.recallReason")}
+            <select
+              value={recallReason}
+              onChange={(event) =>
+                setRecallReason(event.target.value as typeof recallReason)
+              }
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+              aria-label={t("publication.recallReason")}
+            >
+              <option value="dosage_error">
+                {t("publication.reasonDosage")}
+              </option>
+              <option value="clinical_correction">
+                {t("publication.reasonCorrection")}
+              </option>
+              <option value="entered_in_error">
+                {t("publication.reasonEnteredError")}
+              </option>
+              <option value="other_safe_code">
+                {t("publication.reasonOther")}
+              </option>
+            </select>
+          </label>
+        </section>
+      )}
+
+      {(state === "recalled" || state === "entered_in_error") &&
+        role === "clinician" && (
+          <section className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm leading-6 text-amber-900">
+              {t("publication.withdrawnInternal")}
+            </p>
+            <Button
+              kind="primary"
+              onClick={() => void onCorrection()}
+              disabled={busy}
+              dataTestId="publication-correction"
+            >
+              {t("publication.createCorrection")}
+            </Button>
+          </section>
+        )}
+
+      <details
+        className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+        data-testid="publication-version-history"
+      >
+        <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+          {t("publication.versionHistory", {
+            count: publication.versions.length,
+          })}
+        </summary>
+        <div className="mt-3 space-y-2">
+          {publication.versions.map((version) => (
+            <div
+              key={version.id}
+              className="rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5"
+            >
+              <p className="font-semibold text-slate-700">
+                {t("publication.contentVersion", {
+                  version: version.version_number,
+                })}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-slate-600">
+                {version.content}
+              </p>
+            </div>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function PatientCarePanel({ updates }: { updates: PatientCareUpdate[] }) {
+  const { locale, t } = useI18n();
+  return (
+    <section
+      className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-sm sm:p-7"
+      aria-label={t("patient.careUpdatesTitle")}
+      data-testid="patient-published-care"
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
+        {t("patient.careUpdatesEyebrow")}
+      </p>
+      <h2 className="mt-2 text-xl font-semibold text-slate-900">
+        {t("patient.careUpdatesTitle")}
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">
+        {t("patient.careUpdatesBody")}
+      </p>
+      {updates.length === 0 ? (
+        <p className="mt-4 rounded-2xl border border-dashed border-emerald-200 bg-white p-4 text-sm text-slate-500">
+          {t("patient.careUpdatesEmpty")}
+        </p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {updates.map((update, index) => (
+            <article
+              key={`${update.kind}-${update.published_at ?? "none"}-${index}`}
+              className="rounded-2xl border border-emerald-100 bg-white p-4"
+              data-testid={`patient-care-update-${index}`}
+            >
+              <p className="text-xs text-slate-500">
+                {update.published_at
+                  ? formatDate(update.published_at, locale)
+                  : ""}
+              </p>
+              {update.content && (
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-slate-800">
+                  {update.content}
+                </p>
+              )}
+              {update.notice && (
+                <p
+                  className="mt-2 text-sm leading-6 text-amber-900"
+                  role="status"
+                >
+                  {update.notice}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ImmutableTimelineSource({ source }: { source: SourceSelection }) {
   const { t } = useI18n();
-  const displaySource = productizeProvenanceSource(source);
+  const displaySource = isAssertionSource(source)
+    ? source
+    : productizeProvenanceSource(source);
   return (
     <section
       className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4"
@@ -1068,6 +1650,253 @@ function ImmutableTimelineSource({ source }: { source: ProvenanceSource }) {
           />
         </span>
       </div>
+    </section>
+  );
+}
+
+const clinicalConflictStatusKeys: Record<
+  ClinicalConflict["status"],
+  TranslationKey
+> = {
+  open: "conflict.statusOpen",
+  adjudicated: "conflict.statusAdjudicated",
+  superseded: "conflict.statusSuperseded",
+};
+
+const assertionVerificationKeys: Record<
+  ClinicalAssertion["verification_status"],
+  TranslationKey
+> = {
+  unconfirmed: "conflict.unconfirmed",
+  confirmed: "conflict.confirmed",
+  refuted: "conflict.refuted",
+  entered_in_error: "conflict.enteredInErrorStatus",
+};
+
+function ClinicalAssertionSide({
+  assertion,
+  source,
+  label,
+  onViewSource,
+}: {
+  assertion: ClinicalAssertion;
+  source?: ClinicalAssertionSource;
+  label: string;
+  onViewSource: (assertionId: string) => void;
+}) {
+  const { locale, t } = useI18n();
+  return (
+    <article
+      className="rounded-2xl border border-blue-100 bg-slate-50 p-4"
+      data-testid={"clinical-assertion-" + assertion.polarity}
+    >
+      <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">
+        {label}
+      </p>
+      <p className="mt-2 font-semibold text-slate-900">
+        {t("conflict.concept")}
+      </p>
+      <dl className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
+        <div>
+          <dt className="text-slate-500">{t("conflict.verificationLabel")}</dt>
+          <dd className="font-semibold text-slate-800">
+            {t(assertionVerificationKeys[assertion.verification_status])}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-slate-500">{t("conflict.assertedByLabel")}</dt>
+          <dd className="font-semibold text-slate-800">
+            {t(roleKeys[assertion.asserted_by_role] ?? "role.system")}
+          </dd>
+        </div>
+        {source && (
+          <div>
+            <dt className="text-slate-500">{t("conflict.sourceLabel")}</dt>
+            <dd className="font-semibold text-slate-800">
+              {t(entryTypeKeys[source.entry_type] ?? "entryType.systemEvent")} ·{" "}
+              {t("source.version", { version: source.version_number })} ·{" "}
+              {formatDate(source.occurred_at, locale)}
+            </dd>
+          </div>
+        )}
+      </dl>
+      <blockquote className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-800">
+        {assertion.quote}
+      </blockquote>
+      <Button
+        kind="secondary"
+        onClick={() => onViewSource(assertion.id)}
+        ariaLabel={t("conflict.viewSource") + ": " + label}
+      >
+        {t("conflict.viewSource")}
+      </Button>
+    </article>
+  );
+}
+
+function ClinicalConflictReviewPanel({
+  conflict,
+  sources,
+  role,
+  loading,
+  error,
+  stale,
+  success,
+  busy,
+  resolution,
+  onResolution,
+  onSubmit,
+  onViewSource,
+}: {
+  conflict: ClinicalConflict | null;
+  sources: Record<string, ClinicalAssertionSource>;
+  role: string;
+  loading: boolean;
+  error: string | null;
+  stale: boolean;
+  success: string | null;
+  busy: boolean;
+  resolution: ClinicalConflictResolution;
+  onResolution: (resolution: ClinicalConflictResolution) => void;
+  onSubmit: () => void;
+  onViewSource: (assertionId: string) => void;
+}) {
+  const { t } = useI18n();
+  if (!conflict) {
+    return (
+      <div className="space-y-3" data-testid="clinical-conflict-panel">
+        {loading && (
+          <p
+            className="rounded-xl bg-blue-50 p-3 text-sm text-blue-800"
+            role="status"
+          >
+            {t("conflict.loading")}
+          </p>
+        )}
+        {error && (
+          <p
+            className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+            role="alert"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+  const positiveSource = sources[conflict.positive_assertion.id];
+  const negativeSource = sources[conflict.negative_assertion.id];
+  const confirmationKey =
+    resolution === "needs_more_information"
+      ? "conflict.confirmationMoreInfo"
+      : resolution === "confirmed_absent"
+        ? "conflict.confirmationAbsent"
+        : "conflict.confirmation";
+  return (
+    <section className="space-y-4" data-testid="clinical-conflict-panel">
+      {error && (
+        <p
+          className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+          role="alert"
+          data-testid={
+            stale ? "clinical-conflict-stale" : "clinical-conflict-error"
+          }
+        >
+          {error}
+        </p>
+      )}
+      {success && (
+        <p
+          className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800"
+          role="status"
+          data-testid="clinical-conflict-success"
+        >
+          {success}
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="amber">
+          {t(clinicalConflictStatusKeys[conflict.status])}
+        </Pill>
+        <Pill tone="slate">
+          {t("conflict.version", { version: conflict.version })}
+        </Pill>
+      </div>
+      <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+        {t("conflict.explanation")}
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <ClinicalAssertionSide
+          assertion={conflict.positive_assertion}
+          source={positiveSource}
+          label={t("conflict.reported")}
+          onViewSource={onViewSource}
+        />
+        <ClinicalAssertionSide
+          assertion={conflict.negative_assertion}
+          source={negativeSource}
+          label={t("conflict.denied")}
+          onViewSource={onViewSource}
+        />
+      </div>
+      <p className="rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
+        {t("conflict.boundary")}
+      </p>
+      {role !== "clinician" ? (
+        <p
+          className="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+          data-testid="clinical-conflict-read-only"
+        >
+          {t("conflict.staffReadOnly")}
+        </p>
+      ) : conflict.status === "open" ? (
+        <form
+          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit();
+          }}
+        >
+          <label className="block text-sm font-semibold text-slate-700">
+            {t("conflict.resolution")}
+            <select
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              value={resolution}
+              onChange={(event) =>
+                onResolution(event.target.value as ClinicalConflictResolution)
+              }
+              aria-label={t("conflict.resolution")}
+              disabled={busy}
+            >
+              <option value="confirmed_present">
+                {t("conflict.confirmPresent")}
+              </option>
+              <option value="confirmed_absent">
+                {t("conflict.confirmAbsent")}
+              </option>
+              <option value="needs_more_information">
+                {t("conflict.moreInfo")}
+              </option>
+              <option value="entered_in_error">
+                {t("conflict.enteredError")}
+              </option>
+            </select>
+          </label>
+          <p className="text-xs leading-5 text-slate-500">
+            {t(confirmationKey)}
+          </p>
+          <Button type="submit" kind="primary" disabled={busy}>
+            {busy ? t("conflict.recording") : t("conflict.record")}
+          </Button>
+        </form>
+      ) : (
+        <p
+          className="rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-600"
+          role="status"
+        >
+          {t("conflict.recorded")}
+        </p>
+      )}
     </section>
   );
 }
@@ -1954,13 +2783,18 @@ const aiScribeExamples: Record<
 
 function AIScribePanel({
   providerInfo,
+  providerStatus,
+  providerStatusLoading,
   providerError,
   job,
   busy,
   onSubmit,
   onOpenSource,
+  onRefreshStatus,
 }: {
   providerInfo: AIProviderInfo | null;
+  providerStatus: AIProviderStatus | null;
+  providerStatusLoading: boolean;
   providerError: string | null;
   job: AIJob | null;
   busy: boolean;
@@ -1971,6 +2805,7 @@ function AIScribePanel({
     idempotency_key: string;
   }) => Promise<void>;
   onOpenSource: (job: AIJob) => void;
+  onRefreshStatus: () => void;
 }) {
   const { t } = useI18n();
   const [interactionType, setInteractionType] = useState<AIScribeInteraction>(
@@ -2018,6 +2853,72 @@ function AIScribePanel({
       <p className="mt-3 rounded-xl border border-amber-200 bg-white/80 p-3 text-sm font-semibold leading-6 text-amber-950">
         {t("ai.warning")}
       </p>
+      {providerStatus && (
+        <section
+          className={`mt-3 rounded-xl border p-3 text-sm ${
+            providerStatus.availability === "available"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : providerStatus.availability === "degraded"
+                ? "border-amber-200 bg-amber-50 text-amber-950"
+                : "border-slate-300 bg-slate-100 text-slate-800"
+          }`}
+          aria-label={t("ai.availability")}
+          data-testid="ai-provider-status"
+          data-availability={providerStatus.availability}
+        >
+          <p className="font-semibold">
+            {providerStatus.availability === "available"
+              ? t("ai.available")
+              : providerStatus.availability === "degraded"
+                ? t("ai.degraded")
+                : t("ai.unavailable")}
+          </p>
+          {providerStatus.availability !== "available" && (
+            <p className="mt-2 leading-6">{t("ai.existingAvailable")}</p>
+          )}
+          {providerStatus.availability === "temporarily_unavailable" &&
+            providerStatus.retry_after_seconds !== null &&
+            providerStatus.retry_after_seconds > 0 && (
+              <p className="mt-2 leading-6">
+                {t("ai.retryAfter", {
+                  seconds: Math.ceil(providerStatus.retry_after_seconds),
+                })}
+              </p>
+            )}
+          {providerStatus.availability === "temporarily_unavailable" && (
+            <p className="mt-2 text-xs leading-5 opacity-80">
+              {t("ai.newSuggestionsPaused")}
+            </p>
+          )}
+          <Button
+            kind="quiet"
+            onClick={onRefreshStatus}
+            disabled={providerStatusLoading}
+          >
+            {providerStatusLoading
+              ? t("ai.checkingAvailability")
+              : t("ai.checkAvailability")}
+          </Button>
+        </section>
+      )}
+      {!providerStatus && providerError && (
+        <section
+          className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+          aria-label={t("ai.availability")}
+          data-testid="ai-provider-status-unknown"
+        >
+          <p className="font-semibold">{t("ai.statusUnknown")}</p>
+          <Button
+            kind="quiet"
+            onClick={onRefreshStatus}
+            disabled={providerStatusLoading}
+          >
+            {providerStatusLoading
+              ? t("ai.checkingAvailability")
+              : t("ai.checkAvailability")}
+          </Button>
+        </section>
+      )}
       <details
         className="mt-3 rounded-xl border border-slate-200 bg-white/70 p-3 text-xs"
         data-testid="ai-technical-details"
@@ -2081,7 +2982,15 @@ function AIScribePanel({
           />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" kind="primary" disabled={busy || !text.trim()}>
+          <Button
+            type="submit"
+            kind="primary"
+            disabled={
+              busy ||
+              !text.trim() ||
+              providerStatus?.new_suggestions_available === false
+            }
+          >
             {busy ? t("ai.generating") : t("ai.generate")}
           </Button>
           {busy && (
@@ -2120,9 +3029,18 @@ function AIScribePanel({
               )}
             </div>
           ) : job.status.startsWith("failed") ? (
-            <p className="mt-3 text-rose-700" role="alert">
-              {t("ai.safeError")}
-            </p>
+            <div className="mt-3 space-y-2 text-rose-700" role="alert">
+              <p>{t("ai.safeError")}</p>
+              {job.retry_after_seconds !== null &&
+                job.retry_after_seconds !== undefined &&
+                job.retry_after_seconds > 0 && (
+                  <p>
+                    {t("ai.retryAfter", {
+                      seconds: Math.ceil(job.retry_after_seconds),
+                    })}
+                  </p>
+                )}
+            </div>
           ) : (
             <p className="mt-3 text-slate-600">{t("ai.processing")}</p>
           )}
@@ -2452,9 +3370,22 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [source, setSource] = useState<ProvenanceSource | null>(null);
+  const [source, setSource] = useState<SourceSelection | null>(null);
   const [sourceLoading, setSourceLoading] = useState(false);
   const [focusEntryId, setFocusEntryId] = useState<string | null>(null);
+  const [conflictDrawerId, setConflictDrawerId] = useState<string | null>(null);
+  const [conflict, setConflict] = useState<ClinicalConflict | null>(null);
+  const [conflictSources, setConflictSources] = useState<
+    Record<string, ClinicalAssertionSource>
+  >({});
+  const [conflictLoading, setConflictLoading] = useState(false);
+  const [conflictError, setConflictError] = useState<string | null>(null);
+  const [conflictStale, setConflictStale] = useState(false);
+  const [conflictSuccess, setConflictSuccess] = useState<string | null>(null);
+  const [conflictBusy, setConflictBusy] = useState(false);
+  const [conflictResolution, setConflictResolution] =
+    useState<ClinicalConflictResolution>("needs_more_information");
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const [commentsEntryId, setCommentsEntryId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -2475,6 +3406,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [aiProviderInfo, setAIProviderInfo] = useState<AIProviderInfo | null>(
     null,
   );
+  const [aiProviderStatus, setAIProviderStatus] =
+    useState<AIProviderStatus | null>(null);
+  const [aiProviderStatusLoading, setAIProviderStatusLoading] = useState(false);
   const [aiProviderError, setAIProviderError] = useState<string | null>(null);
   const [aiJob, setAIJob] = useState<AIJob | null>(null);
   const [aiBusy, setAIBusy] = useState(false);
@@ -2485,6 +3419,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const [voiceSession, setVoiceSession] = useState<VoiceSession | null>(null);
   const [voiceBusy, setVoiceBusy] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [publishedCare, setPublishedCare] = useState<PatientCareUpdate[]>([]);
+  const [publicationOpen, setPublicationOpen] = useState(false);
+  const [publication, setPublication] = useState<PatientPublication | null>(
+    null,
+  );
+  const [publicationLoading, setPublicationLoading] = useState(false);
+  const [publicationError, setPublicationError] = useState<string | null>(null);
+  const [publicationBusy, setPublicationBusy] = useState(false);
   const commentsInputRef = useRef<HTMLTextAreaElement>(null);
   const commentsReturnFocusRef = useRef<HTMLElement | null>(null);
   const commentsRequestRef = useRef(0);
@@ -2493,6 +3435,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const translationRef = useRef(t);
   const taskTitleInputRef = useRef<HTMLInputElement>(null);
   const taskReturnFocusRef = useRef<HTMLElement | null>(null);
+  const conflictResolutionRef = useRef<HTMLSelectElement>(null);
+  const publicationDraftRef = useRef<HTMLTextAreaElement>(null);
+  const conflictRequestRef = useRef(0);
+  const impressionSignatureRef = useRef<string | null>(null);
+  const patientDataReadyRef = useRef(false);
   commentsEntryIdRef.current = commentsEntryId;
   editingEntryIdRef.current = editingEntryId;
   translationRef.current = t;
@@ -2524,6 +3471,18 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     commentsReturnFocusRef.current = null;
     taskReturnFocusRef.current = null;
     setSource(null);
+    conflictRequestRef.current += 1;
+    setConflictDrawerId(null);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(false);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictBusy(false);
+    setConflictResolution("needs_more_information");
+    setFeedbackNotice(null);
+    impressionSignatureRef.current = null;
     setContext(null);
     setCollaborators([]);
     setTasks([]);
@@ -2550,11 +3509,19 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setEditingText("");
     setRemoteUpdatePending(false);
     setMutationError(null);
+    setPublishedCare([]);
+    setPublicationOpen(false);
+    setPublication(null);
+    setPublicationLoading(false);
+    setPublicationError(null);
+    setPublicationBusy(false);
+    patientDataReadyRef.current = false;
   }, [patientId, internal, user.id]);
 
   useEffect(() => {
     if (!patientId) return;
     let active = true;
+    patientDataReadyRef.current = false;
     setLoading(true);
     setLoadError(null);
     const requestedHighlightId = new URLSearchParams(
@@ -2569,12 +3536,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     const tasksRequest = internal
       ? api.tasks(patientId)
       : Promise.resolve([] as Task[]);
+    const publishedCareRequest = internal
+      ? Promise.resolve({ updates: [] as PatientCareUpdate[] })
+      : api.publishedCare(patientId);
     Promise.all([
       api.timeline(patientId),
       glanceRequest,
       api.context(patientId),
       collaboratorsRequest,
       tasksRequest,
+      publishedCareRequest,
     ])
       .then(
         async ([
@@ -2583,6 +3554,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           contextResult,
           collaboratorsResult,
           tasksResult,
+          publishedCareResult,
         ]) => {
           if (!active) return;
           const activeCommentEntryId = commentsEntryIdRef.current;
@@ -2606,6 +3578,11 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           setContext(contextResult);
           setCollaborators(collaboratorsResult);
           setTasks(tasksResult);
+          setPublishedCare(
+            Array.isArray(publishedCareResult?.updates)
+              ? publishedCareResult.updates
+              : [],
+          );
           if (internal && requestedHighlightId) {
             setSourceLoading(true);
             const linkedSource = await api.source(requestedHighlightId);
@@ -2632,11 +3609,56 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
         },
       )
       .catch((error) => active && setLoadError(displayError(error, t)))
-      .finally(() => active && setLoading(false));
+      .finally(() => {
+        if (!active) return;
+        patientDataReadyRef.current = true;
+        setLoading(false);
+      });
     return () => {
       active = false;
     };
   }, [patientId, internal, refreshToken]);
+
+  useEffect(() => {
+    if (
+      !internal ||
+      !patientId ||
+      !patientDataReadyRef.current ||
+      loading ||
+      loadError
+    )
+      return;
+    const signature = [
+      patientId,
+      user.id,
+      ...glance.map(
+        (item) =>
+          (item.resource_type ?? "highlight") +
+          ":" +
+          item.id +
+          ":" +
+          item.display_priority +
+          ":" +
+          item.status,
+      ),
+    ].join("|");
+    if (impressionSignatureRef.current === signature) return;
+    impressionSignatureRef.current = signature;
+    const surfacedItems = glance.map((item) => ({
+      resource_type: item.resource_type ?? "highlight",
+      resource_id:
+        item.resource_type === "task" ? (item.task_id ?? item.id) : item.id,
+    }));
+    void api
+      .recordGlanceImpression(patientId, {
+        idempotency_key: createOpaqueIdempotencyKey("glance-impression"),
+        requested_limit: glance.length > 0 ? Math.min(6, glance.length) : 6,
+        surfaced_items: surfacedItems,
+      })
+      .catch(() => {
+        // Impression telemetry is non-blocking and intentionally console-free.
+      });
+  }, [glance, internal, loadError, loading, patientId, user.id]);
 
   useEffect(() => {
     setPinnedItems(new Set());
@@ -2645,18 +3667,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   const canUseAIScribe = role === "staff" || role === "clinician";
 
   useEffect(() => {
-    if (!canUseAIScribe) {
+    if (!canUseAIScribe || !patientId) {
       setAIProviderInfo(null);
+      setAIProviderStatus(null);
+      setAIProviderStatusLoading(false);
       setAIProviderError(null);
       return;
     }
+    let active = true;
     setAIProviderInfo(null);
+    setAIProviderStatus(null);
+    setAIProviderStatusLoading(true);
     setAIProviderError(null);
     void api
       .aiProvider()
-      .then(setAIProviderInfo)
-      .catch((error) => setAIProviderError(displayError(error, t)));
-  }, [canUseAIScribe, t, user.id]);
+      .then((result) => active && setAIProviderInfo(result))
+      .catch((error) => active && setAIProviderError(displayError(error, t)));
+    void api
+      .aiProviderStatus(patientId)
+      .then((result) => active && setAIProviderStatus(result))
+      .catch((error) => active && setAIProviderError(displayError(error, t)))
+      .finally(() => active && setAIProviderStatusLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [canUseAIScribe, patientId, t, user.id]);
 
   useEffect(() => {
     let active = true;
@@ -2737,6 +3772,10 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           );
           return;
         }
+        if (payload.resource_type === "patient_publication") {
+          setRefreshToken((value) => value + 1);
+          return;
+        }
         if (editingEntryIdRef.current) {
           setRemoteUpdatePending(true);
         } else {
@@ -2755,6 +3794,93 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
   );
   const selectedEntry =
     timeline.find((entry) => entry.id === commentsEntryId) ?? null;
+
+  async function loadConflictSources(detail: ClinicalConflict) {
+    const [positive, negative] = await Promise.all([
+      api.assertionSource(detail.positive_assertion.id),
+      api.assertionSource(detail.negative_assertion.id),
+    ]);
+    setConflictSources({
+      [detail.positive_assertion.id]: positive,
+      [detail.negative_assertion.id]: negative,
+    });
+  }
+
+  async function openConflict(conflictId: string) {
+    const requestId = conflictRequestRef.current + 1;
+    conflictRequestRef.current = requestId;
+    setConflictDrawerId(conflictId);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(true);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictResolution("needs_more_information");
+    setSource(null);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("patient", patientId);
+    nextUrl.searchParams.delete("highlight");
+    window.history.replaceState(
+      {},
+      "",
+      nextUrl.pathname + nextUrl.search + nextUrl.hash,
+    );
+    try {
+      const detail = await api.clinicalConflict(conflictId);
+      if (requestId !== conflictRequestRef.current) return;
+      setConflict(detail);
+      setConflictResolution(detail.resolution ?? "needs_more_information");
+      await loadConflictSources(detail);
+    } catch (error) {
+      if (requestId === conflictRequestRef.current) {
+        setConflictError(displayError(error, t));
+      }
+    } finally {
+      if (requestId === conflictRequestRef.current) setConflictLoading(false);
+    }
+  }
+
+  function closeConflict() {
+    conflictRequestRef.current += 1;
+    setConflictDrawerId(null);
+    setConflict(null);
+    setConflictSources({});
+    setConflictLoading(false);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    setConflictBusy(false);
+  }
+
+  async function openAssertionSource(assertionId: string) {
+    if (!patientId) return;
+    setSourceLoading(true);
+    setMutationError(null);
+    try {
+      const result = await api.assertionSource(assertionId);
+      setSource(result);
+      setFocusEntryId(result.source_entry_id);
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.set("patient", patientId);
+      nextUrl.searchParams.delete("highlight");
+      window.history.replaceState(
+        {},
+        "",
+        nextUrl.pathname + nextUrl.search + nextUrl.hash,
+      );
+      window.setTimeout(() => {
+        scrollToElement(
+          document.getElementById("timeline-entry-" + result.source_entry_id),
+        );
+      }, 0);
+      window.setTimeout(() => setFocusEntryId(null), 2400);
+    } catch (error) {
+      setMutationError(displayError(error, t));
+    } finally {
+      setSourceLoading(false);
+    }
+  }
 
   async function openSource(item: GlanceItem) {
     setSourceLoading(true);
@@ -2841,6 +3967,56 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     }
   }
 
+  async function submitConflictDecision() {
+    if (!conflict) return;
+    setConflictBusy(true);
+    setConflictError(null);
+    setConflictStale(false);
+    setConflictSuccess(null);
+    try {
+      const updated = await api.adjudicateClinicalConflict(
+        conflict.id,
+        conflict.version,
+        conflictResolution,
+      );
+      setConflict(updated);
+      setConflictResolution(updated.resolution ?? "needs_more_information");
+      await loadConflictSources(updated);
+      setConflictSuccess(t("conflict.recorded"));
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setConflictError(t("conflict.stale"));
+        setConflictStale(true);
+        try {
+          const latest = await api.clinicalConflict(conflict.id);
+          setConflict(latest);
+          setConflictResolution(latest.resolution ?? "needs_more_information");
+          await loadConflictSources(latest);
+        } catch (refreshError) {
+          setConflictError(displayError(refreshError, t));
+        }
+      } else {
+        setConflictError(displayError(error, t));
+      }
+    } finally {
+      setConflictBusy(false);
+    }
+  }
+
+  async function refreshAIProviderStatus() {
+    if (!patientId || !canUseAIScribe) return;
+    setAIProviderStatusLoading(true);
+    setAIProviderError(null);
+    try {
+      setAIProviderStatus(await api.aiProviderStatus(patientId));
+    } catch (error) {
+      setAIProviderError(displayError(error, t));
+    } finally {
+      setAIProviderStatusLoading(false);
+    }
+  }
+
   async function submitAIScribe(payload: {
     interaction_type:
       | "ai_doctor_consult_summary"
@@ -2857,6 +4033,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       const job = await api.submitAIProcessing(patientId, payload);
       setAIJob(job);
+      if (job.status === "failed_provider") {
+        void refreshAIProviderStatus();
+      }
       if (job.status === "completed") {
         setPendingAIEntryId(job.entry_id);
         setRefreshToken((value) => value + 1);
@@ -2864,6 +4043,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       }
     } catch (error) {
       setAIProviderError(displayError(error, t));
+      void refreshAIProviderStatus();
     } finally {
       setAIBusy(false);
     }
@@ -2903,6 +4083,138 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       "",
       `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
     );
+  }
+
+  async function openPublication(entryId: string) {
+    if (!patientId || role === "admin" || !internal) return;
+    setPublicationOpen(true);
+    setPublication(null);
+    setPublicationLoading(true);
+    setPublicationError(null);
+    try {
+      setPublication(await api.createPatientPublication(entryId));
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationLoading(false);
+    }
+  }
+
+  function closePublication() {
+    setPublicationOpen(false);
+    setPublication(null);
+    setPublicationError(null);
+    setPublicationLoading(false);
+    setPublicationBusy(false);
+  }
+
+  async function editPublication(content: string) {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.updatePatientPublication(
+          publication.id,
+          publication.workflow_version,
+          content,
+        ),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function approvePublication() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.approvePatientPublication(
+          publication.id,
+          publication.workflow_version,
+        ),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function publishPublication() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      const updated = await api.publishPatientPublication(
+        publication.id,
+        publication.workflow_version,
+      );
+      setPublication(updated);
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function recallPublication(
+    reason:
+      | "dosage_error"
+      | "clinical_correction"
+      | "entered_in_error"
+      | "other_safe_code",
+  ) {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.recallPatientPublication(
+          publication.id,
+          publication.workflow_version,
+          reason,
+        ),
+      );
+      setRefreshToken((value) => value + 1);
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  async function createPublicationCorrection() {
+    if (!publication) return;
+    setPublicationBusy(true);
+    setPublicationError(null);
+    try {
+      setPublication(
+        await api.createPatientPublicationCorrection(publication.id),
+      );
+    } catch (error) {
+      setPublicationError(displayError(error, t));
+    } finally {
+      setPublicationBusy(false);
+    }
+  }
+
+  function openPublicationSource() {
+    if (!publication) return;
+    setFocusEntryId(publication.source.source_entry_id);
+    window.setTimeout(() => {
+      scrollToElement(
+        document.getElementById(
+          `timeline-entry-${publication?.source.source_entry_id}`,
+        ),
+      );
+    }, 0);
+    window.setTimeout(() => setFocusEntryId(null), 2400);
   }
 
   async function loadHistory(entryId: string) {
@@ -3154,7 +4466,7 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     try {
       await api.reviewHighlight(item.id, status);
       setRefreshToken((value) => value + 1);
-      if (source?.highlight.id === item.id) {
+      if (sourceHighlightId(source) === item.id) {
         setSource(null);
         window.history.replaceState({}, "", "?patient=" + patientId);
       }
@@ -3169,11 +4481,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
     setFeedbackBusyId(item.id);
     setMutationError(null);
     try {
-      await api.feedback(
+      const result = await api.feedback(
         item.id,
         eventType,
         `ui:${eventType}:${item.id}:${Date.now()}`,
       );
+      if (result.applied_to_profile === false) {
+        setFeedbackNotice(t("conflict.feedbackNotice"));
+      } else {
+        setFeedbackNotice(null);
+      }
       setPinnedItems((current) => {
         const next = new Set(current);
         if (eventType === "pinned") next.add(item.id);
@@ -3409,11 +4726,14 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
           {canUseAIScribe && patientId && (
             <AIScribePanel
               providerInfo={aiProviderInfo}
+              providerStatus={aiProviderStatus}
+              providerStatusLoading={aiProviderStatusLoading}
               providerError={aiProviderError}
               job={aiJob}
               busy={aiBusy}
               onSubmit={submitAIScribe}
               onOpenSource={openAIJobSource}
+              onRefreshStatus={() => void refreshAIProviderStatus()}
             />
           )}
 
@@ -3436,191 +4756,274 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                   {t("top.count", { count: glance.length })}
                 </p>
               </div>
+              {feedbackNotice && (
+                <p
+                  className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900"
+                  role="status"
+                  aria-live="polite"
+                  data-testid="protected-feedback-notice"
+                >
+                  {feedbackNotice}
+                </p>
+              )}
               {glance.length === 0 ? (
                 <p className="mt-5 rounded-2xl border border-dashed border-blue-200 bg-white/70 p-5 text-sm text-slate-500">
                   {t("top.empty")}
                 </p>
               ) : (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {glance.map((item) => (
-                    <article
-                      key={item.id}
-                      data-testid="glance-item"
-                      className="rounded-2xl border border-white bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex flex-wrap gap-2">
-                          <Pill
-                            tone={
-                              item.status === "suggested" ||
-                              item.status === "conflict_review"
-                                ? "amber"
-                                : "green"
-                            }
-                          >
-                            {t(statusKeys[item.status] ?? "status.accepted")}
-                          </Pill>
-                          <Pill
-                            tone={
-                              item.item_kind === "action" ||
-                              item.item_kind === "flag"
-                                ? "amber"
-                                : "slate"
-                            }
-                          >
-                            {t(
-                              itemKindKeys[item.item_kind] ??
-                                "itemKind.information",
+                  {glance.map((item) => {
+                    const isProtectedConflict =
+                      item.clinical_conflict_id !== null &&
+                      item.clinical_conflict_id !== undefined;
+                    return (
+                      <article
+                        key={item.id}
+                        data-testid="glance-item"
+                        data-protected-conflict={
+                          isProtectedConflict || undefined
+                        }
+                        className="rounded-2xl border border-white bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex flex-wrap gap-2">
+                            <Pill
+                              tone={
+                                item.status === "suggested" ||
+                                item.status === "conflict_review"
+                                  ? "amber"
+                                  : "green"
+                              }
+                            >
+                              {t(statusKeys[item.status] ?? "status.accepted")}
+                            </Pill>
+                            <Pill
+                              tone={
+                                item.item_kind === "action" ||
+                                item.item_kind === "flag"
+                                  ? "amber"
+                                  : "slate"
+                              }
+                            >
+                              {t(
+                                itemKindKeys[item.item_kind] ??
+                                  "itemKind.information",
+                              )}
+                            </Pill>
+                            {isProtectedConflict && (
+                              <>
+                                <Pill tone="amber">
+                                  {t("conflict.cardTitle")}
+                                </Pill>
+                                <Pill tone="amber">
+                                  {t("conflict.needsReview")}
+                                </Pill>
+                              </>
                             )}
-                          </Pill>
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400">
-                          {t("top.priority", {
-                            priority: item.display_priority,
-                          })}
-                        </span>
-                      </div>
-                      <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
-                        {item.content_summary}
-                      </p>
-                      <p className="mt-2 text-xs leading-5 text-slate-500">
-                        {item.risk_reason}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        <Pill tone={item.risk_level ? "red" : "slate"}>
-                          {item.risk_level
-                            ? t("top.explicitRisk", { risk: item.risk_level })
-                            : t("top.noRisk")}
-                        </Pill>
-                        <span
-                          className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
-                          data-testid="glance-action"
-                        >
-                          {t("top.action", {
-                            label: item.action_label ?? t("top.noActionLabel"),
-                            state: t(
-                              actionStateKeys[item.action_state] ??
-                                "actionState.notApplicable",
-                            ),
-                          })}
-                        </span>
-                      </div>
-                      <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
-                        <summary
-                          className="cursor-pointer font-semibold text-slate-700"
-                          data-testid="ranking-details"
-                        >
-                          {t("ranking.why")}{" "}
-                          <span className="font-normal text-slate-500">
-                            {t("ranking.disclaimer")}
-                          </span>
-                        </summary>
-                        <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
-                          <dt>{t("ranking.base")}</dt>
-                          <dd className="text-right font-semibold">
-                            {item.base_priority}
-                          </dd>
-                          <dt>{t("ranking.recency")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.recency_contribution}
-                          </dd>
-                          <dt>{t("ranking.explicitRisk")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.explicit_risk_contribution}
-                          </dd>
-                          <dt>{t("ranking.openAction")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.unresolved_action_contribution}
-                          </dd>
-                          <dt>{t("ranking.confirmation")}</dt>
-                          <dd className="text-right font-semibold">
-                            +{item.clinician_confirmation_contribution}
-                          </dd>
-                          <dt>{t("ranking.adaptive")}</dt>
-                          <dd className="text-right font-semibold">
-                            {item.adaptive_feedback_adjustment >= 0 ? "+" : ""}
-                            {item.adaptive_feedback_adjustment}
-                          </dd>
-                          <dt className="font-semibold text-slate-800">
-                            {t("ranking.final")}
-                          </dt>
-                          <dd className="text-right font-bold text-blue-700">
-                            {item.display_priority}
-                          </dd>
-                        </dl>
-                      </details>
-                      <p className="mt-3 text-xs font-semibold text-blue-700">
-                        {t(
-                          sourceLabelKeys[item.source_label] ??
-                            "sourceKind.manual",
-                        )}
-                      </p>
-                      {item.resource_type === "task" &&
-                        item.assigned_to_display_name && (
-                          <p className="mt-2 text-xs text-slate-500">
-                            {t("task.assignedTo", {
-                              name: item.assigned_to_display_name,
+                          </div>
+                          <span className="text-xs font-semibold text-slate-400">
+                            {t("top.priority", {
+                              priority: item.display_priority,
                             })}
-                          </p>
-                        )}
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {item.resource_type === "task" && item.task_id ? (
-                          <Button
-                            kind="secondary"
-                            onClick={() => focusTask(item.task_id ?? "")}
-                          >
-                            {t("button.openTask")}
-                          </Button>
-                        ) : (
-                          <Button
-                            kind="secondary"
-                            onClick={() => void openSource(item)}
-                            disabled={sourceLoading}
-                          >
-                            {t("button.openSource")}
-                          </Button>
-                        )}
-                        {role !== "admin" && (
-                          <Button
-                            kind="quiet"
-                            onClick={() =>
-                              void sendFeedback(
-                                item,
-                                pinnedItems.has(item.id)
-                                  ? "unpinned"
-                                  : "pinned",
-                              )
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">
+                          {item.content_summary}
+                        </p>
+                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                          {isProtectedConflict
+                            ? t("conflict.floorNotice")
+                            : item.risk_reason}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                          <Pill
+                            tone={
+                              isProtectedConflict
+                                ? "amber"
+                                : item.risk_level
+                                  ? "red"
+                                  : "slate"
                             }
-                            disabled={feedbackBusyId === item.id}
                           >
-                            {pinnedItems.has(item.id)
-                              ? t("button.unpin")
-                              : t("button.pin")}
-                          </Button>
-                        )}
-                        {role === "clinician" &&
-                          (item.status === "suggested" ||
-                            item.status === "conflict_review") && (
-                            <>
-                              <Button
-                                kind="primary"
-                                onClick={() => void review(item, "accepted")}
-                                disabled={mutationBusy}
-                              >
-                                {t("button.accept")}
-                              </Button>
-                              <Button
-                                kind="danger"
-                                onClick={() => void review(item, "rejected")}
-                                disabled={mutationBusy}
-                              >
-                                {t("button.reject")}
-                              </Button>
-                            </>
+                            {isProtectedConflict
+                              ? t("conflict.protectedAttention")
+                              : item.risk_level
+                                ? t("top.explicitRisk", {
+                                    risk: item.risk_level,
+                                  })
+                                : t("top.noRisk")}
+                          </Pill>
+                          <span
+                            className="rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 font-semibold text-blue-800"
+                            data-testid="glance-action"
+                          >
+                            {t("top.action", {
+                              label:
+                                item.action_label ?? t("top.noActionLabel"),
+                              state: t(
+                                actionStateKeys[item.action_state] ??
+                                  "actionState.notApplicable",
+                              ),
+                            })}
+                          </span>
+                        </div>
+                        <details className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                          <summary
+                            className="cursor-pointer font-semibold text-slate-700"
+                            data-testid="ranking-details"
+                          >
+                            {t("ranking.why")}{" "}
+                            <span className="font-normal text-slate-500">
+                              {isProtectedConflict
+                                ? t("conflict.protectedAttention")
+                                : t("ranking.disclaimer")}
+                            </span>
+                          </summary>
+                          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">
+                            <dt>{t("ranking.base")}</dt>
+                            <dd className="text-right font-semibold">
+                              {item.base_priority}
+                            </dd>
+                            <dt>{t("ranking.recency")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.recency_contribution}
+                            </dd>
+                            <dt>{t("ranking.explicitRisk")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.explicit_risk_contribution}
+                            </dd>
+                            <dt>{t("ranking.openAction")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.unresolved_action_contribution}
+                            </dd>
+                            <dt>{t("ranking.confirmation")}</dt>
+                            <dd className="text-right font-semibold">
+                              +{item.clinician_confirmation_contribution}
+                            </dd>
+                            <dt>{t("ranking.adaptive")}</dt>
+                            <dd className="text-right font-semibold">
+                              {item.adaptive_feedback_adjustment >= 0
+                                ? "+"
+                                : ""}
+                              {item.adaptive_feedback_adjustment}
+                            </dd>
+                            {isProtectedConflict && (
+                              <>
+                                <dt>{t("ranking.preFloor")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {item.ranking_explanation.pre_floor ??
+                                    item.display_priority}
+                                </dd>
+                                <dt>{t("ranking.safetyFloor")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {item.ranking_explanation.safety_floor ??
+                                    item.safety_floor ??
+                                    0}
+                                </dd>
+                                <dt>{t("ranking.floorApplied")}</dt>
+                                <dd className="text-right font-semibold">
+                                  {(item.ranking_explanation.floor_applied ??
+                                    0) === 1
+                                    ? t("ranking.floorYes")
+                                    : t("ranking.floorNo")}
+                                </dd>
+                              </>
+                            )}
+                            <dt className="font-semibold text-slate-800">
+                              {t("ranking.final")}
+                            </dt>
+                            <dd className="text-right font-bold text-blue-700">
+                              {item.display_priority}
+                            </dd>
+                          </dl>
+                        </details>
+                        <p className="mt-3 text-xs font-semibold text-blue-700">
+                          {t(
+                            sourceLabelKeys[item.source_label] ??
+                              "sourceKind.manual",
                           )}
-                      </div>
-                    </article>
-                  ))}
+                        </p>
+                        {item.resource_type === "task" &&
+                          item.assigned_to_display_name && (
+                            <p className="mt-2 text-xs text-slate-500">
+                              {t("task.assignedTo", {
+                                name: item.assigned_to_display_name,
+                              })}
+                            </p>
+                          )}
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {isProtectedConflict && item.clinical_conflict_id && (
+                            <Button
+                              kind="primary"
+                              onClick={() =>
+                                void openConflict(
+                                  item.clinical_conflict_id as string,
+                                )
+                              }
+                              disabled={conflictLoading}
+                            >
+                              {t("conflict.review")}
+                            </Button>
+                          )}
+                          {item.resource_type === "task" && item.task_id ? (
+                            <Button
+                              kind="secondary"
+                              onClick={() => focusTask(item.task_id ?? "")}
+                            >
+                              {t("button.openTask")}
+                            </Button>
+                          ) : (
+                            <Button
+                              kind="secondary"
+                              onClick={() => void openSource(item)}
+                              disabled={sourceLoading}
+                            >
+                              {t("button.openSource")}
+                            </Button>
+                          )}
+                          {role !== "admin" && (
+                            <Button
+                              kind="quiet"
+                              onClick={() =>
+                                void sendFeedback(
+                                  item,
+                                  pinnedItems.has(item.id)
+                                    ? "unpinned"
+                                    : "pinned",
+                                )
+                              }
+                              disabled={feedbackBusyId === item.id}
+                            >
+                              {pinnedItems.has(item.id)
+                                ? t("button.unpin")
+                                : t("button.pin")}
+                            </Button>
+                          )}
+                          {role === "clinician" &&
+                            !isProtectedConflict &&
+                            (item.status === "suggested" ||
+                              item.status === "conflict_review") && (
+                              <>
+                                <Button
+                                  kind="primary"
+                                  onClick={() => void review(item, "accepted")}
+                                  disabled={mutationBusy}
+                                >
+                                  {t("button.accept")}
+                                </Button>
+                                <Button
+                                  kind="danger"
+                                  onClick={() => void review(item, "rejected")}
+                                  disabled={mutationBusy}
+                                >
+                                  {t("button.reject")}
+                                </Button>
+                              </>
+                            )}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -3637,6 +5040,8 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
               </p>
             </section>
           )}
+
+          {!internal && <PatientCarePanel updates={publishedCare} />}
 
           <HistoricalContextPanel
             context={context}
@@ -3797,6 +5202,20 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                             {t("button.assignTask")}
                           </Button>
                         )}
+                        {internal &&
+                          role !== "admin" &&
+                          ![
+                            "patient_facing_summary",
+                            "patient_instruction",
+                          ].includes(entry.entry_type) && (
+                            <Button
+                              kind="secondary"
+                              onClick={() => void openPublication(entry.id)}
+                              dataTestId={`prepare-publication-${entry.id}`}
+                            >
+                              {t("publication.prepare")}
+                            </Button>
+                          )}
                         {editable && !isEditing && (
                           <Button
                             kind="quiet"
@@ -3870,6 +5289,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
       )}
       {internal && (
         <ContextualDrawer
+          open={publicationOpen}
+          title={t("publication.title")}
+          closeLabel={t("publication.close")}
+          onClose={closePublication}
+          initialFocusRef={publicationDraftRef}
+          testId="patient-publication-drawer"
+        >
+          <PublicationReviewPanel
+            publication={publication}
+            role={role}
+            loading={publicationLoading}
+            error={publicationError}
+            busy={publicationBusy}
+            onEdit={editPublication}
+            onApprove={approvePublication}
+            onPublish={publishPublication}
+            onRecall={recallPublication}
+            onCorrection={createPublicationCorrection}
+            onViewSource={openPublicationSource}
+            draftRef={publicationDraftRef}
+          />
+        </ContextualDrawer>
+      )}
+      {internal && (
+        <ContextualDrawer
           open={taskDrawerOpen}
           title={t("task.panel")}
           closeLabel={t("task.close")}
@@ -3895,6 +5339,31 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
             titleInputRef={taskTitleInputRef}
             error={taskError}
             focusedTaskId={taskFocusId}
+          />
+        </ContextualDrawer>
+      )}
+      {internal && (
+        <ContextualDrawer
+          open={conflictDrawerId !== null}
+          title={t("conflict.title")}
+          closeLabel={t("conflict.close")}
+          onClose={closeConflict}
+          initialFocusRef={conflictResolutionRef}
+          testId="clinical-conflict-drawer"
+        >
+          <ClinicalConflictReviewPanel
+            conflict={conflict}
+            sources={conflictSources}
+            role={role}
+            loading={conflictLoading}
+            error={conflictError}
+            stale={conflictStale}
+            success={conflictSuccess}
+            busy={conflictBusy}
+            resolution={conflictResolution}
+            onResolution={setConflictResolution}
+            onSubmit={() => void submitConflictDecision()}
+            onViewSource={openAssertionSource}
           />
         </ContextualDrawer>
       )}

@@ -66,11 +66,82 @@ Pop-Location
 Remove-Item Env:DEMO_SEED_PASSWORD
 ```
 
-The seed creates two synthetic clinics, five users, two synthetic patients, seven entries, three
-distinct system AI-scribed entry types, five source-linked highlights/materialized Glance rows,
-a threaded internal comment fixture, and a derived archival summary with immutable source
-pointers. Re-running it preserves aggregate counts. Mentions and tasks are created through the
-clinic-scoped collaboration APIs so the seed remains deterministic and read-only by default.
+The seed creates two synthetic clinics, five users, two synthetic patients, ten entries, three
+distinct system AI-scribed entry types, six source-linked highlights/materialized Glance rows,
+two source-anchored penicillin assertions with one protected conflict, a threaded internal
+comment fixture, a bounded wrong-dosage publication draft, and a derived archival summary with
+immutable source pointers. Re-running it preserves aggregate counts. Mentions and tasks are
+created through the clinic-scoped collaboration APIs so the seed remains deterministic and
+read-only by default.
+
+### Round 4 patient publication gate
+
+Round 4 adds a local, synthetic, portal-only publication workflow. `Accept` on an internal AI
+highlight never publishes to a patient. Staff can prepare/edit a draft; only a Clinician can
+approve and then explicitly publish it. The bounded metformin dosage evidence check is
+source/version anchored and fails closed on mismatch, ambiguity, or unsupported grammar.
+Recall and correction are separate versioned transitions, while the Patient projection exposes
+only current published content or safe notices. See
+[`PATIENT_PUBLICATION_BOUNDARY.md`](docs/PATIENT_PUBLICATION_BOUNDARY.md), the
+[`Round 4 design`](docs/ROUND4_PATIENT_PUBLICATION_DESIGN.md), and the
+[`Round 4 evidence`](docs/evidence/round4_patient_publication.md).
+
+### Round 5 release-candidate integration
+
+Round 5 adds no clinical feature. It reconciles the Round 1–4 slices, verifies fresh and legacy
+SQLite migration paths through `0014_patient_publications`, prepares the PostgreSQL 18 gate at
+[`real-clinic-postgres.yml`](.github/workflows/real-clinic-postgres.yml), and records the route/
+privacy boundary. Real PostgreSQL execution was pending at the Round 5 checkpoint; Round 6 later
+verified the prepared workflow against PostgreSQL 18. Offline SQL remains non-execution evidence.
+See the
+[`Round 5 integration audit`](docs/ROUND5_INTEGRATION_AUDIT.md),
+[`demo runbook`](docs/REAL_CLINIC_DEMO_RUNBOOK.md), and
+[`iteration brief`](docs/REAL_CLINIC_ITERATION_BRIEF.md).
+
+### Round 6 external PostgreSQL gate
+
+Round 6 pushed only `codex/real-clinic-safety` and ran the prepared PostgreSQL 18 workflow at the
+exact code checkpoint `2af8073`. The gate passed fresh/legacy migration checks, PostgreSQL
+schema/FK assertions, idempotent synthetic seed, the backend regression suite, Ruff, mypy, and
+`pip check`. One bounded repair corrected the mypy ignore code for the optional `faster_whisper`
+import; no migrations, dependencies, or product behavior changed. The final evidence commit
+`eeff4cf` passed exact-SHA run `33592639722`, and `real-clinic-rc2` points to it. The evidence is
+in [`Round 6 external gate`](docs/ROUND6_EXTERNAL_GATE.md); any Render update is a separate
+Round 7 action.
+
+### Round 2 local safety and exposure iteration
+
+The current local iteration adds Alembic `0012_glance_impressions`, a shared provider-free Glance
+candidate builder, metadata-only exposure impressions, and a protected dual-source allergy
+conflict review drawer. Staff can inspect both sources but cannot adjudicate; clinicians use a
+versioned decision with database CAS; patients receive none of the conflict, assertion, or
+impression data. Exposure records contain candidate/surface metadata only and are an observable
+denominator for later evaluation; they do not claim IPS, counterfactual correction, or unbiased
+self-learning. The local evidence is recorded in
+[`round2_conflict_ui_exposure.md`](docs/evidence/round2_conflict_ui_exposure.md) and
+[`round2_warm_path.md`](docs/evidence/round2_warm_path.md). This iteration remains local-only:
+it does not push, deploy, call DeepSeek, or change Voice.
+
+### Round 3 local safe-failure iteration
+
+The current local resilience slice adds Alembic `0013_ai_provider_resilience`, a persistent
+clinic/provider circuit with `closed`, `open`, and `half_open` states, and a bounded DeepSeek
+adapter budget of 8 seconds per attempt, 12 seconds total, and 2 attempts. Provider failures are
+never silently replaced by fixture output. Internal users can query the clinic-scoped provider
+status; the AI panel exposes available/degraded/temporarily unavailable states while preserving
+existing Glance, timeline, tasks, comments, and source navigation. The application logger accepts
+only allowlisted metadata, unexpected exceptions return a generic response, and the explicit local
+log audit command is:
+
+```powershell
+Push-Location backend
+& $pyExe -m app.scripts.audit_phi_logs path\to\local.log --known-name "Synthetic Patient"
+Pop-Location
+```
+
+Round 3 remains local-only and synthetic. It does not provide a durable queue, automatic replay,
+third-party retention evidence, live provider calls, PostgreSQL production evidence, or clinical
+SLA.
 
 ## Gate B API and UI
 
@@ -94,6 +165,9 @@ clinic-scoped collaboration APIs so the seed remains deterministic and read-only
   entry. Provider failures stay failures and do not silently fall back to fixture.
 - `GET /ai-processing/provider` exposes only safe provider name/model/configured metadata to
   authorized staff/clinicians; it never returns a key, key-file path, or base URL.
+- `GET /patients/{patient_id}/ai-processing/provider-status` exposes clinic-scoped availability,
+  circuit state, bounded retry-after, and whether new suggestions are available to internal users.
+  It never contacts the provider or exposes keys, URLs, response bodies, or account data.
 - `GET /ai-processing/{job_id}` exposes job metadata and safe error codes, not raw input,
   provider prompts, or provider responses.
 - `POST /highlights/{highlight_id}/feedback` records clinic-scoped staff/clinician feedback with

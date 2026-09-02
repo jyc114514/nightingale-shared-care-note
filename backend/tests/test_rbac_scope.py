@@ -20,6 +20,12 @@ async def test_unauthenticated_requests_are_rejected(
     response = await client.get(f"/patients/{demo_data.patient_a.id}")
     assert response.status_code == 401
 
+    logout = await client.post(
+        "/auth/logout",
+        headers={"Origin": "http://testserver"},
+    )
+    assert logout.status_code == 401
+
 
 @pytest.mark.asyncio
 async def test_patient_sees_only_safe_patient_facing_fields(

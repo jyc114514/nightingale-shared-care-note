@@ -84,6 +84,7 @@ def _session_out(
 
 @router.get("/voice/provider", response_model=VoiceProviderOut)
 def voice_provider_info(
+    _user: User = Depends(get_current_user),
     app_settings: Settings = Depends(get_settings),
 ) -> VoiceProviderOut:
     try:

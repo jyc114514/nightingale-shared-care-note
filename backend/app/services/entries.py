@@ -71,6 +71,25 @@ def record_audit(
     return audit
 
 
+def _sync_entry_assertions_after_commit(
+    db: Session,
+    *,
+    entry: Entry,
+    version: EntryVersion,
+    request_id: str,
+) -> None:
+    """Run derived safety extraction only after the canonical version is durable."""
+
+    from app.services.clinical_assertions import sync_entry_assertions_safely
+
+    sync_entry_assertions_safely(
+        db,
+        entry=entry,
+        version=version,
+        request_id=request_id,
+    )
+
+
 def create_entry_record(
     db: Session,
     *,
@@ -136,6 +155,13 @@ def create_entry_record(
         to_version=1,
     )
     db.commit()
+    db.refresh(entry)
+    _sync_entry_assertions_after_commit(
+        db,
+        entry=entry,
+        version=version,
+        request_id=request_id,
+    )
     db.refresh(entry)
     return entry
 
@@ -208,6 +234,21 @@ def update_entry_content(
     fresh_entry = db.get(Entry, entry.id)
     if fresh_entry is None:
         raise RuntimeError("Entry disappeared after a successful update")
+    fresh_version = db.scalar(
+        select(EntryVersion).where(
+            EntryVersion.entry_id == fresh_entry.id,
+            EntryVersion.version_number == fresh_entry.current_version,
+        )
+    )
+    if fresh_version is None:
+        raise RuntimeError("Entry has no immutable version after a successful update")
+    _sync_entry_assertions_after_commit(
+        db,
+        entry=fresh_entry,
+        version=fresh_version,
+        request_id=request_id,
+    )
+    db.refresh(fresh_entry)
     return fresh_entry
 
 

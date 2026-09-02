@@ -48,6 +48,7 @@ from app.services.importance import (
     FeedbackIdempotencyConflict,
     record_feedback_event,
 )
+from app.services.glance_read import build_glance_candidates, select_glance_items
 
 
 router = APIRouter(tags=["gate-b"])
@@ -134,42 +135,15 @@ def glance(
 ) -> list[GlanceItemOut]:
     context = get_patient_context(db, user, patient_id)
     require_internal(context)
-    highlight_rows = list(
-        db.scalars(
-            select(PatientGlanceItem)
-            .where(
-                PatientGlanceItem.patient_id == patient_id,
-                PatientGlanceItem.clinic_id == context.clinic_id,
-                PatientGlanceItem.status.not_in(
-                    [HighlightStatus.REJECTED.value, HighlightStatus.SUPERSEDED.value]
-                ),
-            )
-            .order_by(
-                PatientGlanceItem.display_priority.desc(),
-                PatientGlanceItem.occurred_at.desc(),
-                PatientGlanceItem.id.desc(),
-            )
-            .limit(limit)
-        )
+    snapshot = build_glance_candidates(
+        db,
+        clinic_id=context.clinic_id,
+        patient_id=patient_id,
     )
-    task_rows = list(
-        db.scalars(
-            select(TaskGlanceItem)
-            .where(
-                TaskGlanceItem.patient_id == patient_id,
-                TaskGlanceItem.clinic_id == context.clinic_id,
-            )
-            .order_by(TaskGlanceItem.display_priority.desc(), TaskGlanceItem.updated_at.desc())
-            .limit(limit)
-        )
-    )
-    combined = [
-        (item.display_priority, item.occurred_at, item.id, "highlight", item)
-        for item in highlight_rows
-    ] + [(item.display_priority, item.occurred_at, item.id, "task", item) for item in task_rows]
-    combined.sort(key=lambda row: (row[0], row[1], row[2]), reverse=True)
     result: list[GlanceItemOut] = []
-    for _, _, _, resource_type, item in combined[:limit]:
+    for candidate in select_glance_items(snapshot, limit=limit):
+        resource_type = candidate.resource_type
+        item = candidate.projection
         if resource_type == "highlight":
             highlight_item = cast(PatientGlanceItem, item)
             result.append(
@@ -192,6 +166,9 @@ def glance(
                     risk_reason=highlight_item.risk_reason,
                     action_label=highlight_item.action_label,
                     action_state=highlight_item.action_state,
+                    clinical_conflict_id=highlight_item.clinical_conflict_id,
+                    safety_class=highlight_item.safety_class,
+                    safety_floor=highlight_item.safety_floor,
                     source_entry_id=highlight_item.source_entry_id,
                     source_version_id=highlight_item.source_version_id,
                     version_number=highlight_item.version_number,
@@ -429,13 +406,23 @@ def feedback_highlight(
     explanation = (
         json.loads(projection.ranking_explanation)
         if projection is not None
-        else {"adaptive_feedback": result.profile.bounded_weight}
+        else {
+            "adaptive_feedback": result.profile.bounded_weight
+            if result.profile is not None
+            else 0.0
+        }
     )
     return HighlightFeedbackOut(
         event_id=result.event.id,
         event_type=FeedbackEventType(result.event.event_type),
         created=result.created,
         feature_signature=result.event.feature_signature,
-        profile=ImportanceProfileOut.model_validate(result.profile),
+        profile=(
+            ImportanceProfileOut.model_validate(result.profile)
+            if result.profile is not None
+            else None
+        ),
         ranking_explanation=explanation,
+        applied_to_profile=result.event.applied_to_profile,
+        suppression_reason=result.event.suppression_reason,
     )

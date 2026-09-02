@@ -42,6 +42,19 @@ export const en = {
   "ai.ready": "Ready for review",
   "ai.processingStatus": "In progress",
   "ai.failed": "Could not be prepared",
+  "ai.availability": "Suggestion availability",
+  "ai.available": "AI-assisted suggestions are available.",
+  "ai.degraded": "AI-assisted updates are experiencing temporary failures.",
+  "ai.unavailable": "New AI-assisted suggestions are temporarily unavailable.",
+  "ai.statusUnknown":
+    "Suggestion availability is temporarily unknown. Existing records remain available.",
+  "ai.existingAvailable":
+    "Existing care records, Glance items, tasks, comments and source links remain available.",
+  "ai.retryAfter": "Try again after {{seconds}} seconds.",
+  "ai.checkAvailability": "Check availability",
+  "ai.checkingAvailability": "Checking availability...",
+  "ai.newSuggestionsPaused":
+    "New suggestions are paused while the service recovers.",
   "voice.panel": "Voice note",
   "voice.title": "Review a pre-recorded care conversation",
   "voice.warning":
@@ -235,7 +248,62 @@ export const en = {
   "ranking.openAction": "Open action",
   "ranking.confirmation": "Clinical confirmation",
   "ranking.adaptive": "Team feedback",
+  "ranking.preFloor": "Before minimum",
+  "ranking.safetyFloor": "Minimum display priority",
+  "ranking.floorApplied": "Minimum applied",
+  "ranking.floorYes": "Yes",
+  "ranking.floorNo": "No",
   "ranking.final": "Overall priority",
+  "conflict.cardTitle": "Conflicting allergy information",
+  "conflict.needsReview": "Needs clinician review",
+  "conflict.protectedAttention": "Protected attention",
+  "conflict.review": "Review conflict",
+  "conflict.title": "Allergy conflict review",
+  "conflict.close": "Close conflict review",
+  "conflict.loading": "Loading conflict details...",
+  "conflict.error": "We couldn't load this conflict.",
+  "conflict.explanation":
+    "The system found contradictory source assertions. It has not decided which one is clinically correct.",
+  "conflict.reported": "Allergy reported",
+  "conflict.denied": "Allergy denied",
+  "conflict.concept": "Concept: Penicillin",
+  "conflict.verificationLabel": "Verification",
+  "conflict.assertedByLabel": "Asserted by",
+  "conflict.sourceLabel": "Source",
+  "conflict.unconfirmed": "Unconfirmed",
+  "conflict.confirmed": "Confirmed",
+  "conflict.refuted": "Refuted",
+  "conflict.enteredInErrorStatus": "Entered in error",
+  "conflict.statusOpen": "Open",
+  "conflict.statusAdjudicated": "Decision recorded",
+  "conflict.statusSuperseded": "No longer active",
+  "conflict.version": "Review version {{version}}",
+  "conflict.viewSource": "View source",
+  "conflict.boundary":
+    "Only a clinician can record the clinical decision. Original source notes remain unchanged.",
+  "conflict.staffReadOnly":
+    "Read-only for Staff. A clinician must record the clinical decision.",
+  "conflict.resolution": "Clinical decision",
+  "conflict.confirmPresent": "Confirm allergy present",
+  "conflict.confirmAbsent": "Confirm no allergy",
+  "conflict.moreInfo": "Need more information",
+  "conflict.enteredError": "Mark assertions entered in error",
+  "conflict.confirmation":
+    "This changes derived verification status only; it does not edit or delete original notes.",
+  "conflict.confirmationAbsent":
+    "This records a clinician decision for the derived assertion; it does not state a broader patient fact.",
+  "conflict.confirmationMoreInfo":
+    "The conflict remains protected until more information is available.",
+  "conflict.record": "Record clinical decision",
+  "conflict.recording": "Recording decision...",
+  "conflict.recorded":
+    "Decision recorded. Original source notes remain unchanged.",
+  "conflict.stale":
+    "This conflict was updated by another clinician. Review the latest decision before trying again.",
+  "conflict.feedbackNotice":
+    "Interaction recorded. This protected safety item does not train preference ranking while unresolved.",
+  "conflict.floorNotice":
+    "This unresolved allergy conflict has a deterministic minimum display priority. It is not a medical risk score.",
   "button.openSource": "Open source",
   "button.pin": "Pin",
   "button.unpin": "Unpin",
@@ -354,4 +422,74 @@ export const en = {
   "guide.sourceNotice":
     "Patient record content stays in its original language to avoid changing clinical meaning.",
   "guide.openState": "Guide is open",
+  "publication.eyebrow": "Patient publication review",
+  "publication.title": "Patient publication review",
+  "publication.close": "Close publication review",
+  "publication.loading": "Loading publication review...",
+  "publication.stateLabel": "Workflow state",
+  "publication.stateDraft": "Draft",
+  "publication.stateApproved": "Clinician approved",
+  "publication.statePublished": "Published to portal",
+  "publication.stateRecalled": "Recalled from portal",
+  "publication.stateSuperseded": "Superseded",
+  "publication.stateEnteredInError": "Entered in error",
+  "publication.acceptDoesNotPublish":
+    "Accepting an AI suggestion does not publish it to the patient.",
+  "publication.sourceTitle": "Immutable source",
+  "publication.viewSource": "View source evidence",
+  "publication.sourceChanged":
+    "The source has changed since this draft was prepared. Re-review the latest immutable version before continuing.",
+  "publication.sourceIntegrity":
+    "Evidence is anchored to the immutable source using {{unit}} offsets.",
+  "publication.dosageTitle": "Medication dosage check",
+  "publication.statusMatched": "Matched",
+  "publication.statusMismatch": "Mismatch",
+  "publication.statusAmbiguous": "Ambiguous",
+  "publication.statusUnsupported": "Unsupported form",
+  "publication.statusMissing": "No dosage evidence",
+  "publication.dosageMatched":
+    "The draft dosage matches the selected source exactly. Clinician approval is still required.",
+  "publication.dosageNotPresent":
+    "No dosage was found in this general care update; no medication evidence was invented.",
+  "publication.dosageBlocked":
+    "This update cannot be approved or published until the dosage evidence is clear and matched.",
+  "publication.sourceDosage": "Source dosage",
+  "publication.draftDosage": "Draft dosage",
+  "publication.none": "Not present",
+  "publication.draftLabel": "Patient-facing draft",
+  "publication.save": "Save draft revision",
+  "publication.saving": "Saving...",
+  "publication.approve": "Approve for portal",
+  "publication.staffBoundary":
+    "A clinician must approve and publish this update. Staff can prepare and revise the draft, but cannot publish it.",
+  "publication.approvedExact":
+    "Approved content version {{version}} is held for a separate publish decision.",
+  "publication.publish": "Publish to patient portal",
+  "publication.publishing": "Publishing...",
+  "publication.publishConfirmation":
+    "Confirm that this exact approved version will be visible in the patient portal. No external message will be sent; the original source remains unchanged.",
+  "publication.confirmPublish": "Confirm publish",
+  "publication.cancel": "Cancel",
+  "publication.publishedSuccess":
+    "Published to the patient portal. The source and publication history remain auditable.",
+  "publication.recall": "Withdraw from portal",
+  "publication.createCorrection": "Create correction draft",
+  "publication.recallReason": "Withdrawal reason",
+  "publication.reasonDosage": "Dosage error",
+  "publication.reasonCorrection": "Clinical correction",
+  "publication.reasonEnteredError": "Entered in error",
+  "publication.reasonOther": "Other safe code",
+  "publication.withdrawnInternal":
+    "The portal no longer shows the withdrawn content. The internal history is retained for audit.",
+  "publication.versionHistory": "Draft content history ({{count}} versions)",
+  "publication.contentVersion": "Content version {{version}}",
+  "publication.prepare": "Prepare patient update",
+  "publication.stale":
+    "This publication changed. Refresh it before trying again.",
+  "patient.careUpdatesEyebrow": "Patient portal",
+  "patient.careUpdatesTitle": "Published care updates",
+  "patient.careUpdatesBody":
+    "Only updates explicitly published by a clinician are shown here.",
+  "patient.careUpdatesEmpty":
+    "No new clinician-published updates are available.",
 } as const;

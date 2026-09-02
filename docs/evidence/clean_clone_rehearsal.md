@@ -54,3 +54,22 @@ the primary worktree and the untracked original MP4 were not copied into the clo
 
 No password file, API key, database URL, runtime secret, production database, Render write, or
 GitHub write was used by this rehearsal.
+
+## Round 5 final clean-clone rehearsal - 2026-09-02
+
+Tracked-only clean clone v3 at code checkpoint `39ab0f0` was created outside the repository and
+contained no MP4, database, cache, `node_modules`, test-results, or password/API-key files.
+
+- Backend lockfile install, fresh Alembic `0001→0014`, `alembic check`, seed twice, 175 tests,
+  Ruff check/format, mypy, and pip check: passed.
+- Frontend frozen install, 45 Vitest tests, lint, Prettier, type-check, and build: passed.
+- Gate B: 18/18; Voice: 4/4; Scenario F: 2/2, each across 1440×900 and 390×844: passed.
+- One-click launcher smoke: migration/seed, health, second-start idempotency, runtime/log secret
+  checks, owned stop, and port cleanup: passed after the Round 5 path-space fixes.
+
+The first attempt exposed Windows path-space handling in the launcher child arguments and test
+harness; both were fixed in local commits `7587e30` and `47497f3`. The final v3 source run was
+green. Cleanup was attempted only after verifying no clone-owned processes and no target ports;
+Windows ACL/deep-path restrictions prevented deleting the temporary clone directories, so no
+ownership or permission changes were made. This is a local reproducibility record, not external
+PostgreSQL or Render evidence.

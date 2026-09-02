@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import httpx
@@ -52,7 +53,9 @@ class DeepSeekProvider:
         *,
         base_url: str = DEEPSEEK_DEFAULT_BASE_URL,
         model: str = DEEPSEEK_DEFAULT_MODEL,
-        timeout_seconds: float = 20.0,
+        timeout_seconds: float = 8.0,
+        total_budget_seconds: float = 12.0,
+        max_attempts: int = 2,
         max_tokens: int = 600,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
@@ -61,6 +64,10 @@ class DeepSeekProvider:
             raise ProviderError("provider_configuration_missing_key")
         if timeout_seconds <= 0 or timeout_seconds > 120:
             raise ProviderError("provider_configuration_invalid_timeout")
+        if total_budget_seconds < 0.1 or total_budget_seconds > 120:
+            raise ProviderError("provider_configuration_invalid_total_budget")
+        if not 1 <= max_attempts <= 3:
+            raise ProviderError("provider_configuration_invalid_max_attempts")
         if max_tokens <= 0 or max_tokens > 4_096:
             raise ProviderError("provider_configuration_invalid_max_tokens")
         normalized_base_url = base_url.strip().rstrip("/")
@@ -80,6 +87,10 @@ class DeepSeekProvider:
             transport=transport,
         )
         self._max_tokens = max_tokens
+        self._timeout_seconds = timeout_seconds
+        self._total_budget_seconds = total_budget_seconds
+        self._max_attempts = max_attempts
+        self.last_attempt_count = 0
         self.last_usage: dict[str, int] | None = None
 
     def close(self) -> None:
@@ -100,20 +111,37 @@ class DeepSeekProvider:
             raise ProviderError("provider_payload_not_redacted")
 
     def _request(self, body: dict[str, Any]) -> dict[str, Any]:
-        for attempt in range(2):
+        started = time.monotonic()
+        deadline = started + self._total_budget_seconds
+        self.last_attempt_count = 0
+        for attempt in range(self._max_attempts):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ProviderError("provider_timeout")
+            self.last_attempt_count = attempt + 1
+            attempt_timeout = min(self._timeout_seconds, remaining)
             try:
-                response = self._client.post("/chat/completions", json=body)
+                response = self._client.post(
+                    "/chat/completions",
+                    json=body,
+                    timeout=httpx.Timeout(
+                        attempt_timeout,
+                        connect=min(5.0, attempt_timeout),
+                    ),
+                )
             except httpx.TimeoutException as exc:
-                if attempt == 0:
+                if attempt + 1 < self._max_attempts and deadline - time.monotonic() > 0:
                     continue
                 raise ProviderError("provider_timeout") from exc
             except httpx.RequestError as exc:
-                if attempt == 0:
+                if attempt + 1 < self._max_attempts and deadline - time.monotonic() > 0:
                     continue
                 raise ProviderError("provider_unavailable") from exc
 
+            if deadline - time.monotonic() <= 0:
+                raise ProviderError("provider_timeout")
             if response.status_code >= 500:
-                if attempt == 0:
+                if attempt + 1 < self._max_attempts and deadline - time.monotonic() > 0:
                     continue
                 raise ProviderError("provider_unavailable")
             if response.status_code in {401, 403}:

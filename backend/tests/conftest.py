@@ -2,12 +2,15 @@
 
 from collections.abc import AsyncIterator, Generator, Iterator
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Any
 
 import httpx
 import pytest
 import pytest_asyncio
+from alembic import command
+from alembic.config import Config
 from fastapi import FastAPI
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
@@ -15,7 +18,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, get_settings
 from app.core.security import hash_password
-from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
 from app.models import (
@@ -34,6 +36,23 @@ from app.services.entries import create_entry_record
 
 
 TEST_PASSWORD = "test-password-only"
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+
+
+def upgrade_test_database(database_url: str) -> None:
+    """Create test schemas through the same Alembic path as production."""
+
+    previous_database_url = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = database_url
+    try:
+        alembic_config = Config(str(BACKEND_ROOT / "alembic.ini"))
+        alembic_config.set_main_option("script_location", str(BACKEND_ROOT / "migrations"))
+        command.upgrade(alembic_config, "head")
+    finally:
+        if previous_database_url is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous_database_url
 
 
 @dataclass(frozen=True)
@@ -84,11 +103,10 @@ def test_engine(test_settings: Settings) -> Iterator[Engine]:
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
 
-    Base.metadata.create_all(bind=engine)
+    upgrade_test_database(test_settings.database_url)
     try:
         yield engine
     finally:
-        Base.metadata.drop_all(bind=engine)
         engine.dispose()
 
 
