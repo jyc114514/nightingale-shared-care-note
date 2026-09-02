@@ -213,7 +213,7 @@ jobs:
           baseline_root="${RUNNER_TEMP}/nightingale-baseline"
           mkdir -p "${baseline_root}"
           git archive refs/tags/real-clinic-bridge1 | tar -x -C "${baseline_root}"
-          (cd "${baseline_root}/backend" && python -m app.scripts.round7_bridge_smoke)
+          (cd "${baseline_root}" && python -m app.scripts.round7_bridge_smoke)
 
       - name: Run backend regression and Round 1-4 safety suites
         working-directory: backend
