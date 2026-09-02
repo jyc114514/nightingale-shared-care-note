@@ -111,7 +111,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          (cd backend && PORT=8010 DEMO_SEED_ENABLED=false ../scripts/render_entrypoint.sh) > "${RUNNER_TEMP}/bridge-entrypoint.log" 2>&1 &
+          (cd backend && PORT=8010 DEMO_SEED_ENABLED=false sh ../scripts/render_entrypoint.sh) > "${RUNNER_TEMP}/bridge-entrypoint.log" 2>&1 &
           server_pid=$!
           cleanup() {
             kill "${server_pid}" 2>/dev/null || true
