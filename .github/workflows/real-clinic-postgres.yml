@@ -203,7 +203,7 @@ jobs:
           assert first["counts"]["patient_publication_evidence"] >= 1
           PY
 
-      - name: Probe baseline application against 0015 compatibility schema
+      - name: Probe pinned bridge application against 0015 compatibility schema
         working-directory: backend
         shell: bash
         run: |
@@ -213,7 +213,7 @@ jobs:
           baseline_root="${RUNNER_TEMP}/nightingale-baseline"
           mkdir -p "${baseline_root}"
           git archive refs/tags/real-clinic-bridge1 | tar -x -C "${baseline_root}"
-          python -m app.scripts.round7_baseline_compat_probe "${baseline_root}"
+          (cd "${baseline_root}/backend" && python -m app.scripts.round7_bridge_smoke)
 
       - name: Run backend regression and Round 1-4 safety suites
         working-directory: backend
