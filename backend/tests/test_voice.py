@@ -78,6 +78,8 @@ async def test_voice_audio_requires_authentication(
     client: Any, test_settings: Settings, demo_data: Any
 ) -> None:
     test_settings.voice_provider = "fixture"
+    provider = await client.get("/voice/provider")
+    assert provider.status_code == 401
     response = await client.get(
         f"/patients/{demo_data.patient_a.id}/voice/samples/{CLINICAL_SAMPLE.sample_id}/audio"
     )

@@ -50,7 +50,11 @@ def make_me_response(db: Session, user: User) -> MeResponse:
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    dependencies=[Depends(require_allowed_origin)],
+)
 def login(
     payload: LoginRequest,
     response: Response,
