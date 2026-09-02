@@ -67,3 +67,32 @@ This is not a clinical production system, FHIR-conformant implementation, medica
 ASR/diarization system, external communication service, or hosted PostgreSQL performance report.
 The brief is an iteration/release-candidate record, not a replacement for the earlier Technical
 Brief.
+
+## Round 9 production recovery addendum — 2026-09-03
+
+Round 9 addressed a production logging regression before the existing Render service was updated.
+The old sanitizer consumed the parameterized `LogRecord.args` tuple that Uvicorn's
+`AccessFormatter` needs, which caused formatter failures for ordinary access lines. A real
+formatter regression test was committed red at `f72593c`; the narrow repair was committed at
+`43714a5` and preserves formatter-compatible access arguments while redacting query values and
+failing closed on sanitizer errors.
+
+The exact repair source `c6e9851288c745ceb66dad32078d1385ffbe3424` passed PostgreSQL 18 CI run
+`33650978171`, including the full migration/seed/schema checks, the pinned bridge probe, backend
+tests, and static gates. Main was fast-forwarded and the existing Render service deployed that
+same commit once: deploy `dep-dac4dgek1f9s73e4qu30`. HTTPS, anonymous auth boundaries, Staff/
+Clinician/Patient canaries, and a 15/15 sustained asset watch passed. Auto-Deploy remains disabled
+for controlled release.
+
+The current evidence is deliberately partial. The hosted authenticated read-path benchmark was
+not run because no safe browser request surface was available without extracting cookies or
+tokens. The production Glance top-six was also affected by accumulated synthetic rehearsal state,
+so protected allergy/publication controls were not claimed as live-canary passes. No production
+cleanup was used to manufacture them. See [`round9_render_live.md`](evidence/round9_render_live.md)
+and [`round9_hosted_performance.md`](evidence/round9_hosted_performance.md).
+
+The local iteration demo is a separate, disposable synthetic artifact at
+[`Nightingale_Real_Clinic_Iteration_Demo.webm`](../deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm);
+its browser-based QA and the unavailability of `ffprobe`/`ffmpeg` are recorded in
+[`round9_demo_qa.md`](evidence/round9_demo_qa.md). The original user-supplied MP4 was not opened,
+transformed, moved, renamed, or uploaded.

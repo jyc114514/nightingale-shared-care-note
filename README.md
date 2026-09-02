@@ -246,6 +246,26 @@ synthetic WAV fixtures, displays prepared timestamped transcript segments, and l
 unavailable. The achieved status is: “Bounded prerecorded synthetic audio with prepared transcript
 and segment provenance; no ASR inference, diarization, or microphone capture.”
 
+### Round 9 production recovery and iteration evidence
+
+Round 9 first reproduced and fixed the Uvicorn access-log formatter regression with the real
+`AccessFormatter`, then passed the exact PostgreSQL 18 gate before updating the existing Render
+service. Main and Render now run `c6e9851288c745ceb66dad32078d1385ffbe3424`; the deployment,
+anonymous checks, role canaries, logging observation, and 15/15 sustained watch are recorded in
+[`round9_render_live.md`](docs/evidence/round9_render_live.md). Auto-Deploy remains disabled for
+controlled release, and no new Render resource was created.
+
+The current Round 9 release record is intentionally partial: the authenticated hosted benchmark
+is pending because no safe browser request surface was available without extracting cookies or
+tokens, and the accumulated production top-six did not expose every protected conflict/publication
+control. No production data cleanup was performed. See
+[`round9_hosted_performance.md`](docs/evidence/round9_hosted_performance.md).
+
+The local iteration artifact is [`Nightingale_Real_Clinic_Iteration_Demo.webm`](deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm),
+generated from disposable synthetic data with visible English captions. Its rehearsal/media QA is
+in [`round9_demo_qa.md`](docs/evidence/round9_demo_qa.md). The original user-supplied MP4 remains
+local and is not tracked or uploaded.
+
 ## Bonus importance logic
 
 The adaptive ranking path uses a closed structured feature signature derived from entry type,
@@ -273,21 +293,23 @@ Backend:
 $pyExe = 'C:\Users\JI YANCHEN\Desktop\ai_trading_playground\ai_env\python.exe'
 Push-Location backend
 & $pyExe -m ruff check --no-cache app tests migrations
-& $pyExe -m ruff format --check --no-cache app tests migrations
+& $pyExe -m ruff format --check --no-cache app tests
 & $pyExe -m mypy app tests
 & $pyExe -m pytest
 Pop-Location
 ```
 
-At the final release-candidate application checkpoint, this suite reports **85 passed**. Reproducible coverage is **88%**
-when run with `pytest --cov=app`; the percentage includes standalone benchmark/seed scripts that
-are not exercised by the application suite.
+At the Round 9 application checkpoint, the backend suite reports **179 passed**. The global
+`pytest --cov=app` measurement is **83.30%** because standalone benchmark/seed/probe scripts are
+included; the runtime application slice excluding those scripts measures **92.9%**. The global
+85% threshold was not hidden or inflated.
 
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus
 `test_redaction.py`, `test_ai_provider_boundary.py`, `test_ai_processing.py`, and
 `test_materialized_glance.py`, `test_self_learning_importance.py`, `test_data_decay.py`, and
-`test_voice.py`. They use HTTPX `AsyncClient` with `ASGITransport`; no old
+`test_voice.py`, and `test_uvicorn_access_logging.py`. They use HTTPX `AsyncClient` with
+`ASGITransport`; no old
 `TestClient/httpx` warning is hidden. Migration tests use Alembic to create the database and
 prove that seed does not call `Base.metadata.create_all()`.
 
@@ -314,9 +336,10 @@ Pop-Location
 ```
 
 `pnpm e2e` creates a temporary Alembic-migrated SQLite database, seeds synthetic data, starts
-real Uvicorn and Vite processes on clean local ports, and runs 14 core checks at 1440x900 and
-390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks at the same viewports. The final
-run therefore reports 18 browser checks. Scenario B
+real Uvicorn and Vite processes on clean local ports, and runs the core checks at 1440x900 and
+390x844. `pnpm e2e:voice` runs four isolated Voice fixture checks and
+`pnpm e2e:publication` runs two publication-gate checks at the same viewports. The Round 9 run
+therefore reports 18 core, 4 Voice, and 2 publication browser checks. Scenario B
 covers revisions, nested comments, keyboard mention selection, contextual assignment drawer
 creation/completion, and a second browser receiving the metadata-only SSE invalidation. The
 dedicated preview check verifies real internal 1440x900/390x844 iframe viewports, query

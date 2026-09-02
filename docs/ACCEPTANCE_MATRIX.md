@@ -408,3 +408,22 @@ was used in Round 6.
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.
+
+## Round 9 production and iteration evidence — 2026-09-03
+
+The 25-item Mandatory matrix remains **25/25 passed on local synthetic application evidence**;
+the status is not a claim that every advanced control was observable in the accumulated hosted
+demo state. Round 9 adds the following release evidence:
+
+| Evidence area | Result | Evidence |
+| --- | --- | --- |
+| Safe Uvicorn access logging | RED reproduced, narrow GREEN repair verified; normal access lines retained and formatter errors absent in the observed live window | [round9 safe logging](evidence/round9_safe_logging_recovery.md) |
+| PostgreSQL 18 release gate | Passed at exact source `c6e9851288c745ceb66dad32078d1385ffbe3424` | [GitHub Actions run 33650978171](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33650978171) |
+| Existing Render deployment | Live on `c6e9851`; HTTPS/anonymous boundaries and 15/15 sustained watch passed | [round9 Render evidence](evidence/round9_render_live.md) |
+| Hosted authenticated benchmark | Pending; no cookies/tokens were extracted | [round9 benchmark boundary](evidence/round9_hosted_performance.md) |
+| Local iteration demo | 54.76-second 1280×720 synthetic WebM generated and browser-seek inspected | [round9 demo QA](evidence/round9_demo_qa.md) |
+| Iteration Brief PDF | Separate Round 9 artifact; 3-page extraction and visual QA passed | [round9 brief QA](evidence/round9_iteration_brief_qa.md) |
+
+Round 9 therefore remains a **soft partial** release record until the authenticated hosted
+benchmark and the remaining deliverable audit are closed. No requirements text was changed, and
+the original user-supplied MP4 remains outside Git.

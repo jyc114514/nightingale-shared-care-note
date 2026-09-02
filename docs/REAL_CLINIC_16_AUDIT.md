@@ -963,3 +963,25 @@ forward repair and second run passed. This validates database compatibility for 
 candidate. It does not change the 16-scenario classifications, add RLS, claim clinical
 production safety, or imply a Render deployment. See
 [`Round 6 PostgreSQL evidence`](evidence/round6_postgres_ci.md).
+
+## Round 9 integration evidence — 2026-09-03
+
+Round 9 repaired the deployed access-log failure and validated the repaired application against a
+real PostgreSQL 18 service before updating the existing Render service. The safe-logging repair
+preserved Uvicorn formatter arguments and redacted query values; it did not change the 16-scenario
+domain model or add a migration. The exact repair source was `c6e9851288c745ceb66dad32078d1385ffbe3424`.
+
+The current scenario statuses above remain the authoritative safety interpretation. In particular:
+
+- Scenario 3 remains **PARTIAL**: local application logging is hardened, while provider/host
+  retention and broader operational controls are not independently proven.
+- Scenarios 8, 9, 12, 13, 14, and 15 remain bounded **PARTIAL** slices rather than general
+  clinical guarantees.
+- Scenarios 6 and 11 remain **DOES NOT** for the capabilities that were intentionally deferred.
+- Scenarios 4, 10, and 16 retain their **SURVIVES** status under the tested contracts.
+
+Round 9 production observations are limited to synthetic data and a single existing Render
+service. The protected allergy/publication controls were not observable in the current polluted
+top-six Glance slice, so no live-canary claim is added for those controls. The authenticated
+hosted benchmark is explicitly pending; the local/demo and PostgreSQL evidence must not be
+mistaken for a clinical production or performance certification.

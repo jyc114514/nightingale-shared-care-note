@@ -36,6 +36,8 @@ artifacts/gate-b/
 artifacts/local-runtime/
 deliverables/submission/*.zip
 deliverables/submission/MANIFEST.txt
+# Iteration recordings stay local; Round 10 decides final packaging explicitly.
+deliverables/iteration/*.webm
 
 # IDE and operating-system files
 .idea/

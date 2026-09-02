@@ -1,0 +1,39 @@
+{
+  "status": "PARTIAL_AUTHENTICATED_HOSTED_BENCHMARK_PENDING",
+  "service_url": "https://nightingale-shared-care-note.onrender.com",
+  "live_commit": "c6e9851288c745ceb66dad32078d1385ffbe3424",
+  "release_tag": "real-clinic-rc5",
+  "database_target": "existing managed Render PostgreSQL 18",
+  "warm_up_requests": null,
+  "measured_requests": null,
+  "concurrency": null,
+  "endpoints": [
+    {
+      "category": "authenticated Staff Glance read",
+      "status": "pending",
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "max_ms": null,
+      "errors": null
+    },
+    {
+      "category": "authenticated Patient current-care projection",
+      "status": "pending",
+      "p50_ms": null,
+      "p95_ms": null,
+      "p99_ms": null,
+      "max_ms": null,
+      "errors": null
+    }
+  ],
+  "auth_boundary": "No authenticated request benchmark was executed because the available browser control surface did not provide a safe page-request API without extracting cookies or tokens. No credential file was read and no credential was printed.",
+  "anonymous_canary": {
+    "health_redirect_status": 301,
+    "https_health_status": 200,
+    "sustained_watch_samples": 15,
+    "sustained_watch_failures": 0,
+    "sustained_watch_5xx": 0
+  },
+  "non_claim": "This file does not claim hosted Glance or Patient warm-path latency, a production SLA, or clinical validation."
+}
