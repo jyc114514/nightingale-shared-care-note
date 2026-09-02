@@ -1,7 +1,7 @@
 # Round 5 release-candidate integration audit
 
-Status: local integration audit in progress until the clean-clone rehearsal completes. This
-document records facts and deliberate boundaries; it does not claim external CI or deployment.
+Status: local integration audit complete. This document records facts and deliberate boundaries;
+it does not claim external CI or deployment.
 
 ## Baseline and scope
 
@@ -75,8 +75,34 @@ authorized external CI action.
    chain itself remained unchanged.
 3. No Round 1–4 production code defect was found by the integration audit after these corrections.
 
-## Remaining checks before RC tag
+## Clean-clone and final regression result
 
-The clean-clone rehearsal and final integrated regression must complete before this audit is marked
-complete and `real-clinic-rc1` is created. External PostgreSQL CI remains pending and will not be
+Tracked-only clean clone v3 at source checkpoint `39ab0f0` passed locked backend installation,
+fresh migration/seed/check, 175 backend tests, Ruff/format/mypy/pip check, frozen frontend
+installation, 45 Vitest tests, lint/Prettier/type-check/build, launcher smoke, Gate B 18/18,
+Voice 4/4, and Scenario F 2/2 across 1440×900 and 390×844. The clone had zero forbidden
+tracked files. Its generated database, test results, runtime, and node_modules were isolated from
+the original repository; clone cleanup was attempted after verifying zero processes/ports, but
+Windows ACL/deep-path restrictions prevented deletion of the temporary clone directories. No
+ownership or permissions were changed. External PostgreSQL CI remains pending and is not
 represented as passed in Round 5.
+
+## Primary performance and security reconciliation
+
+The final local primary run at code checkpoint `39ab0f0` measured the same protocols separately;
+the numbers are not treated as a trend because the rounds use different local loads and datasets:
+
+| Path | Protocol/result |
+| --- | --- |
+| Glance | 50 warm-up + 1,000 real-TCP requests, concurrency 10, 0 errors; P50 86.852 ms, P95 113.998 ms, P99 142.345 ms, max 159.988 ms, 6 items |
+| Circuit-open AI fail-fast | 100 submissions after 3 synthetic bootstrap failures, 0 errors, 0 measured provider calls; P50 25.529 ms, P95 27.571 ms, P99 31.806 ms, max 33.553 ms |
+| Published-care | 50 warm-up + 1,000 real-TCP requests, concurrency 10, 0 errors; P50 63.247 ms, P95 82.264 ms, P99 126.876 ms, max 145.557 ms, 1 update |
+| Backend | 175 passed, 85% coverage; Ruff check/format, mypy and pip check passed |
+| Frontend | 45 Vitest; lint, Prettier, type-check and build passed |
+| Browser | 18 Gate B + 4 Voice + 2 Scenario F passed at 1440×900 and 390×844 |
+| Log audit | clean synthetic log exit 0; deliberately dirty negative fixture exit 1; matched values not echoed |
+| Route/privacy | 54 OpenAPI routes; no unauthenticated non-bootstrap data route, no write route missing Origin guard, no forbidden Patient projection fields, no OpenAPI high-confidence secret pattern |
+
+Current and complete history scans found zero high-confidence token/private-key hits and zero
+forbidden tracked artifact names (excluding the safe `.env.example` template). The final worktree
+still contains only the user-supplied untracked MP4.

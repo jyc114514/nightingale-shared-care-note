@@ -1,13 +1,15 @@
 # Round 5 route and privacy audit
 
 This is a safe structured inventory of the FastAPI application at the Round 5 candidate
-checkpoint. It records route shape and authorization behavior, not request payloads or secrets.
+checkpoint `39ab0f0`. It records route shape and authorization behavior, not request payloads or
+secrets.
 
 ## Inventory summary
 
 - OpenAPI-visible API routes inspected: **54**.
-- Every application API route except `/health` requires the authenticated HttpOnly session
-  dependency. SPA root/static fallback is not an API data route.
+- Every protected application API route requires the authenticated HttpOnly session dependency;
+  the only deliberate data-plane exception is `POST /auth/login`, the authentication bootstrap.
+  `/health` and SPA root/static fallback are non-data health/serving routes.
 - All state-changing routes inspected have `require_allowed_origin` as a route dependency.
 - Patient-facing response families are limited to patient entry/timeline and the typed
   `published-care` projection; internal routes call `require_internal` or a stricter role check.

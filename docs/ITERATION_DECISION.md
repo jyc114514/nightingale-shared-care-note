@@ -321,7 +321,9 @@ push, external CI, Render deployment, live provider calls, Voice changes, video,
 
 The integration audit is [`ROUND5_INTEGRATION_AUDIT.md`](ROUND5_INTEGRATION_AUDIT.md), the route
 matrix is [`evidence/round5_route_privacy_audit.md`](evidence/round5_route_privacy_audit.md), and
-the scenario/runbook and iteration brief are separate documents. No external PostgreSQL CI run is
-claimed until Round 6. Existing real-clinic statuses remain honest: #3, #8, #9, #12, #13, #14,
-and #15 are PARTIAL; #16 remains SURVIVES. The round stops before push/deploy and final video/PDF/
-ZIP regeneration.
+the scenario/runbook and iteration brief are separate documents. The final primary run records
+175 backend tests with 85% coverage, 45 frontend tests, 24 browser checks across both viewports,
+Glance P95 113.998 ms, circuit-open P95 27.571 ms, and published-care P95 82.264 ms, all with
+zero measured errors. No external PostgreSQL CI run is claimed until Round 6. Existing
+real-clinic statuses remain honest: #3, #8, #9, #12, #13, #14, and #15 are PARTIAL; #16 remains
+SURVIVES. The round stops before push/deploy and final video/PDF/ZIP regeneration.

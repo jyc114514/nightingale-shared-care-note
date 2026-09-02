@@ -29,11 +29,11 @@ compatibility, prepares PostgreSQL CI, and rehearses the candidate from tracked 
 
 ## 4. Evidence
 
-The candidate has 175 backend tests with 86% coverage, 45 frontend Vitest tests, 18 existing Gate
+The candidate has 175 backend tests with 85% coverage, 45 frontend Vitest tests, 18 existing Gate
 B browser checks, 4 Voice checks, and 2 Scenario F checks across desktop/mobile viewports. Fresh
 and four legacy SQLite paths reach `0014`; disposable downgrade/re-upgrade and targeted
 PostgreSQL offline SQL pass. The published-care local real-TCP benchmark is 1,000 requests at
-concurrency 10 with zero errors and P95 46.797 ms. These are local synthetic measurements, not
+concurrency 10 with zero errors and P95 82.264 ms in the Round 5 comparable run. These are local synthetic measurements, not
 hosted PostgreSQL performance or clinical validation.
 
 ## 5. Failure and abstention
