@@ -253,7 +253,7 @@ try {
   }
 
   $backendProcess = Start-Process -FilePath $pythonExecutable -ArgumentList @(
-    "-m", "uvicorn", "app.main:app", "--app-dir", $backendRoot, "--host", "127.0.0.1", "--port", "8000"
+    "-m", "uvicorn", "app.main:app", "--app-dir", ('"{0}"' -f $backendRoot), "--host", "127.0.0.1", "--port", "8000"
   ) -WorkingDirectory $backendRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $backendLog -RedirectStandardError $backendErrorLog
   $startedHere += [pscustomobject]@{ ProcessId = $backendProcess.Id; Kind = "backend" }
   Remove-Item Env:DEEPSEEK_API_KEY -ErrorAction SilentlyContinue
@@ -261,7 +261,7 @@ try {
 
   $viteExecutable = Join-Path $frontendRoot "node_modules\vite\bin\vite.js"
   $frontendProcess = Start-Process -FilePath $nodeExecutable -ArgumentList @(
-    $viteExecutable, "--host", "127.0.0.1", "--port", "5173"
+    ('"{0}"' -f $viteExecutable), "--host", "127.0.0.1", "--port", "5173"
   ) -WorkingDirectory $frontendRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput $frontendLog -RedirectStandardError $frontendErrorLog
   $startedHere += [pscustomobject]@{ ProcessId = $frontendProcess.Id; Kind = "frontend" }
 
