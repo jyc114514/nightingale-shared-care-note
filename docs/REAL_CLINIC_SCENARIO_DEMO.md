@@ -88,3 +88,20 @@ visibility. It is portal-only: no email, SMS, WhatsApp, push delivery, delivery 
 external recall, general medication NLP, or FHIR conformance is claimed. See
 [`PATIENT_PUBLICATION_BOUNDARY.md`](PATIENT_PUBLICATION_BOUNDARY.md) for the exact role and
 state boundary.
+
+## Round 9 recorded local iteration demo
+
+The Round 9 local recording is generated from a fresh Alembic-migrated synthetic SQLite runtime;
+it does not reuse or modify the hosted rehearsal database. The controlled path is implemented by
+[`record_round9_demo.mjs`](../scripts/record_round9_demo.mjs) and covers:
+
+1. Six-item Glance View and the protected allergy conflict.
+2. Immutable source/provenance navigation and conflict review.
+3. The separate patient publication review gate (`Accept is not Publish`).
+4. Explicit provider failure with existing records still usable.
+5. Prerecorded synthetic Voice transcript/source review.
+6. Patient projection and privacy boundary.
+
+The resulting 1280×720 WebM is intentionally local-only and uses visible English captions. It is
+not an ASR, diarization, live-provider, or clinical-validation recording. Rehearsal and media
+checks are recorded in [`round9_demo_qa.md`](evidence/round9_demo_qa.md).
