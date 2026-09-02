@@ -97,9 +97,7 @@ def main() -> None:
             glance = client.get(f"/patients/{patient_id}/glance")
             assert glance.status_code == 200, glance.text
             highlight_id = next(
-                item["resource_id"]
-                for item in glance.json()
-                if item.get("resource_type") == "highlight"
+                item["id"] for item in glance.json() if item.get("resource_type") == "highlight"
             )
             feedback = client.post(
                 f"/highlights/{highlight_id}/feedback",
