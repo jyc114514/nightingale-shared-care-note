@@ -125,6 +125,12 @@ jobs:
             sleep 0.5
           done
           echo "bridge entrypoint did not become healthy" >&2
+          if [ -f "${RUNNER_TEMP}/bridge-entrypoint.log" ]; then
+            sed -E \
+              -e 's#(postgres(ql)?[^[:space:]]*)://[^[:space:]]+#<DATABASE_URL>#g' \
+              -e 's#(PASSWORD|SECRET|TOKEN|API_KEY)[[:space:]]*[:=][^[:space:]]+#\1=<REDACTED>#g' \
+              "${RUNNER_TEMP}/bridge-entrypoint.log" | tail -n 40 >&2
+          fi
           exit 1
 
       - name: Exercise baseline login Glance source comments and feedback
