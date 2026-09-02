@@ -1,7 +1,9 @@
 # Round 5 release-candidate evidence
 
-Status: **local Release Candidate integration complete**. This is not external PostgreSQL CI or
-Render deployment evidence. Round 6 is the first authorized external action.
+Status: **local Release Candidate integration complete; Round 6 code gate passed**. The Round 5
+sections below remain historical local evidence. The external PostgreSQL result is recorded in
+[`round6_postgres_ci.md`](round6_postgres_ci.md); the final documentation-commit run and `rc2`
+tag are still pending.
 
 ## Candidate identity
 
@@ -33,13 +35,15 @@ authenticated logout (`681301c`), and authenticated login/Voice provider boundar
 
 ## PostgreSQL status and prepared workflow
 
-No Docker, Podman, local PostgreSQL server, `psql`, `pg_isready`, or `actionlint` was available.
-Real PostgreSQL execution is therefore **PENDING EXTERNAL CI**. The prepared workflow is
+No Docker, Podman, local PostgreSQL server, `psql`, `pg_isready`, or `actionlint` was available in
+the Round 5 environment. Real PostgreSQL execution was therefore **PENDING EXTERNAL CI at that
+checkpoint**. Round 6 later executed the prepared workflow:
 [`real-clinic-postgres.yml`](../../.github/workflows/real-clinic-postgres.yml): PostgreSQL 18,
 Python 3.12, locked dependencies, current 0014 head/check, schema/FK assertions, seed twice,
 full backend tests, Ruff, mypy, pip check, fixture AI, Voice disabled, read-only repository
-permissions, and no deployment step. Its database values are disposable CI fixtures, not user or
-production credentials.
+permissions, and no deployment step. Run `33591652918` passed at code commit `2af8073`; see
+[`Round 6 PostgreSQL evidence`](round6_postgres_ci.md). Its database values are disposable CI
+fixtures, not user or production credentials.
 
 ## Clean clone
 
@@ -79,10 +83,9 @@ Scenario #3, #8, #9, #12, #13, #14 and #15 remain PARTIAL; #16 remains SURVIVES.
 does not claim FHIR conformance, clinical production safety, general medication NLP, external
 message delivery/receipt/recall, durable queue/replay, or hosted PostgreSQL performance.
 
-The exact Round 6 sequence is: authorize external action; push only the iteration branch; run the
-prepared PostgreSQL 18 workflow; inspect real migration/schema/seed/test results; make at most a
-bounded deterministic fix if CI exposes one; then separately decide whether to update the existing
-Render service. Do not push `main`, create resources, read production credentials, or deploy from
-Round 5.
+Round 6 has authorized and completed the iteration-branch push, bounded repair, and successful
+code-gate inspection. The remaining Round 6 sequence is the evidence-only commit, its exact-SHA
+PostgreSQL 18 run, and the `real-clinic-rc2` tag. Do not push `main`, create resources, read
+production credentials, or deploy Render from this gate.
 
 Round 5 did not modify or regenerate the final video, Technical Brief PDF, or submission ZIP.

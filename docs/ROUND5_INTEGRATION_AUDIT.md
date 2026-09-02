@@ -1,7 +1,8 @@
 # Round 5 release-candidate integration audit
 
-Status: local integration audit complete. This document records facts and deliberate boundaries;
-it does not claim external CI or deployment.
+Status: local integration audit complete. This document records the Round 5 facts and deliberate
+boundaries. Round 5 itself did not claim external CI or deployment; the later Round 6 result is
+recorded separately in [`evidence/round6_postgres_ci.md`](evidence/round6_postgres_ci.md).
 
 ## Baseline and scope
 
@@ -59,12 +60,13 @@ permissions were changed. `.gitignore` now excludes only `.pytest-tmp-round*/` a
 ## PostgreSQL and external boundary
 
 No Docker, Podman, local PostgreSQL server, `psql`, `pg_isready`, or `actionlint` was available.
-Therefore no real PostgreSQL execution is claimed. The prepared workflow is
+Therefore Round 5 made no real PostgreSQL execution claim. The prepared workflow was
 `.github/workflows/real-clinic-postgres.yml`; it uses PostgreSQL 18, Python 3.12, locked backend
 dependencies, fresh/legacy-compatible migration checks, seed idempotency, schema/FK assertions,
 full backend tests, Ruff, mypy, pip check, fixture AI, and Voice disabled. It has read-only
-repository permissions and no production credentials or deployment step. Round 6 is the first
-authorized external CI action.
+repository permissions and no production credentials or deployment step. Round 6 subsequently
+executed this workflow; the successful run and the one bounded static-check repair are recorded
+in [`evidence/round6_postgres_ci.md`](evidence/round6_postgres_ci.md).
 
 ## Initial bugs found and fixed
 
@@ -84,8 +86,9 @@ Voice 4/4, and Scenario F 2/2 across 1440×900 and 390×844. The clone had zero 
 tracked files. Its generated database, test results, runtime, and node_modules were isolated from
 the original repository; clone cleanup was attempted after verifying zero processes/ports, but
 Windows ACL/deep-path restrictions prevented deletion of the temporary clone directories. No
-ownership or permissions were changed. External PostgreSQL CI remains pending and is not
-represented as passed in Round 5.
+ownership or permissions were changed. External PostgreSQL CI was pending at the Round 5
+checkpoint; it is now verified by the separate Round 6 evidence, not retroactively attributed to
+the clean-clone rehearsal.
 
 ## Primary performance and security reconciliation
 

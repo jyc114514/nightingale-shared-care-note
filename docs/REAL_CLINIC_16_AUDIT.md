@@ -952,3 +952,14 @@ test_highlight_provenance.py covers the existing contract, including non-BMP Uni
 repeated phrases. New assertion tests must reuse the same validation discipline.
 
 Round 1 decision: Existing strength; extend the contract to assertions.
+
+## Round 6 validation update — 2026-09-02
+
+The external PostgreSQL 18 gate executed the complete Alembic chain through
+`0014_patient_publications`, including fresh upgrade, `alembic check`, downgrade/re-upgrade,
+schema/FK inspection, idempotent synthetic seed, backend regression, and static checks. The first
+run exposed only a missing-mypy-ignore-code issue for the optional `faster_whisper` import; the
+forward repair and second run passed. This validates database compatibility for the iteration
+candidate. It does not change the 16-scenario classifications, add RLS, claim clinical
+production safety, or imply a Render deployment. See
+[`Round 6 PostgreSQL evidence`](evidence/round6_postgres_ci.md).

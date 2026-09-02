@@ -388,6 +388,20 @@ evidence. Final video/PDF/ZIP artifacts are intentionally unchanged.
 | ROUND5-DEMO | Scenario 13/15 primary safety path and Scenario 12 optional publication path documented with no new recording | passed | [REAL_CLINIC_DEMO_RUNBOOK.md](REAL_CLINIC_DEMO_RUNBOOK.md), [REAL_CLINIC_SCENARIO_DEMO.md](REAL_CLINIC_SCENARIO_DEMO.md) |
 | ROUND5-BRIEF | Round 1–5 iteration brief records baseline, scope, architecture, evidence and non-claims | passed | [REAL_CLINIC_ITERATION_BRIEF.md](REAL_CLINIC_ITERATION_BRIEF.md) |
 
+## Round 6 / external PostgreSQL 18 gate - 2026-09-02
+
+Round 6 performed the authorized external database gate on the iteration branch only. The first
+run exposed one optional-Voice static-check annotation issue; the bounded repair and second run
+passed. The final documentation commit still requires its own exact-SHA run before `real-clinic-rc2`
+is created. No `main` push, pull request, Render deploy, or production database was used.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND6-BRANCH-PUSH | `codex/real-clinic-safety` pushed at `6de7f0c`; remote `main` remained `573f897`; push was non-force and no tag was moved | passed | [Round 6 gate](ROUND6_EXTERNAL_GATE.md), [Round 6 evidence](evidence/round6_postgres_ci.md) |
+| ROUND6-POSTGRES-CI | Exact commit `2af8073` passed the PostgreSQL 18/Python 3.12 workflow: fresh and downgrade/re-upgrade Alembic checks through `0014`, schema/index/FK assertions, seed twice, full backend tests, Ruff, mypy, and pip check | passed | [GitHub Actions run 33592195446](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33592195446), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-REPAIR-BOUNDARY | The only repair changed the `faster_whisper` optional import's mypy ignore code; migrations, requirements, runtime behavior, and data model were unchanged | passed | [providers.py](../backend/app/voice/providers.py), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-SECURITY-BOUNDARY | Remote branch tree has zero forbidden tracked artifacts; CI uses disposable synthetic values and no deployment step | passed | [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

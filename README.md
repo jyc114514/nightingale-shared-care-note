@@ -91,11 +91,22 @@ only current published content or safe notices. See
 Round 5 adds no clinical feature. It reconciles the Round 1–4 slices, verifies fresh and legacy
 SQLite migration paths through `0014_patient_publications`, prepares the PostgreSQL 18 gate at
 [`real-clinic-postgres.yml`](.github/workflows/real-clinic-postgres.yml), and records the route/
-privacy boundary. Real PostgreSQL execution remains pending the authorized external CI run in
-Round 6; offline SQL is not execution evidence. See the
+privacy boundary. Real PostgreSQL execution was pending at the Round 5 checkpoint; Round 6 later
+verified the prepared workflow against PostgreSQL 18. Offline SQL remains non-execution evidence.
+See the
 [`Round 5 integration audit`](docs/ROUND5_INTEGRATION_AUDIT.md),
 [`demo runbook`](docs/REAL_CLINIC_DEMO_RUNBOOK.md), and
 [`iteration brief`](docs/REAL_CLINIC_ITERATION_BRIEF.md).
+
+### Round 6 external PostgreSQL gate
+
+Round 6 pushed only `codex/real-clinic-safety` and ran the prepared PostgreSQL 18 workflow at the
+exact code checkpoint `2af8073`. The gate passed fresh/legacy migration checks, PostgreSQL
+schema/FK assertions, idempotent synthetic seed, the backend regression suite, Ruff, mypy, and
+`pip check`. One bounded repair corrected the mypy ignore code for the optional `faster_whisper`
+import; no migrations, dependencies, or product behavior changed. The evidence is in
+[`Round 6 external gate`](docs/ROUND6_EXTERNAL_GATE.md). The final evidence-commit run and
+`real-clinic-rc2` tag remain before any later Render decision.
 
 ### Round 2 local safety and exposure iteration
 
