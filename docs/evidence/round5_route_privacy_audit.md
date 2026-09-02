@@ -47,7 +47,7 @@ secrets.
 | Impression logging vs debiasing | Impressions provide bounded denominators/metadata; no inverse-propensity or fairness claim is made. |
 | Internal vs patient-facing | Patient projection filters server-side; publication does not flip internal Entry visibility. |
 | Recall vs external delivery | Recall removes portal content only; no external message was sent, so no external recall/receipt exists. |
-| SQLite vs PostgreSQL | SQLite fresh/legacy tests and PostgreSQL offline SQL are separate evidence; real PostgreSQL execution remains pending external CI. |
+| SQLite vs PostgreSQL | SQLite fresh/legacy tests and PostgreSQL offline SQL remain separate evidence; Round 6 now adds real PostgreSQL 18 CI execution evidence. |
 | Portal visibility vs communication receipt | `PUBLISHED` means visible in this portal projection, not delivered or read by a patient. |
 
 ## Known integration limitations

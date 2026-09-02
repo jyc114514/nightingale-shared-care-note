@@ -1,9 +1,8 @@
 # Round 5 release-candidate evidence
 
-Status: **local Release Candidate integration complete; Round 6 code gate passed**. The Round 5
-sections below remain historical local evidence. The external PostgreSQL result is recorded in
-[`round6_postgres_ci.md`](round6_postgres_ci.md); the final documentation-commit run and `rc2`
-tag are still pending.
+Status: **local Release Candidate integration complete; Round 6 external gate complete**. The Round
+5 sections below remain historical local evidence. The external PostgreSQL result, final evidence
+run, and remote `rc2` tag are recorded in [`round6_postgres_ci.md`](round6_postgres_ci.md).
 
 ## Candidate identity
 
@@ -41,7 +40,7 @@ checkpoint**. Round 6 later executed the prepared workflow:
 [`real-clinic-postgres.yml`](../../.github/workflows/real-clinic-postgres.yml): PostgreSQL 18,
 Python 3.12, locked dependencies, current 0014 head/check, schema/FK assertions, seed twice,
 full backend tests, Ruff, mypy, pip check, fixture AI, Voice disabled, read-only repository
-permissions, and no deployment step. Run `33591652918` passed at code commit `2af8073`; see
+permissions, and no deployment step. Run `33592195446` passed at code commit `2af8073`; see
 [`Round 6 PostgreSQL evidence`](round6_postgres_ci.md). Its database values are disposable CI
 fixtures, not user or production credentials.
 
@@ -83,9 +82,8 @@ Scenario #3, #8, #9, #12, #13, #14 and #15 remain PARTIAL; #16 remains SURVIVES.
 does not claim FHIR conformance, clinical production safety, general medication NLP, external
 message delivery/receipt/recall, durable queue/replay, or hosted PostgreSQL performance.
 
-Round 6 has authorized and completed the iteration-branch push, bounded repair, and successful
-code-gate inspection. The remaining Round 6 sequence is the evidence-only commit, its exact-SHA
-PostgreSQL 18 run, and the `real-clinic-rc2` tag. Do not push `main`, create resources, read
-production credentials, or deploy Render from this gate.
+Round 6 authorized and completed the iteration-branch push, bounded repair, final evidence commit,
+exact-SHA PostgreSQL 18 run, and `real-clinic-rc2` tag. Round 7 is the separate main/Render handoff;
+do not infer a Render deployment from this local release-candidate record.
 
 Round 5 did not modify or regenerate the final video, Technical Brief PDF, or submission ZIP.

@@ -1,7 +1,7 @@
 # Round 6 external PostgreSQL 18 CI evidence
 
-Status: **code gate passed; final evidence-commit gate is still required before the
-`real-clinic-rc2` tag is created.** This record covers the authorized external CI action only.
+Status: **Round 6 PostgreSQL code and final evidence gates passed; `real-clinic-rc2` points to the
+verified final evidence commit.** This record covers the authorized external CI action only.
 
 ## Scope and boundary
 
@@ -52,8 +52,8 @@ local temporary environment itself had unrelated missing `traitlets` typing impo
 wrapper failure. Those local limitations are not represented as local full-suite success; the
 authoritative clean-environment result is the successful GitHub Actions run above.
 
-## Next gate
+## Final evidence gate
 
-The documentation-only evidence commit must be pushed to the same branch and must pass a new
-exact-SHA PostgreSQL 18 run. Only after that final run may `real-clinic-rc2` be created and pushed.
-Render remains outside Round 6.
+The documentation-only evidence commit `eeff4cf7216be17b07fa76c24dd5a9e95190c677` passed its
+exact-SHA PostgreSQL 18 run `33592639722`. The annotated remote tag `real-clinic-rc2` has been
+verified to peel to that commit. Render remains outside Round 6.

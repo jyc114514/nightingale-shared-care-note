@@ -104,9 +104,10 @@ Round 6 pushed only `codex/real-clinic-safety` and ran the prepared PostgreSQL 1
 exact code checkpoint `2af8073`. The gate passed fresh/legacy migration checks, PostgreSQL
 schema/FK assertions, idempotent synthetic seed, the backend regression suite, Ruff, mypy, and
 `pip check`. One bounded repair corrected the mypy ignore code for the optional `faster_whisper`
-import; no migrations, dependencies, or product behavior changed. The evidence is in
-[`Round 6 external gate`](docs/ROUND6_EXTERNAL_GATE.md). The final evidence-commit run and
-`real-clinic-rc2` tag remain before any later Render decision.
+import; no migrations, dependencies, or product behavior changed. The final evidence commit
+`eeff4cf` passed exact-SHA run `33592639722`, and `real-clinic-rc2` points to it. The evidence is
+in [`Round 6 external gate`](docs/ROUND6_EXTERNAL_GATE.md); any Render update is a separate
+Round 7 action.
 
 ### Round 2 local safety and exposure iteration
 

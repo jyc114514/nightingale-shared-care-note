@@ -392,8 +392,9 @@ evidence. Final video/PDF/ZIP artifacts are intentionally unchanged.
 
 Round 6 performed the authorized external database gate on the iteration branch only. The first
 run exposed one optional-Voice static-check annotation issue; the bounded repair and second run
-passed. The final documentation commit still requires its own exact-SHA run before `real-clinic-rc2`
-is created. No `main` push, pull request, Render deploy, or production database was used.
+passed. The final documentation commit also passed its exact-SHA run and `real-clinic-rc2` was
+created at that final commit. No `main` push, pull request, Render deploy, or production database
+was used in Round 6.
 
 | ID | Evidence | Status | Evidence location |
 | --- | --- | --- | --- |
@@ -401,6 +402,8 @@ is created. No `main` push, pull request, Render deploy, or production database 
 | ROUND6-POSTGRES-CI | Exact commit `2af8073` passed the PostgreSQL 18/Python 3.12 workflow: fresh and downgrade/re-upgrade Alembic checks through `0014`, schema/index/FK assertions, seed twice, full backend tests, Ruff, mypy, and pip check | passed | [GitHub Actions run 33592195446](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33592195446), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
 | ROUND6-REPAIR-BOUNDARY | The only repair changed the `faster_whisper` optional import's mypy ignore code; migrations, requirements, runtime behavior, and data model were unchanged | passed | [providers.py](../backend/app/voice/providers.py), [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
 | ROUND6-SECURITY-BOUNDARY | Remote branch tree has zero forbidden tracked artifacts; CI uses disposable synthetic values and no deployment step | passed | [round6_postgres_ci.md](evidence/round6_postgres_ci.md) |
+| ROUND6-FINAL-EVIDENCE | Documentation commit `eeff4cf` passed exact-SHA run `33592639722`; remote annotated `real-clinic-rc2` peels to that commit | passed | [round6_postgres_ci.md](evidence/round6_postgres_ci.md), [ROUND6_EXTERNAL_GATE.md](ROUND6_EXTERNAL_GATE.md) |
+| ROUND5-POSTGRES-CI-CLOSEOUT | The Round 5 prepared-workflow status is historical; Round 6 executed it successfully on real PostgreSQL 18 and recorded the final evidence/tag | passed | [Round 6 evidence](evidence/round6_postgres_ci.md) |
 
 ## Hard release gate
 
