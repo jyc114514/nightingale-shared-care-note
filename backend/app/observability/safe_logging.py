@@ -8,6 +8,7 @@ import re
 from collections.abc import Callable, Iterable
 from threading import RLock
 from typing import Final
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 from app.ai.redaction import PHONE_PATTERN, SG_ID_PATTERN
 
@@ -94,6 +95,14 @@ _COOKIE_PATTERN = re.compile(
     r"(?i)\b(?:cookie|set-cookie|session(?:id|_token)?|jwt)\s*[:=]\s*[^\s,;]+"
 )
 _CONTROL_PATTERN = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+_ACCESS_LOG_TEMPLATE: Final[str] = '%s - "%s %s HTTP/%s" %d'
+_ACCESS_FALLBACK_ARGS: Final[tuple[str, str, str, str, int]] = (
+    "-",
+    "GET",
+    "/",
+    "1.1",
+    500,
+)
 
 _known_names_lock = RLock()
 _known_names: tuple[str, ...] = ()
@@ -150,15 +159,88 @@ def sanitize_log_text(value: str, known_names: Iterable[str] = ()) -> str:
     return _CONTROL_PATTERN.sub("?", text)
 
 
+def _sanitize_log_value(value: object, known_names: Iterable[str]) -> object:
+    if isinstance(value, str):
+        return sanitize_log_text(value, known_names)
+    if value is None or isinstance(value, (bool, int, float)):
+        return value
+    if isinstance(value, tuple):
+        return tuple(_sanitize_log_value(item, known_names) for item in value)
+    if isinstance(value, list):
+        return [_sanitize_log_value(item, known_names) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_log_value(item, known_names) for key, item in value.items()}
+    return "[REDACTED_VALUE]"
+
+
+def _sanitize_log_args(
+    args: object, known_names: Iterable[str]
+) -> tuple[object, ...] | dict[str, object] | None:
+    if args is None:
+        return None
+    if isinstance(args, tuple):
+        return tuple(_sanitize_log_value(item, known_names) for item in args)
+    if isinstance(args, dict):
+        if any(not isinstance(key, str) for key in args):
+            raise TypeError("mapping log arguments must use string keys")
+        return {key: _sanitize_log_value(value, known_names) for key, value in args.items()}
+    return ()
+
+
+def _sanitize_access_path(value: str, known_names: Iterable[str]) -> str:
+    parsed = urlsplit(value)
+    decoded_path = unquote(parsed.path or "/")
+    safe_path = sanitize_log_text(decoded_path, known_names)
+    if not parsed.query:
+        return safe_path
+    query_keys = parse_qsl(parsed.query, keep_blank_values=True)
+    if not query_keys:
+        return f"{safe_path}?[REDACTED_QUERY]"
+    safe_keys = [sanitize_log_text(key, known_names) for key, _ in query_keys]
+    safe_query = "&".join(f"{key}=[REDACTED_QUERY]" for key in safe_keys)
+    return f"{safe_path}?{safe_query}"
+
+
+def _sanitize_access_args(
+    args: object, known_names: Iterable[str]
+) -> tuple[object, object, object, object, object]:
+    if not isinstance(args, tuple) or len(args) != 5:
+        raise ValueError("uvicorn access record must have five positional arguments")
+    client_addr, method, full_path, http_version, status_code = args
+    if not all(isinstance(value, str) for value in (client_addr, method, full_path, http_version)):
+        raise TypeError("uvicorn access fields must be strings")
+    if isinstance(status_code, bool) or not isinstance(status_code, (int, float)):
+        raise TypeError("uvicorn status code must be numeric")
+    return (
+        sanitize_log_text(client_addr, known_names),
+        sanitize_log_text(method, known_names),
+        _sanitize_access_path(full_path, known_names),
+        sanitize_log_text(http_version, known_names),
+        status_code,
+    )
+
+
 def _sanitize_record(record: logging.LogRecord) -> None:
+    known_names = _configured_known_names()
     try:
-        record.msg = sanitize_log_text(record.getMessage(), _configured_known_names())
-        record.args = ()
+        if record.name == "uvicorn.access":
+            record.msg = _ACCESS_LOG_TEMPLATE
+            record.args = _sanitize_access_args(record.args, known_names)
+        else:
+            if isinstance(record.msg, str):
+                record.msg = sanitize_log_text(record.msg, known_names)
+            else:
+                record.msg = "[REDACTED_LOG_MESSAGE]"
+            record.args = _sanitize_log_args(record.args, known_names)
         record.exc_info = None
         record.exc_text = None
     except Exception:
-        record.msg = "log_sanitization_failed"
-        record.args = ()
+        if record.name == "uvicorn.access":
+            record.msg = _ACCESS_LOG_TEMPLATE
+            record.args = _ACCESS_FALLBACK_ARGS
+        else:
+            record.msg = "log_sanitization_failed"
+            record.args = ()
         record.exc_info = None
         record.exc_text = None
 

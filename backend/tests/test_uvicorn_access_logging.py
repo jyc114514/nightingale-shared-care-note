@@ -11,6 +11,7 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
 from uvicorn.logging import AccessFormatter
 
 from app.observability.safe_logging import SafeLogFilter, configure_safe_logging
@@ -119,6 +120,28 @@ def test_access_sanitization_is_idempotent_and_formatter_safe() -> None:
     assert first == second
     assert "Sarah Tan" not in second
     assert "token-sentinel" not in second
+
+
+def test_access_sanitizer_failure_keeps_formatter_safe_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import app.observability.safe_logging as safe_logging
+
+    configure_safe_logging([])
+    monkeypatch.setattr(
+        safe_logging,
+        "sanitize_log_text",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("raw sentinel")),
+    )
+
+    record = _access_record("/health?token=token-sentinel")
+    rendered = _access_formatter().format(record)
+
+    assert isinstance(record.args, tuple)
+    assert len(record.args) == 5
+    assert "GET /" in rendered
+    assert "500 Internal Server Error" in rendered
+    assert "raw sentinel" not in rendered
 
 
 def test_real_uvicorn_subprocess_has_access_lines_without_logging_errors(
