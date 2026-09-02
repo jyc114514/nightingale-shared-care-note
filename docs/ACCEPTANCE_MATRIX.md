@@ -369,6 +369,24 @@ the dosage grammar is narrow and external delivery is not implemented.
 | ROUND4-PERF | Published-care real TCP path: 50 warm-up + 1,000 requests, concurrency 10, zero errors, P95 46.797 ms on local SQLite/Uvicorn | passed with disclosed local approximation boundary | [round4_patient_publication.md](evidence/round4_patient_publication.md), [round4_patient_publication_p95.json](evidence/round4_patient_publication_p95.json) |
 | ROUND4-AUDIT-STATUS | Scenario 12 improves from missing workflow to **PARTIAL** bounded portal gate; no external delivery/receipt/recall or general medication NLP is claimed | recorded | [REAL_CLINIC_16_AUDIT.md](REAL_CLINIC_16_AUDIT.md), [ITERATION_DECISION.md](ITERATION_DECISION.md) |
 
+## Round 5 / release-candidate integration evidence - 2026-09-02
+
+These rows reconcile Round 1–4 without adding clinical scope. Real PostgreSQL execution and
+external GitHub Actions remain pending Round 6 authorization; offline SQL is not execution
+evidence. Final video/PDF/ZIP artifacts are intentionally unchanged.
+
+| ID | Evidence | Status | Evidence location |
+| --- | --- | --- | --- |
+| ROUND5-TEMP-HYGIENE | Genuine Round pytest/Ruff/Playwright artifacts identified; removable generated outputs deleted, ACL-protected pytest directories preserved and narrowly ignored | passed with disclosed ACL note | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [.gitignore](../.gitignore) |
+| ROUND5-DIFF-AUDIT | Round 1–4 migrations, models, services, routes, frontend, tests, benchmarks, state/privacy distinctions and local/hosted claims reconciled | passed | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [route/privacy audit](evidence/round5_route_privacy_audit.md) |
+| ROUND5-MIGRATION-FRESH | Fresh SQLite 0001→0014, schema/FK inspection, seed twice, stable counts, and Alembic check pass | passed | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [test_migrations.py](../backend/tests/test_migrations.py) |
+| ROUND5-MIGRATION-LEGACY | Disposable 0010/0011/0012/0013 → 0014 paths preserve old synthetic records and pass seed/check; downgrade data-loss behavior documented | passed with disposable-database boundary | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [round5_legacy_probe.py](../backend/app/scripts/round5_legacy_probe.py) |
+| ROUND5-POSTGRES-OFFLINE | PostgreSQL dialect offline SQL 0010→0014 contains publication/self-reference constraints and no SQLite temp token; fresh base→head limitation recorded | passed with disclosed offline limitation | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md), [real-clinic-postgres.yml](../.github/workflows/real-clinic-postgres.yml) |
+| ROUND5-POSTGRES-CI | PostgreSQL 18/Python 3.12 workflow prepared with current 0014 schema, seed, tests and static gates; not externally executed in Round 5 | ready — pending Round 6 external CI | [real-clinic-postgres.yml](../.github/workflows/real-clinic-postgres.yml) |
+| ROUND5-CLEAN-CLONE | Tracked-only clean clone rehearsal from the final Round 5 commit | pending until rehearsal completes | [ROUND5_INTEGRATION_AUDIT.md](ROUND5_INTEGRATION_AUDIT.md) |
+| ROUND5-DEMO | Scenario 13/15 primary safety path and Scenario 12 optional publication path documented with no new recording | passed | [REAL_CLINIC_DEMO_RUNBOOK.md](REAL_CLINIC_DEMO_RUNBOOK.md), [REAL_CLINIC_SCENARIO_DEMO.md](REAL_CLINIC_SCENARIO_DEMO.md) |
+| ROUND5-BRIEF | Round 1–5 iteration brief records baseline, scope, architecture, evidence and non-claims | passed | [REAL_CLINIC_ITERATION_BRIEF.md](REAL_CLINIC_ITERATION_BRIEF.md) |
+
 ## Hard release gate
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.

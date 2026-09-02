@@ -22,9 +22,9 @@ that does not yet exist. A passing test is cited only for the behavior it actual
 | 10 | Concurrent editing | SURVIVES | High | M | A same-section stale write is rejected and preserved as a write conflict | Existing strength; keep separate from clinical conflicts |
 | 11 | Appointment link never delivered | DOES NOT | Medium | L | There is no link-generation, delivery, receipt, retry, or acknowledgement path | Deferred |
 | 12 | Wrong patient-facing dosage | PARTIAL | Critical | L | Bounded portal publication gate blocks mismatched synthetic dosage and separates draft, clinician approval, publish, recall, and correction; external delivery is absent | Round 4 partial gate; do not equate Accept with Publish |
-| 13 | Nurse allergy vs patient no allergies | DOES NOT | Critical | M | No normalized assertion or semantic comparison can create a reviewable contradiction | Implemented now in Phase 2 |
+| 13 | Nurse allergy vs patient no allergies | PARTIAL | Critical | M | Bounded penicillin assertions/conflict review exist, but this is not general semantic clinical NLP | Round 1–2 bounded slice; keep the limitation explicit |
 | 14 | Meaningful risk/confidence/importance | PARTIAL | High | M | Display priority can be mistaken for medical risk and has no protected safety floor | Improved now through a deterministic safety floor |
-| 15 | Exposure bias and fatigue | PARTIAL | High | L | Only surfaced interactions create feedback; there is no impression denominator and ordinary adaptive feedback has no safety floor | Partially implemented now through protected feedback suppression; impression logging deferred |
+| 15 | Exposure bias and fatigue | PARTIAL | High | L | Impression denominators and protected feedback now exist, but there is no inverse-propensity correction, calibration, or fatigue study | Round 2 bounded exposure/feedback instrumentation; no debiasing claim |
 | 16 | Edited source provenance | SURVIVES | High | M | A source remains resolvable if every new derived record preserves the immutable version/span contract | Existing strength; reuse the same contract for assertions |
 
 ## Scenario 1 — Patient has no email
@@ -691,6 +691,17 @@ synthetic dosage slice; no external delivery, provider receipt, or general medic
 The detailed state machine, role matrix, source/version binding, and limitations are in
 [`ROUND4_PATIENT_PUBLICATION_DESIGN.md`](ROUND4_PATIENT_PUBLICATION_DESIGN.md) and the
 verification record is in [`evidence/round4_patient_publication.md`](evidence/round4_patient_publication.md).
+
+## Round 5 integration update
+
+Round 5/10 did not add a clinical feature. It reconciled the Round 1–4 implementation as a
+release candidate, verified fresh and legacy SQLite migration paths through `0014`, prepared a
+PostgreSQL 18 GitHub Actions gate, and rechecked the route/privacy boundary. The real-clinic
+statuses remain intentionally bounded: #3 is PARTIAL (local logging cannot certify external
+retention), #8 is PARTIAL (no durable queue), #9 is PARTIAL (no durable replay), #12 is PARTIAL
+(portal-only bounded dosage gate), #13 is PARTIAL (bounded penicillin slice), #14 is PARTIAL,
+#15 is PARTIAL, and #16 remains SURVIVES. No status is promoted because of documentation or
+offline SQL alone.
 
 ## Scenario 13 — Nurse allergy vs patient no allergies
 

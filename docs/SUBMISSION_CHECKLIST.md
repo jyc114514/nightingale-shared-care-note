@@ -29,3 +29,12 @@
 - [ ] Private GitHub upload verification, if authorized and authenticated.
 - [ ] Final human review of screenshots/brief/demo and recorded video.
 - [ ] Email submission by the user; Codex must not send it.
+
+## Round 5 release-candidate boundary
+
+- Round 5 local integration and scenario evidence is recorded in
+  [`ROUND5_INTEGRATION_AUDIT.md`](ROUND5_INTEGRATION_AUDIT.md) and
+  [`evidence/round5_release_candidate.md`](evidence/round5_release_candidate.md).
+- PostgreSQL 18 GitHub Actions is prepared but not executed until the user authorizes Round 6
+  external CI. No push, Render deployment, video review, PDF regeneration, or ZIP regeneration is
+  part of Round 5.

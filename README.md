@@ -86,6 +86,17 @@ only current published content or safe notices. See
 [`Round 4 design`](docs/ROUND4_PATIENT_PUBLICATION_DESIGN.md), and the
 [`Round 4 evidence`](docs/evidence/round4_patient_publication.md).
 
+### Round 5 release-candidate integration
+
+Round 5 adds no clinical feature. It reconciles the Round 1–4 slices, verifies fresh and legacy
+SQLite migration paths through `0014_patient_publications`, prepares the PostgreSQL 18 gate at
+[`real-clinic-postgres.yml`](.github/workflows/real-clinic-postgres.yml), and records the route/
+privacy boundary. Real PostgreSQL execution remains pending the authorized external CI run in
+Round 6; offline SQL is not execution evidence. See the
+[`Round 5 integration audit`](docs/ROUND5_INTEGRATION_AUDIT.md),
+[`demo runbook`](docs/REAL_CLINIC_DEMO_RUNBOOK.md), and
+[`iteration brief`](docs/REAL_CLINIC_ITERATION_BRIEF.md).
+
 ### Round 2 local safety and exposure iteration
 
 The current local iteration adds Alembic `0012_glance_impressions`, a shared provider-free Glance

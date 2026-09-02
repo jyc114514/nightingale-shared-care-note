@@ -292,3 +292,36 @@ across 1440x900 and 390x844. A separate 1,000-request published-care benchmark a
 PARTIAL because the dosage grammar is bounded and external delivery is intentionally absent.
 Round 4 stops before push, deployment, live LLM calls, Voice changes, video/PDF/ZIP regeneration,
 RLS, and broad clinical NLP.
+
+# Round 5/10 iteration decision
+
+Baseline: `2200a891ab82555a78cdef926975c75ff8108ce3`
+
+Round: 5 of 10
+
+Decision: Freeze the Round 1–4 clinical scope and integrate the local implementation into a
+reproducible release candidate. This round adds no clinical product feature and does not perform
+push, external CI, Render deployment, live provider calls, Voice changes, video, PDF, or ZIP work.
+
+## Selected work
+
+1. Add narrow ignore rules for genuine Round test temp directories, preserving ACL-protected
+   directories without taking ownership or performing broad cleanup.
+2. Audit the Round 1–4 diff, route/RBAC/data-flow boundaries, patient projection, semantic state
+   distinctions, and local-versus-hosted performance claims.
+3. Verify fresh/legacy/downgrade disposable SQLite paths through `0014_patient_publications` and
+   targeted PostgreSQL offline SQL. Record the pre-existing fresh offline reflection limitation.
+4. Replace the stale PostgreSQL workflow that stopped at `0010` with a Python 3.12/PostgreSQL 18
+   workflow that covers the current head, publication tables, seed idempotency, tests and static
+   quality gates without production credentials.
+5. Rehearse the candidate from tracked files in a clean clone and record actual results before
+   creating the local `real-clinic-rc1` tag.
+
+## Evidence and stop boundary
+
+The integration audit is [`ROUND5_INTEGRATION_AUDIT.md`](ROUND5_INTEGRATION_AUDIT.md), the route
+matrix is [`evidence/round5_route_privacy_audit.md`](evidence/round5_route_privacy_audit.md), and
+the scenario/runbook and iteration brief are separate documents. No external PostgreSQL CI run is
+claimed until Round 6. Existing real-clinic statuses remain honest: #3, #8, #9, #12, #13, #14,
+and #15 are PARTIAL; #16 remains SURVIVES. The round stops before push/deploy and final video/PDF/
+ZIP regeneration.
