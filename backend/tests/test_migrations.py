@@ -122,6 +122,13 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
             column["name"] for column in database_inspector.get_columns("highlight_feedback_events")
         }
         assert {"applied_to_profile", "suppression_reason"} <= feedback_columns
+        applied_to_profile = next(
+            column
+            for column in database_inspector.get_columns("highlight_feedback_events")
+            if column["name"] == "applied_to_profile"
+        )
+        assert applied_to_profile["nullable"] is False
+        assert str(applied_to_profile["default"]).lower() in {"1", "true"}
         assertion_columns = {
             column["name"] for column in database_inspector.get_columns("clinical_assertions")
         }
@@ -232,7 +239,7 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0014_patient_publications"
+                == "0015_feedback_backward_compat"
             )
     finally:
         engine.dispose()
@@ -240,6 +247,17 @@ def test_alembic_head_matches_orm_shape_without_create_all(migrated_database: st
 
 def test_migration_downgrade_and_reupgrade_are_reversible(migrated_database: str) -> None:
     downgraded = run_alembic(migrated_database, "downgrade", "0001_gate_a")
+    assert downgraded.returncode == 0, downgraded.stderr
+    upgraded = run_alembic(migrated_database, "upgrade", "head")
+    assert upgraded.returncode == 0, upgraded.stderr
+    checked = run_alembic(migrated_database, "check")
+    assert checked.returncode == 0, checked.stderr
+
+
+def test_feedback_compatibility_downgrade_and_reupgrade_are_disposable(
+    migrated_database: str,
+) -> None:
+    downgraded = run_alembic(migrated_database, "downgrade", "0014_patient_publications")
     assert downgraded.returncode == 0, downgraded.stderr
     upgraded = run_alembic(migrated_database, "upgrade", "head")
     assert upgraded.returncode == 0, upgraded.stderr
@@ -287,7 +305,7 @@ def test_legacy_gate_a_indexes_are_repaired_without_data_loss(tmp_path: Path) ->
         with engine.connect() as connection:
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "0014_patient_publications"
+                == "0015_feedback_backward_compat"
             )
     finally:
         engine.dispose()
