@@ -261,10 +261,10 @@ tokens, and the accumulated production top-six did not expose every protected co
 control. No production data cleanup was performed. See
 [`round9_hosted_performance.md`](docs/evidence/round9_hosted_performance.md).
 
-The local iteration artifact is [`Nightingale_Real_Clinic_Iteration_Demo.webm`](deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm),
-generated from disposable synthetic data with visible English captions. Its rehearsal/media QA is
-in [`round9_demo_qa.md`](docs/evidence/round9_demo_qa.md). The original user-supplied MP4 remains
-local and is not tracked or uploaded.
+The local iteration artifact is `deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm`,
+generated from disposable synthetic data with visible English captions and intentionally kept out
+of GitHub. Its rehearsal/media QA is in [`round9_demo_qa.md`](docs/evidence/round9_demo_qa.md). The
+original user-supplied MP4 remains local and is not tracked or uploaded.
 
 ## Bonus importance logic
 

@@ -92,7 +92,7 @@ cleanup was used to manufacture them. See [`round9_render_live.md`](evidence/rou
 and [`round9_hosted_performance.md`](evidence/round9_hosted_performance.md).
 
 The local iteration demo is a separate, disposable synthetic artifact at
-[`Nightingale_Real_Clinic_Iteration_Demo.webm`](../deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm);
-its browser-based QA and the unavailability of `ffprobe`/`ffmpeg` are recorded in
+`deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm` and is intentionally kept out
+of GitHub; its browser-based QA and the unavailability of `ffprobe`/`ffmpeg` are recorded in
 [`round9_demo_qa.md`](evidence/round9_demo_qa.md). The original user-supplied MP4 was not opened,
 transformed, moved, renamed, or uploaded.

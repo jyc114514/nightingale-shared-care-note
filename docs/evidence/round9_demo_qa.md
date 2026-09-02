@@ -10,7 +10,7 @@ Status: **local synthetic recording generated and browser-validated.**
 - Environment: disposable migrated SQLite at Alembic head, local Uvicorn and Vite only
 - Provider mode: deterministic fixture; no live DeepSeek call
 - Rehearsal: `REHEARSAL PASSED - local synthetic selectors verified`
-- Recording output: [`Nightingale_Real_Clinic_Iteration_Demo.webm`](../../deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm)
+- Recording output (local-only): `deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm`
 
 The recording path used only local synthetic accounts and opened the Glance, immutable source,
 conflict review, patient publication review, explicit provider-failure, prerecorded Voice, and
