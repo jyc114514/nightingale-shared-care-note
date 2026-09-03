@@ -4,6 +4,10 @@ Date: 2026-09-03
 
 Status: **ROUND 9 PARTIAL - PROTECTED-FIRST LIVE; AUTHENTICATED HOSTED BENCHMARK PENDING**
 
+Submission decision: **SUBMISSION READY WITH DISCLOSED SUPPLEMENTARY BENCHMARK GAP**. The pending
+benchmark is retained as honest engineering evidence; it is not a requested deliverable and does
+not block final Demo Video preparation or submission.
+
 This is the closure record for the existing Nightingale service. It does not create a new
 Render resource, reset production data, alter the requirements brief, or inspect the original
 user-supplied MP4.

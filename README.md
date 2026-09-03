@@ -264,10 +264,29 @@ cookies or tokens. The exact-commit closure did not repeat the Patient/Clinician
 
 The closure evidence is consolidated in [`round9_closure.md`](docs/evidence/round9_closure.md).
 
+Submission decision: **SUBMISSION READY WITH DISCLOSED SUPPLEMENTARY BENCHMARK GAP**. The hosted
+authenticated benchmark remains pending as a disclosed engineering limitation; it is not a
+requested deliverable and does not block final Demo Video preparation or submission.
+
 The local iteration artifact is `deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm`,
 generated from disposable synthetic data with visible English captions and intentionally kept out
 of GitHub. Its rehearsal/media QA is in [`round9_demo_qa.md`](docs/evidence/round9_demo_qa.md). The
 original user-supplied MP4 remains local and is not tracked or uploaded.
+
+## Final Real Clinic Demo Materials
+
+The current recording source of truth is [`REAL_CLINIC_DEMO_RECORDING_MASTER_ZH_EN.md`](docs/REAL_CLINIC_DEMO_RECORDING_MASTER_ZH_EN.md).
+It combines Chinese operator actions, English narration, cue times, and matching English subtitle
+text. Use [`REAL_CLINIC_DEMO_STATE_PREP_ZH.md`](docs/REAL_CLINIC_DEMO_STATE_PREP_ZH.md) before
+recording, then import [`REAL_CLINIC_DEMO_SUBTITLES_EN.srt`](docs/REAL_CLINIC_DEMO_SUBTITLES_EN.srt).
+Scenario mapping is in [`REAL_CLINIC_DEMO_REQUIREMENT_TRACEABILITY.md`](docs/REAL_CLINIC_DEMO_REQUIREMENT_TRACEABILITY.md),
+and post-recording review belongs in [`REAL_CLINIC_DEMO_VIDEO_QA.md`](docs/REAL_CLINIC_DEMO_VIDEO_QA.md).
+The pre-shoot Staff observations are recorded in
+[`real_clinic_final_demo_rehearsal.md`](docs/evidence/real_clinic_final_demo_rehearsal.md).
+
+The hosted authenticated benchmark remains a disclosed supplementary gap and is not a blocker
+for this recording phase. No product code, runtime, or requirements text is changed by the demo
+materials.
 
 ## Bonus importance logic
 

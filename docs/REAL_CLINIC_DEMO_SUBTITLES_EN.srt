@@ -1,0 +1,219 @@
+1
+00:00:00,000 --> 00:00:08,000
+Nightingale is a shared care workspace that keeps
+longitudinal records, review decisions, and audience boundaries on one patient page.
+
+2
+00:00:08,500 --> 00:00:16,500
+This recording uses synthetic data, a hosted HTTPS workspace,
+and a deliberate separation between sources, suggestions, and publication.
+
+3
+00:00:17,000 --> 00:00:25,000
+A ranked item is a workflow aid, not a diagnosis,
+and it never silently replaces a human-authored record.
+
+4
+00:00:25,500 --> 00:00:32,000
+I will move from Staff to Clinician to Patient,
+with role changes outside the camera frame.
+
+5
+00:00:32,500 --> 00:00:43,000
+I start with Glance View, where content, status, next action,
+risk context, and priority appear together.
+
+6
+00:00:43,500 --> 00:00:54,000
+The screen is deliberately capped at six items,
+keeping the first clinical read compact instead of overwhelming.
+
+7
+00:00:54,500 --> 00:01:04,000
+The protected allergy conflict appears first even when
+ordinary candidates carry a higher numerical priority.
+
+8
+00:01:04,500 --> 00:01:15,000
+Protected attention is a separate selection policy; it does not
+turn a workflow number into a medical risk score.
+
+9
+00:01:15,500 --> 00:01:26,000
+The explanation makes the ranking auditable: protected candidates first,
+then deterministic priority, time, and resource ordering.
+
+10
+00:01:26,500 --> 00:01:37,000
+I open the conflict to inspect two contradictory assertions
+without editing or resolving either source.
+
+11
+00:01:37,500 --> 00:01:49,000
+The reported allergy and the denied allergy remain separate,
+with their own authors, timestamps, and verification states.
+
+12
+00:01:49,500 --> 00:02:00,000
+Each assertion links to an immutable source version and an exact
+highlighted span, rather than a copied approximation.
+
+13
+00:02:00,500 --> 00:02:12,000
+The source panel keeps the originating version distinct from the record's
+current version, so later edits remain explainable.
+
+14
+00:02:12,500 --> 00:02:21,500
+Staff can inspect both sources, but the clinical decision controls
+stay unavailable in this role.
+
+15
+00:02:22,000 --> 00:02:31,500
+Comments and Tasks are collaboration entry points; opening a drawer
+does not change clinical truth or create a task.
+
+16
+00:02:32,000 --> 00:02:41,500
+I now switch to Clinician outside the camera, then return
+to the same synthetic patient workspace.
+
+17
+00:02:42,000 --> 00:02:51,000
+Clinician review exposes adjudication, version history, and conflict
+choices that Staff cannot submit.
+
+18
+00:02:51,500 --> 00:03:00,500
+A stale same-section write returns a deterministic conflict instead
+of silently overwriting the newer version.
+
+19
+00:03:01,000 --> 00:03:10,500
+The audit preserves both submissions, so a reviewer can see what happened
+and which version was current.
+
+20
+00:03:11,000 --> 00:03:20,000
+History shows an earlier version beside the current record,
+without requiring a fixed version number.
+
+21
+00:03:20,500 --> 00:03:30,000
+Compare makes the Before and After text explicit,
+while the original timeline entry remains available.
+
+22
+00:03:30,500 --> 00:03:40,000
+A revert creates a new version; it never erases previous snapshots,
+audit metadata, or source provenance.
+
+23
+00:03:40,500 --> 00:03:50,500
+From a timeline entry, Prepare patient update opens an explicit
+patient-publication review rather than changing visibility.
+
+24
+00:03:51,000 --> 00:04:01,000
+The workflow begins in Draft and shows the immutable source evidence
+behind the proposed patient-facing content.
+
+25
+00:04:01,500 --> 00:04:12,000
+Accepting an internal AI suggestion does not publish it to the patient;
+those are separate user actions.
+
+26
+00:04:12,500 --> 00:04:22,000
+Dosage checks are visible before approval, and unsupported or mismatched
+dosage remains fail-closed.
+
+27
+00:04:22,500 --> 00:04:32,000
+Clinician approval and explicit Publish are distinct gates; this prototype
+does not claim external message delivery.
+
+28
+00:04:32,500 --> 00:04:42,500
+The Voice panel uses a prerecorded synthetic care conversation
+and a prepared timestamped transcript.
+
+29
+00:04:43,000 --> 00:04:53,000
+It demonstrates a reviewable source path, not live ASR, diarization,
+speaker attribution, or microphone capture.
+
+30
+00:04:53,500 --> 00:05:03,500
+If a provider fails, the system surfaces an explicit failure state
+and keeps existing records available.
+
+31
+00:05:04,000 --> 00:05:13,000
+The failure path is evidence-backed; the prototype does not silently
+fabricate a successful fixture result.
+
+32
+00:05:13,500 --> 00:05:23,000
+I switch to Patient outside the camera and show only
+the audience-specific shared care projection.
+
+33
+00:05:23,500 --> 00:05:33,000
+The patient view contains current care information and its safe Voice fixture,
+without internal review controls.
+
+34
+00:05:33,500 --> 00:05:43,500
+Glance, comments, tasks, conflict details, raw AI output, and source
+workflow identifiers stay outside the Patient projection.
+
+35
+00:05:44,000 --> 00:05:53,000
+Publication is therefore a gate before sharing, not an automatic
+consequence of accepting an internal suggestion.
+
+36
+00:05:53,500 --> 00:06:03,500
+The remaining gaps are stated as evidence boundaries,
+not hidden claims about a general clinical system.
+
+37
+00:06:04,000 --> 00:06:14,000
+Phone-only onboarding, multilingual ASR, external delivery receipts,
+and broad medication interpretation are not implemented here.
+
+38
+00:06:14,500 --> 00:06:24,000
+The prototype deliberately abstains when its bounded rules lack support,
+instead of inventing clinical certainty.
+
+39
+00:06:24,500 --> 00:06:34,000
+These limits are deliberate scope decisions and point to the next build
+step rather than a false finish.
+
+40
+00:06:34,500 --> 00:06:44,000
+The repository includes the required application tests for RBAC,
+revisions, provenance, and concurrent edits.
+
+41
+00:06:44,500 --> 00:06:54,000
+The local closure run recorded 194 backend tests and 86.62 percent
+global application coverage.
+
+42
+00:06:54,500 --> 00:07:04,000
+PostgreSQL 18 CI passed, and the existing Render service is live
+on the exact runtime candidate.
+
+43
+00:07:04,500 --> 00:07:12,000
+The hosted authenticated benchmark remains a disclosed supplementary gap,
+not a claim we are hiding.
+
+44
+00:07:12,500 --> 00:07:22,000
+The next step is final human recording, full video QA, and submission
+packaging after the video exists.

@@ -21,6 +21,10 @@ immutable-evidence boundary. The authenticated hosted benchmark remains pending 
 available browser connector has no safe same-origin request/performance surface; no cookies,
 storage, passwords, or tokens were extracted. `real-clinic-live1` was not created.
 
+Submission decision: **SUBMISSION READY WITH DISCLOSED SUPPLEMENTARY BENCHMARK GAP**. The pending
+benchmark is not a requested deliverable and does not block final Demo Video preparation or
+submission.
+
 ### Historical RC5 checkpoint
 
 **ROUND 9 PARTIAL — FULL APPLICATION LIVE; AUTHENTICATED HOSTED BENCHMARK PENDING.**
