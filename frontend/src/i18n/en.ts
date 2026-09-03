@@ -242,6 +242,8 @@ export const en = {
   "ranking.why": "Why is this here?",
   "ranking.disclaimer":
     "Priority helps organise the view. It is not a medical risk score.",
+  "ranking.protectedFirst":
+    "Protected safety items are shown before ordinary priority ranking.",
   "ranking.base": "Base importance",
   "ranking.recency": "Recent",
   "ranking.explicitRisk": "Risk flag",

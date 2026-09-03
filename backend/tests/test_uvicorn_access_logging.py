@@ -186,6 +186,8 @@ uvicorn.run(application, host="127.0.0.1", port=int(os.environ["NIGHTINGALE_PORT
             "PYTHONUNBUFFERED": "1",
         }
     )
+    child_env.pop("COVERAGE_FILE", None)
+    child_env.pop("COVERAGE_PROCESS_START", None)
     backend_dir = Path(__file__).resolve().parents[1]
     process = subprocess.Popen(
         [sys.executable, "-c", child_code],

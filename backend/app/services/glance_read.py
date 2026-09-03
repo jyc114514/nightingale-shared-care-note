@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import PatientGlanceItem, TaskGlanceItem
 
 
 MAX_STORED_CANDIDATES = 500
-ALGORITHM_VERSION = "importance-v2-safety-floor"
+ALGORITHM_VERSION = "importance-v3-protected-first"
 GlanceResourceType = Literal["highlight", "task"]
 GlanceProjection = PatientGlanceItem | TaskGlanceItem
 
@@ -37,8 +37,15 @@ class GlanceCandidateSnapshot:
     candidate_truncated: bool
 
 
-def _sort_key(candidate: GlanceCandidate) -> tuple[float, datetime, str]:
-    return (candidate.display_priority, candidate.occurred_at, candidate.resource_id)
+def _sort_key(candidate: GlanceCandidate) -> tuple[int, float, datetime, str]:
+    """Keep active protected safety candidates ahead of ordinary ranking."""
+
+    return (
+        1 if candidate.safety_class is not None else 0,
+        candidate.display_priority,
+        candidate.occurred_at,
+        candidate.resource_id,
+    )
 
 
 def build_glance_candidates(
@@ -68,6 +75,10 @@ def build_glance_candidates(
             select(PatientGlanceItem)
             .where(*highlight_filter)
             .order_by(
+                case(
+                    (PatientGlanceItem.safety_class.is_not(None), 1),
+                    else_=0,
+                ).desc(),
                 PatientGlanceItem.display_priority.desc(),
                 PatientGlanceItem.occurred_at.desc(),
                 PatientGlanceItem.id.desc(),
@@ -128,7 +139,7 @@ def select_glance_items(
     *,
     limit: int,
 ) -> tuple[GlanceCandidate, ...]:
-    """Select the same deterministic top-N items used by the Glance endpoint."""
+    """Select the same deterministic protected-first top-N used by Glance and impressions."""
 
     if not 1 <= limit <= 6:
         raise ValueError("Glance limit must be between 1 and 6")

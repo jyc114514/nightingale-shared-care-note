@@ -4776,6 +4776,9 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                     const isProtectedConflict =
                       item.clinical_conflict_id !== null &&
                       item.clinical_conflict_id !== undefined;
+                    const isProtectedSafetyItem =
+                      item.safety_class !== null &&
+                      item.safety_class !== undefined;
                     return (
                       <article
                         key={item.id}
@@ -4874,9 +4877,16 @@ function Workspace({ user, onLogout }: { user: Me; onLogout: () => void }) {
                           >
                             {t("ranking.why")}{" "}
                             <span className="font-normal text-slate-500">
-                              {isProtectedConflict
-                                ? t("conflict.protectedAttention")
-                                : t("ranking.disclaimer")}
+                              {isProtectedConflict ? (
+                                <>
+                                  {t("conflict.protectedAttention")} ·{" "}
+                                  {t("ranking.protectedFirst")}
+                                </>
+                              ) : isProtectedSafetyItem ? (
+                                t("ranking.protectedFirst")
+                              ) : (
+                                t("ranking.disclaimer")
+                              )}
                             </span>
                           </summary>
                           <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-slate-600">

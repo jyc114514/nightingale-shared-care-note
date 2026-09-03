@@ -1084,3 +1084,102 @@ test("Scenario E - provider outage degrades AI without erasing care context", as
     await patientContext.close();
   }
 });
+
+test("Protected safety item remains visible above six ordinary high-priority items", async ({
+  page,
+}) => {
+  await login(page, "clinician.a@clinic-a.test");
+  const patientId = await page.locator("#patient-select").inputValue();
+  const conflictsResponse = await backendRequest(
+    page,
+    "/patients/" + patientId + "/clinical-conflicts",
+  );
+  expect(conflictsResponse.status).toBe(200);
+  const openConflict = (conflictsResponse.body as JsonObject[]).find(
+    (candidate) => candidate.status === "open",
+  );
+  expect(openConflict).toBeDefined();
+  const conflictId = String(openConflict?.id);
+
+  const timelineResponse = await backendRequest(
+    page,
+    "/patients/" + patientId + "/timeline",
+  );
+  expect(timelineResponse.status).toBe(200);
+  const timeline = timelineResponse.body as JsonObject[];
+  const createdIds: string[] = [];
+  try {
+    for (const [index, entry] of timeline.slice(0, 6).entries()) {
+      const versionsResponse = await backendRequest(
+        page,
+        "/entries/" + String(entry.id) + "/versions",
+      );
+      expect(versionsResponse.status).toBe(200);
+      const version = (versionsResponse.body as JsonObject[])[0];
+      const content = String(version.content);
+      const created = await backendRequest(
+        page,
+        "/entry-versions/" + String(version.id) + "/highlights",
+        {
+          method: "POST",
+          body: {
+            start_offset: 0,
+            end_offset: content.length,
+            quote: content,
+            item_kind: "information",
+            display_priority: 100,
+            risk_level: null,
+            risk_reason: "Ordinary protected-first regression fixture",
+            action_label: "Review ordinary regression item " + index,
+            action_state: "open",
+          },
+        },
+      );
+      expect(created.status).toBe(200);
+      createdIds.push(String((created.body as JsonObject).id));
+    }
+
+    await page.reload();
+    const glanceResponse = await backendRequest(
+      page,
+      "/patients/" + patientId + "/glance?limit=6",
+    );
+    expect(glanceResponse.status).toBe(200);
+    const items = glanceResponse.body as JsonObject[];
+    expect(items).toHaveLength(6);
+    expect(items[0]?.clinical_conflict_id).toBe(conflictId);
+    expect(items[0]?.safety_class).toBe("allergy_conflict");
+    expect(
+      items.filter(
+        (item) => item.safety_class !== null && item.safety_class !== undefined,
+      ).length,
+    ).toBe(1);
+    await expect(
+      page.locator(
+        '[data-testid="glance-item"][data-protected-conflict="true"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      page.getByText(
+        "Protected safety items are shown before ordinary priority ranking.",
+      ),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  } finally {
+    for (const highlightId of createdIds) {
+      const cleanup = await backendRequest(
+        page,
+        "/highlights/" + highlightId + "/review",
+        {
+          method: "PATCH",
+          body: { status: "superseded" },
+        },
+      );
+      expect(cleanup.status).toBe(200);
+    }
+  }
+});

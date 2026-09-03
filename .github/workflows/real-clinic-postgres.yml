@@ -217,7 +217,7 @@ jobs:
 
       - name: Run backend regression and Round 1-4 safety suites
         working-directory: backend
-        run: python -m pytest
+        run: python -m pytest --cov=app --cov-report=term-missing --cov-fail-under=85
 
       - name: Run backend static quality gates
         working-directory: backend

@@ -74,6 +74,55 @@ def make_candidate(
     )
 
 
+def make_protected_candidate(
+    db: Session,
+    demo_data: DemoData,
+    *,
+    request_id: str,
+    priority: float,
+    safety_class: str = "allergy_conflict",
+) -> Highlight:
+    entry = create_entry_record(
+        db,
+        clinic_id=demo_data.clinic_a.id,
+        patient_id=demo_data.patient_a.id,
+        entry_type=EntryType.STAFF_NOTE,
+        owner_role=EntryOwnerRole.STAFF,
+        visibility=EntryVisibility.INTERNAL,
+        content=f"Protected synthetic candidate {request_id}.",
+        created_by_user_id=demo_data.staff_a.id,
+        created_by_role="staff",
+        request_id=f"{request_id}-entry",
+    )
+    version = db.scalar(
+        select(EntryVersion).where(
+            EntryVersion.entry_id == entry.id,
+            EntryVersion.version_number == 1,
+        )
+    )
+    assert version is not None
+    return create_highlight_record(
+        db,
+        source_version_id=version.id,
+        start_offset=0,
+        end_offset=len(version.content),
+        quote=version.content,
+        item_kind="flag",
+        status=HighlightStatus.CONFLICT_REVIEW,
+        display_priority=priority,
+        risk_level=None,
+        risk_reason="Protected synthetic safety fixture",
+        action_label="Review protected item",
+        action_state="open",
+        created_by_role="system",
+        created_by_user_id=None,
+        request_id=f"{request_id}-highlight",
+        safety_class=safety_class,
+        safety_floor=95.0,
+        commit=False,
+    )
+
+
 @pytest.mark.asyncio
 async def test_get_glance_reuses_candidates_without_writing_impression_rows(
     client: httpx.AsyncClient,
@@ -141,7 +190,7 @@ async def test_impression_snapshot_is_idempotent_and_summary_is_metadata_only(
     )
     assert created.status_code == 200, created.text
     body = created.json()
-    assert body["algorithm_version"] == "importance-v2-safety-floor"
+    assert body["algorithm_version"] == "importance-v3-protected-first"
     assert body["eligible_count"] == 2
     assert body["stored_candidate_count"] == 2
     assert body["surfaced_count"] == 1
@@ -362,3 +411,68 @@ def test_candidate_snapshot_truncates_storage_at_five_hundred(
     assert snapshot.eligible_count == MAX_STORED_CANDIDATES + 1
     assert len(snapshot.candidates) == MAX_STORED_CANDIDATES
     assert snapshot.candidate_truncated is True
+
+
+def test_candidate_snapshot_keeps_protected_candidates_before_ordinary_cap(
+    db_session: Session,
+    demo_data: DemoData,
+) -> None:
+    from app.services.glance_read import MAX_STORED_CANDIDATES, build_glance_candidates
+
+    source_version = db_session.scalar(
+        select(EntryVersion).where(
+            EntryVersion.entry_id == demo_data.staff_note.id,
+            EntryVersion.version_number == 1,
+        )
+    )
+    assert source_version is not None
+    for index in range(MAX_STORED_CANDIDATES):
+        create_highlight_record(
+            db_session,
+            source_version_id=source_version.id,
+            start_offset=0,
+            end_offset=len(source_version.content),
+            quote=source_version.content,
+            item_kind="information",
+            status=HighlightStatus.SUGGESTED,
+            display_priority=100,
+            risk_level=None,
+            risk_reason="Ordinary cap fixture",
+            action_label=None,
+            action_state="not_applicable",
+            created_by_role="system",
+            created_by_user_id=None,
+            request_id=f"protected-cap-ordinary-{index}",
+            commit=False,
+        )
+    protected = make_protected_candidate(
+        db_session,
+        demo_data,
+        request_id="protected-cap-primary",
+        priority=95,
+    )
+    protected_confirmed = make_protected_candidate(
+        db_session,
+        demo_data,
+        request_id="protected-cap-confirmed",
+        priority=94,
+        safety_class="confirmed_allergy",
+    )
+    db_session.commit()
+
+    snapshot = build_glance_candidates(
+        db_session,
+        clinic_id=demo_data.clinic_a.id,
+        patient_id=demo_data.patient_a.id,
+    )
+
+    protected_ids = {protected.id, protected_confirmed.id}
+    assert snapshot.eligible_count == MAX_STORED_CANDIDATES + 2
+    assert len(snapshot.candidates) == MAX_STORED_CANDIDATES
+    assert snapshot.candidate_truncated is True
+    assert protected_ids <= {
+        candidate.resource_id
+        for candidate in snapshot.candidates
+        if candidate.safety_class is not None
+    }
+    assert {candidate.resource_id for candidate in snapshot.candidates[:2]} == protected_ids

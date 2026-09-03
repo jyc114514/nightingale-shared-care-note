@@ -223,6 +223,7 @@ export const zhCN: TranslationDictionary = {
   "top.priority": "优先级 {{priority}}",
   "ranking.why": "为什么显示在这里？",
   "ranking.disclaimer": "优先级用于整理视图，不是医疗风险评分。",
+  "ranking.protectedFirst": "受保护的临床安全项会先于普通优先级排序显示。",
   "ranking.base": "基础重要性",
   "ranking.recency": "近期性",
   "ranking.explicitRisk": "风险提示",

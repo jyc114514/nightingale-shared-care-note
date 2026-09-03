@@ -1464,6 +1464,9 @@ describe("Gate B shared care note", () => {
     const card = getProtectedCard();
     expect(card).toHaveTextContent("Conflicting allergy information");
     expect(card).toHaveTextContent("Protected attention");
+    expect(card).toHaveTextContent(
+      "Protected safety items are shown before ordinary priority ranking.",
+    );
     expect(card).toHaveTextContent("Needs clinician review");
     expect(within(card).queryByRole("button", { name: "Accept" })).toBeNull();
     expect(within(card).queryByRole("button", { name: "Reject" })).toBeNull();

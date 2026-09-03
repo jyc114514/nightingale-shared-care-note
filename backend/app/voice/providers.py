@@ -95,7 +95,7 @@ class FasterWhisperProvider:
             )
             return self._model
         try:
-            from faster_whisper import WhisperModel  # type: ignore[import-not-found]
+            from faster_whisper import WhisperModel  # type: ignore[import-not-found,import-untyped]
         except ImportError as exc:
             raise VoiceProviderError("asr_dependency_missing") from exc
         try:
