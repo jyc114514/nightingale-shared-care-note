@@ -1,11 +1,40 @@
 # Round 9 Render live and canary evidence
 
+## Round 9 closure addendum (2026-09-03)
+
+The earlier RC5 block below is retained as historical evidence. The current closure release is:
+
+- Main/runtime commit: `4f4fc84c3451152e63135bd7fdd7b851bb43a1ea`
+- Release tag: `real-clinic-rc6` (peeled to the same commit)
+- PostgreSQL 18 CI: [run 33702459026](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33702459026)
+- Deploy-candidate CI: [run 33702720681](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33702720681)
+- Existing Render deploy: `dep-dacd2lgn74is73co3t2g`, source `4f4fc84`
+- Existing service URL: `https://nightingale-shared-care-note.onrender.com`
+- Auto-Deploy: disabled; existing PostgreSQL 18 retained
+
+The closure deployment reached Live. Anonymous `/health` redirected from HTTP 301 to HTTPS,
+HTTPS health/root/current assets returned 200, unauthenticated protected routes returned 401,
+and the sustained anonymous watch passed 15/15 with zero failures and zero observed 5xx. The
+observed Render log window contained normal access lines and no formatter `ValueError`, logging
+error banner, or logging traceback.
+
+The current Staff UI canary showed six Glance items with the protected allergy conflict first,
+the protected-first explanation, both immutable conflict sources, and the Staff read-only
+boundary. `Prepare patient update` showed Draft, immutable evidence, and the explicit
+"Accepting an AI suggestion does not publish it to the patient" boundary. No adjudication,
+publication, or other write was performed.
+
+The authenticated hosted benchmark remains pending because the available browser connector has
+no safe same-origin page-request/performance surface and no cookies/tokens were extracted.
+Patient privacy, Clinician adjudication, and authenticated SSE were not re-claimed as exact
+closure canaries. Consequently `real-clinic-live1` was not created.
+
 Date: 2026-09-03
 
 Status: **the repaired full application is Live; advanced production canary and hosted
 authenticated benchmark remain partial.**
 
-## Exact release path
+## Historical RC5 release path
 
 - Repository: `jyc114514/nightingale-shared-care-note`
 - Repair branch: `codex/round9-safe-logging-recovery`

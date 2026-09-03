@@ -248,18 +248,21 @@ and segment provenance; no ASR inference, diarization, or microphone capture.”
 
 ### Round 9 production recovery and iteration evidence
 
-Round 9 first reproduced and fixed the Uvicorn access-log formatter regression with the real
-`AccessFormatter`, then passed the exact PostgreSQL 18 gate before updating the existing Render
-service. Main and Render now run `c6e9851288c745ceb66dad32078d1385ffbe3424`; the deployment,
-anonymous checks, role canaries, logging observation, and 15/15 sustained watch are recorded in
+The earlier Round 9 RC5 release reproduced and fixed the Uvicorn access-log formatter regression
+with the real `AccessFormatter`. The Round 9 closure then repaired protected-item starvation,
+passed the exact PostgreSQL 18 and deploy-candidate gates, and updated the existing Render
+service. Main and Render now run `4f4fc84c3451152e63135bd7fdd7b851bb43a1ea`; the deployment,
+protected-first Staff canary, anonymous checks, logging observation, and 15/15 sustained watch are recorded in
 [`round9_render_live.md`](docs/evidence/round9_render_live.md). Auto-Deploy remains disabled for
 controlled release, and no new Render resource was created.
 
 The current Round 9 release record is intentionally partial: the authenticated hosted benchmark
-is pending because no safe browser request surface was available without extracting cookies or
-tokens, and the accumulated production top-six did not expose every protected conflict/publication
-control. No production data cleanup was performed. See
+is pending because no safe browser request/performance surface was available without extracting
+cookies or tokens. The exact-commit closure did not repeat the Patient/Clinician/SSE canaries, so
+`real-clinic-live1` was not created. No production data cleanup was performed. See
 [`round9_hosted_performance.md`](docs/evidence/round9_hosted_performance.md).
+
+The closure evidence is consolidated in [`round9_closure.md`](docs/evidence/round9_closure.md).
 
 The local iteration artifact is `deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm`,
 generated from disposable synthetic data with visible English captions and intentionally kept out
@@ -299,10 +302,10 @@ Push-Location backend
 Pop-Location
 ```
 
-At the Round 9 application checkpoint, the backend suite reports **179 passed**. The global
-`pytest --cov=app` measurement is **83.30%** because standalone benchmark/seed/probe scripts are
-included; the runtime application slice excluding those scripts measures **92.9%**. The global
-85% threshold was not hidden or inflated.
+At the Round 9 closure checkpoint, the backend suite reports **194 passed**. The global
+`pytest --cov=app` measurement is **86.62%**; the current CI and local commands enforce the
+85% threshold. Standalone benchmark/seed/probe scripts remain covered by the same application
+target, and no coverage setting was changed to conceal misses.
 
 The repository contains the required real-application tests `test_rbac_scope.py`,
 `test_revision_history.py`, `test_highlight_provenance.py`, and `test_concurrent_edits.py`, plus

@@ -1,5 +1,7 @@
 # Round 9 safe-logging recovery evidence
 
+## Historical RC5 incident checkpoint
+
 Date: 2026-09-03
 
 Status: **logging repair passed; Round 9 remains a documented partial because the authenticated
@@ -55,3 +57,12 @@ not copied.
 
 No credentials, cookies, database URLs, API keys, note text, or original video contents were read
 or written for this evidence.
+
+## Round 9 closure correction (2026-09-03)
+
+The incident record above preserves the earlier RC5 checkpoint. At closure, the full backend
+collection was **194 passed** with **86.62% global `app` coverage**, and the real coverage gate
+`--cov-fail-under=85` passed locally and in the current CI workflows. The exact deployed runtime
+is `4f4fc84c3451152e63135bd7fdd7b851bb43a1ea`, deployed as Render deploy
+`dep-dacd2lgn74is73co3t2g`. The clean startup/access-log observation and 15/15 anonymous watch
+are recorded in [`round9_closure.md`](round9_closure.md).

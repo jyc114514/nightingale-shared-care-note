@@ -1,9 +1,11 @@
 {
   "status": "PARTIAL_AUTHENTICATED_HOSTED_BENCHMARK_PENDING",
   "service_url": "https://nightingale-shared-care-note.onrender.com",
-  "live_commit": "c6e9851288c745ceb66dad32078d1385ffbe3424",
-  "release_tag": "real-clinic-rc5",
+  "live_commit": "4f4fc84c3451152e63135bd7fdd7b851bb43a1ea",
+  "release_tag": "real-clinic-rc6",
+  "render_deploy_id": "dep-dacd2lgn74is73co3t2g",
   "database_target": "existing managed Render PostgreSQL 18",
+  "migration_head": "0015_feedback_backward_compat",
   "warm_up_requests": null,
   "measured_requests": null,
   "concurrency": null,
@@ -27,13 +29,28 @@
       "errors": null
     }
   ],
-  "auth_boundary": "No authenticated request benchmark was executed because the available browser control surface did not provide a safe page-request API without extracting cookies or tokens. No credential file was read and no credential was printed.",
+  "auth_boundary": "No authenticated request benchmark was executed because the available browser control surface did not provide a safe same-origin page-request/performance API without extracting cookies or tokens. No credential file was read and no credential was printed.",
+  "observed_ui_canary": {
+    "staff_glance_item_count": 6,
+    "staff_protected_conflict_position": 1,
+    "staff_conflict_sources_observable": 2,
+    "staff_conflict_adjudication": "read-only boundary observed; no write attempted",
+    "staff_publication_review": "Draft and immutable evidence observed; no approve/publish write attempted",
+    "patient_privacy_exact_closure_canary": "pending",
+    "clinician_exact_closure_canary": "not re-run",
+    "authenticated_sse_exact_closure_canary": "not re-run"
+  },
   "anonymous_canary": {
     "health_redirect_status": 301,
     "https_health_status": 200,
     "sustained_watch_samples": 15,
     "sustained_watch_failures": 0,
     "sustained_watch_5xx": 0
+  },
+  "ci": {
+    "postgresql_18_run": "33702459026",
+    "deploy_candidate_run": "33702720681",
+    "coverage_gate": "passed at 86.62% global app coverage"
   },
   "non_claim": "This file does not claim hosted Glance or Patient warm-path latency, a production SLA, or clinical validation."
 }

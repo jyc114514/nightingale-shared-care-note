@@ -985,3 +985,24 @@ service. The protected allergy/publication controls were not observable in the c
 top-six Glance slice, so no live-canary claim is added for those controls. The authenticated
 hosted benchmark is explicitly pending; the local/demo and PostgreSQL evidence must not be
 mistaken for a clinical production or performance certification.
+
+## Round 9 closure update - 2026-09-03
+
+The current runtime is `4f4fc84c3451152e63135bd7fdd7b851bb43a1ea`, tagged `real-clinic-rc6` and
+deployed to the existing Render service after PostgreSQL 18 CI run `33702459026` and
+deploy-candidate run `33702720681` passed. The protected-item starvation issue is now addressed
+by `importance-v3-protected-first`: active protected candidates are ordered before ordinary
+importance candidates without changing the meaning of `display_priority`, the six-item cap, or
+the separate explicit-risk field.
+
+The closure local backend run was 194 passed with 86.62% global `app` coverage; frontend and
+browser suites remained green. The current Staff hosted canary observed the protected allergy
+conflict first, both immutable source assertions, the Staff read-only adjudication boundary, and
+the patient-publication Draft/immutable-evidence boundary. This is a UI canary, not a clinical
+decision or publication.
+
+The authenticated hosted benchmark remains pending because the available browser connector does
+not provide a safe same-origin request/performance API and no browser credential material was
+extracted. Exact-commit Patient privacy, Clinician adjudication, and authenticated SSE were not
+re-run in this closure. `real-clinic-live1` was therefore not created, and the scenario
+classifications above remain bounded safety interpretations rather than production guarantees.

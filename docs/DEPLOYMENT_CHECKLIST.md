@@ -1,5 +1,20 @@
 # Deployment checklist
 
+## Round 9 closure addendum (2026-09-03)
+
+The current existing-service release is `4f4fc84c3451152e63135bd7fdd7b851bb43a1ea`, tagged
+`real-clinic-rc6`, and Live as Render deploy `dep-dacd2lgn74is73co3t2g`. PostgreSQL 18 CI run
+`33702459026` and deploy-candidate run `33702720681` passed. The protected-first Glance repair,
+global 86.62% application coverage, anonymous HTTPS boundaries, clean access logging, and 15/15
+sustained watch are detailed in [`evidence/round9_closure.md`](evidence/round9_closure.md).
+
+The hosted authenticated benchmark remains unchecked because no permitted same-origin page
+request/performance surface is available through the current browser connector. No cookies,
+storage, passwords, or tokens were extracted. `real-clinic-live1` was not created, and Patient/
+Clinician exact-commit canaries were not re-claimed from earlier RC5 evidence.
+
+## Historical earlier deployment checklist records
+
 Status: **Render deployment live with synthetic evaluation limitations documented.**
 
 ## Hosted evidence

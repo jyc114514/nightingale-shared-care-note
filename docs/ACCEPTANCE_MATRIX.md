@@ -409,7 +409,7 @@ was used in Round 6.
 
 Do not call the build submission-ready unless every Mandatory and Deliverable row is `passed`, or an explicit limitation is documented with a deliberate scope decision. Bonus rows may be dropped without blocking release.
 
-## Round 9 production and iteration evidence — 2026-09-03
+## Round 9 historical RC5 production and iteration evidence — 2026-09-03
 
 The 25-item Mandatory matrix remains **25/25 passed on local synthetic application evidence**;
 the status is not a claim that every advanced control was observable in the accumulated hosted
@@ -424,6 +424,22 @@ demo state. Round 9 adds the following release evidence:
 | Local iteration demo | 54.76-second 1280×720 synthetic WebM generated and browser-seek inspected | [round9 demo QA](evidence/round9_demo_qa.md) |
 | Iteration Brief PDF | Separate Round 9 artifact; 3-page extraction and visual QA passed | [round9 brief QA](evidence/round9_iteration_brief_qa.md) |
 
-Round 9 therefore remains a **soft partial** release record until the authenticated hosted
-benchmark and the remaining deliverable audit are closed. No requirements text was changed, and
-the original user-supplied MP4 remains outside Git.
+The RC5 record above is historical. No requirements text was changed, and the original
+user-supplied MP4 remains outside Git.
+
+## Round 9 closure evidence - 2026-09-03
+
+The current closure status is **soft partial**: protected-first selection is live and verified,
+but the authenticated hosted benchmark and exact-commit Patient/Clinician/SSE canaries are not
+complete, so `real-clinic-live1` is intentionally absent.
+
+| Evidence area | Result | Evidence |
+| --- | --- | --- |
+| Protected starvation | RED `8ffafed`; GREEN `cc2e10c`; final runtime `4f4fc84` uses `importance-v3-protected-first` and keeps the six-item cap | [closure evidence](evidence/round9_closure.md) |
+| Backend quality | 194 passed; 86.62% global `app` coverage; 85% gate passed | [closure evidence](evidence/round9_closure.md) |
+| Frontend/browser quality | 45 Vitest; 20 core, 4 Voice, and 2 publication Playwright checks passed | [closure evidence](evidence/round9_closure.md) |
+| PostgreSQL/deploy CI | Exact PostgreSQL 18 and deploy-candidate runs passed | [PostgreSQL run 33702459026](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33702459026), [deploy run 33702720681](https://github.com/jyc114514/nightingale-shared-care-note/actions/runs/33702720681) |
+| Existing Render deployment | Live at `4f4fc84`; deploy `dep-dacd2lgn74is73co3t2g`; HTTPS/anonymous boundaries and 15/15 watch passed | [closure evidence](evidence/round9_closure.md) |
+| Staff protected/publication UI canary | Protected conflict first in Glance; both sources and Staff read-only boundary; publication Draft/immutable evidence observed | [closure evidence](evidence/round9_closure.md) |
+| Hosted authenticated benchmark | Pending; no cookies/tokens were extracted and no fake latency was reported | [hosted benchmark boundary](evidence/round9_hosted_performance.md) |
+| Live tag | `real-clinic-rc6` peels to the deployed runtime; `real-clinic-live1` not created because mandatory hosted gates remain pending | [closure evidence](evidence/round9_closure.md) |

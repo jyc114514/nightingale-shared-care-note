@@ -73,6 +73,11 @@
       .doesnot { color: #a33b3b; background: #ffe5e5; }
       .mono { font-family: Consolas, "Courier New", monospace; font-size: 8.5pt; }
       .note { color: var(--muted); font-size: 8.7pt; }
+      .page:last-of-type th { padding: 5px 6px; }
+      .page:last-of-type td { padding: 4px 6px; }
+      .page:last-of-type .card { padding: 8px 10px; }
+      .page:last-of-type li { margin-bottom: 3px; }
+      .page:last-of-type .note { margin-bottom: 5px; font-size: 7.8pt; line-height: 1.2; }
     </style>
   </head>
   <body>
@@ -127,9 +132,9 @@
 
       <h2>Round 9 release evidence</h2>
       <div class="grid2">
-        <div class="card blue"><div class="label">Database gate</div><h3>PostgreSQL 18 · exact source</h3><p class="mono">CI 33650978171<br />c6e9851288c745ceb66dad32078d1385ffbe3424</p><p class="small">Fresh/legacy migration, seed idempotency, schema checks, bridge probe, backend and static gates passed.</p></div>
-        <div class="card teal"><div class="label">Hosted deployment</div><h3>Existing Render service · Live</h3><p class="mono">deploy dep-dac4dgek1f9s73e4qu30<br />main c6e9851 · rc5</p><p class="small">HTTPS redirect, anonymous boundaries, role canaries, and 15/15 sustained asset watch passed.</p></div>
-        <div class="card amber"><div class="label">Application quality</div><h3>179 backend tests</h3><p>Focused logging regression: 12 passed. Frontend: 45 Vitest; browser: 18 core + 4 Voice + 2 publication.</p><p class="small">Global app coverage is 83.30%; runtime application slice excluding standalone scripts is 92.9%.</p></div>
+        <div class="card blue"><div class="label">Database gate</div><h3>PostgreSQL 18 - exact source</h3><p class="mono">CI 33702459026<br />4f4fc84c3451152e63135bd7fdd7b851bb43a1ea</p><p class="small">Fresh/legacy migration, seed idempotency, schema checks, bridge probe, backend coverage and static gates passed.</p></div>
+        <div class="card teal"><div class="label">Hosted deployment</div><h3>Existing Render service - Live</h3><p class="mono">deploy dep-dacd2lgn74is73co3t2g<br />main 4f4fc84 - rc6</p><p class="small">Protected-first Staff canary, HTTPS redirect, anonymous boundaries, clean logs, and 15/15 sustained asset watch passed.</p></div>
+        <div class="card amber"><div class="label">Application quality</div><h3>194 backend tests</h3><p>Focused logging and protected-ranking regressions passed. Frontend: 45 Vitest; browser: 20 core + 4 Voice + 2 publication.</p><p class="small">Global application coverage is 86.62%; the 85% coverage gate passed locally and in CI.</p></div>
         <div class="card"><div class="label">Local performance boundary</div><h3>P95 56.053 ms</h3><p>Prior local SQLite/Uvicorn warm-path evidence, 1,000 requests at concurrency 10, zero errors.</p><p class="small">The authenticated hosted benchmark is pending; this is not a hosted PostgreSQL SLA.</p></div>
       </div>
 
@@ -163,12 +168,12 @@
 
       <hr class="rule" />
       <div class="grid2">
-        <div class="card amber"><div class="label">Round 9 partial gates</div><h2>Do not overstate live evidence</h2><ul><li>The hosted authenticated Glance/Patient benchmark is pending because no permitted authenticated request channel was available.</li><li>Accumulated synthetic rehearsal state hid protected conflict/publication actions from the live top-six; no production cleanup was performed to manufacture them.</li><li><span class="mono">real-clinic-live1</span> was not created.</li></ul></div>
-        <div class="card teal"><div class="label">Next validation priorities</div><h2>Close the evidence, not the caveat</h2><ul><li>Run a bounded authenticated hosted read benchmark through an approved non-secret mechanism.</li><li>Rehearse the protected production state only with an explicit, auditable data-state decision.</li><li>Complete final artifact audit and packaging in Round 10.</li></ul></div>
+        <div class="card amber"><div class="label">Round 9 partial gates</div><h2>Do not overstate live evidence</h2><ul><li>Hosted authenticated Staff/Patient benchmark pending; no safe same-origin request API.</li><li>Staff canary shows protected conflict first, two immutable sources, and the Draft boundary; no writes.</li><li><span class="mono">real-clinic-live1</span> not created; Patient/Clinician/SSE and latency rechecks pending.</li></ul></div>
+        <div class="card teal"><div class="label">Next validation priorities</div><h2>Close the evidence, not the caveat</h2><ul><li>Run an approved authenticated read benchmark.</li><li>Rehearse protected state with an auditable synthetic-data decision.</li><li>Finish the Round 10 artifact audit and packaging.</li></ul></div>
       </div>
 
-      <p class="note"><b>Not claimed:</b> live LLM quality, live ASR, microphone capture, FHIR conformance, external delivery receipts, clinical validation, or production compliance.</p>
-      <p class="note"><b>Requirements integrity:</b> the authoritative <span class="mono">requirements.txt</span> was not edited; SHA-256 remains <span class="mono">4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5</span>. The original user-supplied MP4 was not opened or changed. The local iteration WebM is a separate synthetic captioned artifact and is not tracked or uploaded.</p>
+      <p class="note"><b>Not claimed:</b> live LLM/ASR quality, microphone capture, FHIR conformance, delivery receipts, clinical validation, or production compliance.</p>
+      <p class="note"><b>Requirements integrity:</b> <span class="mono">requirements.txt</span> was not edited; SHA-256 remains <span class="mono">4659AF4A414AFF86C1DB6DA0EC3FEB4837236D625669AE7C9CFE5CC69BC934F5</span>. The original MP4 was untouched; the synthetic WebM is ignored and not uploaded.</p>
       <div class="footer"><span>HONEST STATUS / NEXT GATE</span><span>03 / 03</span></div>
     </section>
   </body>

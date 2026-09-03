@@ -29,9 +29,9 @@ compatibility, prepares PostgreSQL CI, and rehearses the candidate from tracked 
 
 ## 4. Evidence
 
-The candidate has 175 backend tests with 85% coverage, 45 frontend Vitest tests, 18 existing Gate
-B browser checks, 4 Voice checks, and 2 Scenario F checks across desktop/mobile viewports. Fresh
-and four legacy SQLite paths reach `0014`; disposable downgrade/re-upgrade and targeted
+The closure candidate has 194 backend tests with 86.62% global `app` coverage, 45 frontend Vitest
+tests, 20 core browser checks, 4 Voice checks, and 2 publication checks across desktop/mobile
+viewports. Fresh and legacy migration paths reach `0015`; disposable downgrade/re-upgrade and targeted
 PostgreSQL offline SQL pass. The published-care local real-TCP benchmark is 1,000 requests at
 concurrency 10 with zero errors and P95 82.264 ms in the Round 5 comparable run. These are local synthetic measurements, not
 hosted PostgreSQL performance or clinical validation.
@@ -57,9 +57,9 @@ fallback from a failed external provider to a fixture result.
 
 ## 7. Deployment status
 
-The existing Render deployment evidence remains historical and was not changed by Round 5. No
-Render resource, production database, GitHub remote, or external CI run was touched. The prepared
-`.github/workflows/real-clinic-postgres.yml` requires Round 6 external authorization to execute.
+The existing Render service remains the only deployment target. Round 9 closure deployed the
+protected-first runtime after exact PostgreSQL/deploy CI passed; the hosted authenticated
+benchmark is still pending and `real-clinic-live1` is intentionally absent.
 
 ## 8. Explicit non-claims
 
@@ -77,19 +77,21 @@ formatter regression test was committed red at `f72593c`; the narrow repair was 
 `43714a5` and preserves formatter-compatible access arguments while redacting query values and
 failing closed on sanitizer errors.
 
-The exact repair source `c6e9851288c745ceb66dad32078d1385ffbe3424` passed PostgreSQL 18 CI run
-`33650978171`, including the full migration/seed/schema checks, the pinned bridge probe, backend
-tests, and static gates. Main was fast-forwarded and the existing Render service deployed that
-same commit once: deploy `dep-dac4dgek1f9s73e4qu30`. HTTPS, anonymous auth boundaries, Staff/
-Clinician/Patient canaries, and a 15/15 sustained asset watch passed. Auto-Deploy remains disabled
-for controlled release.
+The earlier RC5 source `c6e9851288c745ceb66dad32078d1385ffbe3424` passed PostgreSQL 18 CI run
+`33650978171` and its deployment evidence is retained historically. The closure source
+`4f4fc84c3451152e63135bd7fdd7b851bb43a1ea` passed PostgreSQL 18 CI run `33702459026` and the
+deploy-candidate run `33702720681`, then reached Live on the existing Render service as deploy
+`dep-dacd2lgn74is73co3t2g`. HTTPS, anonymous auth boundaries, protected-first Staff UI canary,
+clean access logging, and a 15/15 sustained asset watch passed. Auto-Deploy remains disabled.
 
-The current evidence is deliberately partial. The hosted authenticated read-path benchmark was
-not run because no safe browser request surface was available without extracting cookies or
-tokens. The production Glance top-six was also affected by accumulated synthetic rehearsal state,
-so protected allergy/publication controls were not claimed as live-canary passes. No production
-cleanup was used to manufacture them. See [`round9_render_live.md`](evidence/round9_render_live.md)
-and [`round9_hosted_performance.md`](evidence/round9_hosted_performance.md).
+The current evidence is deliberately partial. The hosted authenticated read-path benchmark remains
+pending because no safe browser request/performance surface was available without extracting
+cookies or tokens. The current Staff Glance showed the protected allergy conflict first and the
+publication Draft boundary, but Patient privacy, Clinician adjudication, and authenticated SSE
+were not re-run as exact-commit closure canaries. No production cleanup was used to manufacture
+state, and `real-clinic-live1` was not created. See [`round9_closure.md`](evidence/round9_closure.md),
+[`round9_render_live.md`](evidence/round9_render_live.md), and
+[`round9_hosted_performance.md`](evidence/round9_hosted_performance.md).
 
 The local iteration demo is a separate, disposable synthetic artifact at
 `deliverables/iteration/Nightingale_Real_Clinic_Iteration_Demo.webm` and is intentionally kept out
