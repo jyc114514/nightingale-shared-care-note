@@ -127,11 +127,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags origin main
+          git fetch --no-tags origin refs/tags/real-clinic-bridge1:refs/tags/real-clinic-bridge1
+          test "$(git rev-parse refs/tags/real-clinic-bridge1^{commit})" = "a6fc8c087a55808db1c363336fa5897abb2a0346"
           baseline_root="${RUNNER_TEMP}/nightingale-baseline"
           mkdir -p "${baseline_root}"
-          git archive origin/main | tar -x -C "${baseline_root}"
-          python -m app.scripts.round7_baseline_compat_probe "${baseline_root}"
+          git archive refs/tags/real-clinic-bridge1 | tar -x -C "${baseline_root}"
+          (cd "${baseline_root}" && python -m app.scripts.round7_bridge_smoke)
 
       - name: Run full backend regression suite
         working-directory: backend
