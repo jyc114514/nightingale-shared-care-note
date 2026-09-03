@@ -23,8 +23,10 @@ from app.models import (
     HighlightFeedbackEvent,
     ImportanceProfile,
     PatientGlanceItem,
+    HighlightStatus,
 )
 from app.services.entries import create_entry_record, update_entry_content
+from app.services.highlights import create_highlight_record
 from conftest import DemoData, TEST_PASSWORD
 
 
@@ -132,6 +134,61 @@ async def test_conflict_has_dual_provenance_protected_glance_floor_and_safe_api(
         for audit in audit_rows
         for field in ("quote", "content", "raw_text")
     )
+
+
+@pytest.mark.asyncio
+async def test_protected_conflict_survives_six_higher_priority_ordinary_items(
+    client: httpx.AsyncClient,
+    demo_data: DemoData,
+    db_session: Session,
+) -> None:
+    fixture = make_conflict(db_session, demo_data)
+    ordinary_entries = [
+        demo_data.patient_summary,
+        demo_data.patient_instruction,
+        demo_data.staff_note,
+        demo_data.clinician_section,
+        demo_data.ai_summary,
+        demo_data.ai_doctor,
+    ]
+    for index, entry in enumerate(ordinary_entries):
+        version = db_session.scalar(
+            select(EntryVersion).where(
+                EntryVersion.entry_id == entry.id,
+                EntryVersion.version_number == 1,
+            )
+        )
+        assert version is not None
+        create_highlight_record(
+            db_session,
+            source_version_id=version.id,
+            start_offset=0,
+            end_offset=len(version.content),
+            quote=version.content,
+            item_kind="information",
+            status=HighlightStatus.SUGGESTED,
+            display_priority=100,
+            risk_level=None,
+            risk_reason="Ordinary synthetic attention item",
+            action_label=f"Review ordinary item {index}",
+            action_state="open",
+            created_by_role="system",
+            created_by_user_id=None,
+            request_id=f"protected-first-ordinary-{index}",
+            commit=False,
+        )
+    db_session.commit()
+
+    await login(client, "staff@clinic-a.test")
+    response = await client.get(f"/patients/{demo_data.patient_a.id}/glance")
+
+    assert response.status_code == 200, response.text
+    items = response.json()
+    assert len(items) == 6
+    assert items[0]["clinical_conflict_id"] == fixture.conflict.id
+    assert items[0]["safety_class"] == "allergy_conflict"
+    assert items[0]["display_priority"] == 95.0
+    assert len({item["id"] for item in items}) == 6
 
 
 @pytest.mark.asyncio
